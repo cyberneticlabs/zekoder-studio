@@ -12,7 +12,7 @@ Keep fork changes small and isolated. Prefer supported plugins and configuration
 
 | Location                         | Responsibility                                |
 | -------------------------------- | --------------------------------------------- |
-| `cyberneticlabs/zekoder-suite`   | Branded application distribution              |
+| `cyberneticlabs/zekoder-studio`  | Branded application distribution              |
 | `~/Code/zekoder/apps`            | Local checkout                                |
 | `origin`                         | Cybernetic Labs fork                          |
 | `upstream`                       | `https://github.com/getpaseo/paseo.git`       |
