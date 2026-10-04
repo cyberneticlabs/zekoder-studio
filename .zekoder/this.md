@@ -60,6 +60,7 @@ Detail: kb/preflight.md
 
 - `kb/architecture.md` — Architecture and file map
 - `kb/conventions.md` — Naming conventions and norms
+- `kb/discovery/plugins.md` — Plugin system: built-in registry, packaging, import rules, config/built-in id collisions, CI checks
 - `kb/goals.md` — Repo purpose, users, goals with dated success signals, and explicit non-goals
 - `kb/guardrails.md` — Hard boundaries: each rule, why it exists, and how to check compliance
 - `kb/preflight.md` — Pre-flight caveats
