@@ -5,7 +5,7 @@ title: Restore module-level auto-updater tests once branded auto-update is enabl
 status: planned
 createdAt: 2026-10-06
 openedAt: 2026-10-06T11:15:54.289Z
-updatedAt: 2026-10-06T11:15:54.289Z
+updatedAt: 2026-10-06T13:33:17.654Z
 origin: zekoder-coding-agent
 filedFromTask: 002-zekoder-rebrand-03-brand-surfaces
 branch: followup-001-restore-auto-updater-service-tests
@@ -15,7 +15,7 @@ relatedFeatures:
   - 002-zekoder-rebrand
 relatedBugs: []
 relatedFollowups: []
-resolvedBy: null
+resolvedBy: 003-desktop-gcs-release-pipeline
 statusHistory: []
 ---
 

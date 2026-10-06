@@ -34,17 +34,18 @@ Goals, dates and non-goals: kb/goals.md. Source: plan.md.
 - Never restart the main daemon on :6767. Never run the full test suite locally (changed file only, `--bail=1`).
 - Run typecheck and lint after every change and format before commit, via npm scripts only. Use npm only.
 - Keep persistence file-based JSON (no database or migration tool). Do not hand-edit generated or patched paths (`dist/`, zod-aot validation output, `patches/`).
-Rationale and checks: kb/guardrails.md.
+  Rationale and checks: kb/guardrails.md.
 
 ## Quality gates
 
 Run after every change (npm scripts only, never raw npx eslint/oxlint/oxfmt):
+
 - `npm run typecheck`
 - `npm run lint` (targeted: `npm run lint -- <files>`)
 - `npm run format` before commit (targeted: `npm run format:files -- <files>`; check: `npm run format:check`)
 - Tests: ONLY the changed file: `npx vitest run <file> --bail=1 > /tmp/test-output.txt 2>&1`. NEVER `npm run test` for a workspace/whole repo locally; full suite = CI.
 - Stale cross-package types: `npm run build:client` or `npm run build:server` first.
-Detail: kb/quality-gates.md
+  Detail: kb/quality-gates.md
 
 ## Pre-flight / environment prerequisites
 
@@ -54,13 +55,14 @@ Detail: kb/quality-gates.md
 - `git status --short` (clean tree expected before planning)
 - No database/migration tool; persistence is file-based JSON (docs/data-model.md)
 - Do NOT touch the main daemon on port 6767; dev daemon uses 6768 via `npm run dev`
-Detail: kb/preflight.md
+  Detail: kb/preflight.md
 
 ## Reference index
 
 - `kb/architecture.md` — Architecture and file map
 - `kb/conventions.md` — Naming conventions and norms
 - `kb/discovery/branding.md` — Zekoder branding: BRAND module, asset generator, ids, i18n rewrite
+- `kb/discovery/desktop-releases.md` — Desktop release matrix, updater boundaries and fork publisher audit
 - `kb/discovery/plugins.md` — Plugin system: built-in registry, packaging, import rules, config/built-in id collisions, CI checks
 - `kb/goals.md` — Repo purpose, users, goals with dated success signals, and explicit non-goals
 - `kb/guardrails.md` — Hard boundaries: each rule, why it exists, and how to check compliance
