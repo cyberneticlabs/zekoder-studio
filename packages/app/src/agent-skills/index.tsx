@@ -1,3 +1,4 @@
+import { brandUrl } from "@getpaseo/protocol/branding";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Text, View } from "react-native";
@@ -24,7 +25,7 @@ const ThemedBlocks = withUnistyles(Blocks);
 const ThemedCheck = withUnistyles(Check);
 const ThemedSettings = withUnistyles(Settings2);
 const ThemedArrowUpRight = withUnistyles(ArrowUpRight);
-const SKILLS_DOCS_URL = "https://paseo.sh/docs/skills";
+const SKILLS_DOCS_URL = brandUrl("/docs/skills");
 const foregroundMapping = (theme: Theme) => ({ color: theme.colors.foreground });
 const mutedMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 

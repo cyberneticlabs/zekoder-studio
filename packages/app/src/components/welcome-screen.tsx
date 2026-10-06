@@ -1,3 +1,4 @@
+import { BRAND, brandUrl } from "@getpaseo/protocol/branding";
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View, ScrollView } from "react-native";
@@ -26,6 +27,8 @@ import { openExternalUrl } from "@/utils/open-external-url";
 import { isFdroidBuild } from "@/constants/build-profile";
 import { isWeb, isNative } from "@/constants/platform";
 import { isElectronRuntime } from "@/desktop/host";
+
+const WEBSITE_LABEL = BRAND.websiteUrl.replace(/^https?:\/\//, "");
 
 interface WelcomeAction {
   key: "scan-qr" | "direct-connection" | "remote-ssh" | "paste-pairing-link";
@@ -189,7 +192,7 @@ export function WelcomeScreen({ onHostAdded }: WelcomeScreenProps) {
   }, [router]);
 
   const handleOpenPaseoSite = useCallback(() => {
-    void openExternalUrl("https://paseo.sh");
+    void openExternalUrl(brandUrl());
   }, []);
 
   const handleOpenSettings = useCallback(() => {
@@ -292,7 +295,7 @@ export function WelcomeScreen({ onHostAdded }: WelcomeScreenProps) {
             <Text style={styles.subtitle}>{t("onboarding.subtitle")}</Text>
             {isNative ? (
               <Pressable style={styles.setupLink} onPress={handleOpenPaseoSite}>
-                <Text style={styles.setupLinkText}>paseo.sh</Text>
+                <Text style={styles.setupLinkText}>{WEBSITE_LABEL}</Text>
                 <ExternalLink size={14} color={theme.colors.accent} />
               </Pressable>
             ) : null}

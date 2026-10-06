@@ -45,7 +45,7 @@ const buildProfile = isFdroidBuild
           "expo-notifications",
           {
             icon: "./assets/images/notification-icon.png",
-            color: "#20744A",
+            color: "#1461BD",
           },
         ],
       ],
@@ -67,8 +67,8 @@ function resolveSecretFile(params) {
 
 const variants = {
   production: {
-    name: "Paseo",
-    packageId: "sh.paseo",
+    name: "Zekoder",
+    packageId: "net.zekoder.app",
     googleServicesFile: resolveSecretFile({
       envKey: "GOOGLE_SERVICES_FILE_PROD",
       fallbackRelativePath: "./.secrets/google-services.prod.json",
@@ -79,8 +79,8 @@ const variants = {
     }),
   },
   development: {
-    name: "Paseo Debug",
-    packageId: "sh.paseo.debug",
+    name: "Zekoder Debug",
+    packageId: "net.zekoder.app.debug",
     googleServicesFile: resolveSecretFile({
       envKey: "GOOGLE_SERVICES_FILE_DEBUG",
       fallbackRelativePath: "./.secrets/google-services.debug.json",
@@ -102,7 +102,7 @@ export default {
     version: nativeReleaseVersion.appVersion,
     orientation: "portrait",
     icon: "./assets/images/icon.png",
-    scheme: "paseo",
+    scheme: "zekoder",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     ios: {
@@ -119,7 +119,7 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        backgroundColor: "#000000",
+        backgroundColor: "#FFFFFF",
         foregroundImage: "./assets/images/android-icon-foreground.png",
       },
       edgeToEdgeEnabled: true,
@@ -153,6 +153,7 @@ export default {
           resizeMode: "contain",
           backgroundColor: "#ffffff",
           dark: {
+            image: "./assets/images/splash-icon-dark.png",
             backgroundColor: "#000000",
           },
         },

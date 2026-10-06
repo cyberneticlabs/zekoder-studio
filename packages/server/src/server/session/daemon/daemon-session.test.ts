@@ -357,7 +357,7 @@ describe("DaemonSession", () => {
     });
     writeFileSync(
       join(paseoHome, "daemon.log"),
-      "first line\nrelay.secret.test:443 token=super-secret paseo://pairing-secret\n",
+      "first line\nrelay.secret.test:443 token=super-secret paseo://pairing-secret zekoder://zekoder-pairing-secret\n",
     );
 
     await subsystem.handleDiagnosticsRequest({ type: "diagnostics.request", requestId: "d-1" });
@@ -374,6 +374,7 @@ describe("DaemonSession", () => {
     expect(message.payload.diagnostic).not.toContain("relay.secret.test:443");
     expect(message.payload.diagnostic).not.toContain("super-secret");
     expect(message.payload.diagnostic).not.toContain("pairing-secret");
+    expect(message.payload.diagnostic).not.toContain("zekoder-pairing-secret");
   });
 
   test("diagnostics includes the PATH and shell visible to the daemon", async () => {

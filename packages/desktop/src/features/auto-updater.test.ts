@@ -47,23 +47,16 @@ import {
 } from "./auto-updater";
 
 describe("checkForAppUpdate", () => {
-  it("treats an unpublished channel manifest as an unavailable update", async () => {
-    const error = Object.assign(new Error("Cannot find latest-mac.yml"), {
-      code: "ERR_UPDATER_CHANNEL_FILE_NOT_FOUND",
-    });
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    autoUpdaterMock.checkForUpdates.mockImplementationOnce(async () => {
-      autoUpdaterMock.logger.error(error);
-      autoUpdaterMock.handlers.get("error")?.(error);
-      throw error;
-    });
-
+  // Zekoder keeps auto-update off until a fork-owned update feed exists, so the module-level
+  // service must never reach electron-updater even for a packaged app.
+  it("never contacts the updater while branded auto-update is disabled", async () => {
     const result = await checkForAppUpdate({
       currentVersion: "1.2.3",
       releaseChannel: "stable",
       intent: "manual",
     });
 
+    expect(autoUpdaterMock.checkForUpdates).not.toHaveBeenCalled();
     expect(result).toEqual({
       hasUpdate: false,
       readyToInstall: false,
@@ -73,28 +66,6 @@ describe("checkForAppUpdate", () => {
       date: null,
       errorMessage: null,
     });
-    expect(consoleError).not.toHaveBeenCalled();
-    consoleError.mockRestore();
-  });
-
-  it("keeps genuine updater failures visible", async () => {
-    const error = new Error("network down");
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    autoUpdaterMock.checkForUpdates.mockImplementationOnce(async () => {
-      autoUpdaterMock.logger.error(error);
-      autoUpdaterMock.handlers.get("error")?.(error);
-      throw error;
-    });
-
-    const result = await checkForAppUpdate({
-      currentVersion: "1.2.3",
-      releaseChannel: "stable",
-      intent: "manual",
-    });
-
-    expect(result.errorMessage).toBe("network down");
-    expect(consoleError).toHaveBeenCalled();
-    consoleError.mockRestore();
   });
 
   it("logs the update handoff with current and selected target versions", () => {

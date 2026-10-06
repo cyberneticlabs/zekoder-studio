@@ -1,3 +1,4 @@
+import { brandUrl } from "@getpaseo/protocol/branding";
 import { memo, useCallback, useMemo } from "react";
 import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import { ExternalLink, Gift } from "lucide-react-native";
@@ -25,7 +26,7 @@ import {
   type ChangelogSection,
 } from "./parse-changelog";
 
-const WEBSITE_CHANGELOG_URL = "https://paseo.sh/changelog";
+const WEBSITE_CHANGELOG_URL = brandUrl("/changelog");
 
 const ThemedGift = withUnistyles(Gift);
 const ThemedExternalLink = withUnistyles(ExternalLink);

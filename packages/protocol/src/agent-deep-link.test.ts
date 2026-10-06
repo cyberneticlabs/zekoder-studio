@@ -11,9 +11,17 @@ describe("agent deep links", () => {
 
     const link = buildAgentDeepLink(target);
 
-    expect(link).toBe("paseo://h/server%2Fmain/agent/agent%20123");
+    expect(link).toBe("zekoder://h/server%2Fmain/agent/agent%20123");
     expect(buildAgentDeepLinkRoute(target)).toBe("/h/server%2Fmain/agent/agent%20123");
     expect(parseAgentDeepLink(link)).toEqual(target);
+  });
+
+  it("parses zekoder and legacy paseo schemes and rejects others", () => {
+    const target = { serverId: "server-1", agentId: "agent-1" };
+
+    expect(parseAgentDeepLink("zekoder://h/server-1/agent/agent-1")).toEqual(target);
+    expect(parseAgentDeepLink("paseo://h/server-1/agent/agent-1")).toEqual(target);
+    expect(parseAgentDeepLink("other://h/server-1/agent/agent-1")).toBeNull();
   });
 
   it("rejects links outside the exact agent route", () => {

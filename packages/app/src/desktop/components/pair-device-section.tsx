@@ -1,3 +1,4 @@
+import { brandUrl } from "@getpaseo/protocol/branding";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
@@ -21,7 +22,7 @@ import {
   type EditingTextInputHandle,
 } from "@/components/ui/text-input";
 
-const RELAY_DOCS_URL = "https://paseo.sh/docs/security";
+const RELAY_DOCS_URL = brandUrl("/docs/security");
 const FLEX_ONE_STYLE = { flex: 1 } as const;
 const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
 const ThemedShieldCheck = withUnistyles(ShieldCheck);

@@ -1,3 +1,8 @@
+import { BRAND } from "./branding.js";
+
+// `paseo:` stays parseable for links produced by upstream daemons.
+const ACCEPTED_SCHEMES = new Set([`${BRAND.deepLinkScheme}:`, "paseo:"]);
+
 export interface AgentDeepLinkTarget {
   serverId: string;
   agentId: string;
@@ -24,7 +29,7 @@ export function buildAgentDeepLinkRoute(
 }
 
 export function buildAgentDeepLink(target: AgentDeepLinkTarget): string {
-  return `paseo:/${buildAgentDeepLinkRoute(target)}`;
+  return `${BRAND.deepLinkScheme}:/${buildAgentDeepLinkRoute(target)}`;
 }
 
 export function parseAgentDeepLink(input: string): AgentDeepLinkTarget | null {
@@ -36,7 +41,7 @@ export function parseAgentDeepLink(input: string): AgentDeepLinkTarget | null {
   }
 
   if (
-    url.protocol !== "paseo:" ||
+    !ACCEPTED_SCHEMES.has(url.protocol) ||
     url.hostname !== "h" ||
     url.username ||
     url.password ||

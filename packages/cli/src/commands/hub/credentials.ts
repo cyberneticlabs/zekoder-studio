@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { chmodSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
 import path from "node:path";
+import { resolvePaseoHome } from "@getpaseo/server/daemon-control";
 import { z } from "zod";
 import { HubCommandError } from "./error.js";
 import { normalizeHubOrigin } from "./origin.js";
@@ -134,12 +134,6 @@ export class PrivateHubCredentialStore implements HubCredentialStore {
       throw credentialStorageError();
     }
   }
-}
-
-function resolvePaseoHome(env: Readonly<Record<string, string | undefined>>): string {
-  const configured = env.PASEO_HOME ?? "~/.paseo";
-  const expanded = configured === "~" ? homedir() : configured.replace(/^~\//u, `${homedir()}/`);
-  return path.resolve(expanded);
 }
 
 function chmodPrivate(target: string, mode: number): void {

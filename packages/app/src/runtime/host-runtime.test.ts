@@ -36,9 +36,9 @@ import type { HostConfirmationRequest } from "./host-confirmation";
 it("requests the managed connection credential through desktop main without a web hint", async () => {
   const requests: string[] = [];
   const connection: HostConnection = {
-    id: "direct:localhost:6767",
+    id: "direct:localhost:6777",
     type: "directTcp",
-    endpoint: "localhost:6767",
+    endpoint: "localhost:6777",
   };
   let token = "local-token";
   const invoke = async (listen: string) => {
@@ -48,7 +48,7 @@ it("requests the managed connection credential through desktop main without a we
   expect(await readDesktopManagedLocalCredential(connection, invoke)).toBe("local-token");
   token = "rotated-token";
   expect(await readDesktopManagedLocalCredential(connection, invoke)).toBe("rotated-token");
-  expect(requests).toEqual(["localhost:6767", "localhost:6767"]);
+  expect(requests).toEqual(["localhost:6777", "localhost:6777"]);
 });
 
 class FakeDaemonClient {
@@ -3913,7 +3913,7 @@ describe("HostRuntimeStore", () => {
 
     expect(requests).toEqual([]);
     expect(store.getHosts().map((host) => host.serverId)).toEqual([
-      "srv_localhost:6767",
+      "srv_localhost:6777",
       "srv_10.0.0.5:6767",
     ]);
     store.syncHosts([]);

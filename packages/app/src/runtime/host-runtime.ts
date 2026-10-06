@@ -48,6 +48,7 @@ import {
 } from "@/desktop/daemon/desktop-daemon-transport";
 import { getDesktopHost } from "@/desktop/host";
 import { readDesktopManagedLocalCredential } from "@/desktop/daemon/local-credential";
+import { BRAND } from "@getpaseo/protocol/branding";
 import { CLIENT_CAPS } from "@getpaseo/protocol/client-capabilities";
 import { BROWSER_AUTOMATION_COMMAND_NAMES } from "@getpaseo/protocol/browser-automation/rpc-schemas";
 import {
@@ -1405,7 +1406,7 @@ export class HostRuntimeController {
 }
 
 const REGISTRY_STORAGE_KEY = "@paseo:daemon-registry";
-const LOCALHOST_FALLBACK_ENDPOINT = "localhost:6767";
+const LOCALHOST_FALLBACK_ENDPOINT = `localhost:${BRAND.defaultDaemonPort}`;
 const DEFAULT_LOCALHOST_BOOTSTRAP_TIMEOUT_MS = 2500;
 const E2E_STORAGE_KEY = "@paseo:e2e";
 const INITIAL_DAEMON_CONNECTION_HINT_GLOBAL_KEY = "__PASEO_INITIAL_DAEMON_CONNECTION__";

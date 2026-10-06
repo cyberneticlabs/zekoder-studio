@@ -1,3 +1,4 @@
+import { brandUrl } from "@getpaseo/protocol/branding";
 import {
   useCallback,
   useEffect,
@@ -321,7 +322,7 @@ function SchedulesEmptyState({
       <View style={styles.emptyTextStack}>
         <Text style={styles.emptyTitle}>No active schedules</Text>
         <Text style={styles.emptyDescription}>Schedules run agents on a cadence.</Text>
-        <ExternalLink href="https://paseo.sh/docs/schedules" label="See docs" />
+        <ExternalLink href={brandUrl("/docs/schedules")} label="See docs" />
       </View>
       <Button variant="outline" leftIcon={Plus} onPress={onCreate} testID="schedules-empty-new">
         New schedule

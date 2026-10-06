@@ -1,4 +1,6 @@
-export const DEFAULT_SSH_DAEMON_PORT = 6767;
+import { BRAND } from "./branding.js";
+
+export const DEFAULT_SSH_DAEMON_PORT = BRAND.defaultDaemonPort;
 
 export interface SshTransportTarget {
   host: string;

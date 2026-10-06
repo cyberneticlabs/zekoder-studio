@@ -10,6 +10,7 @@ import { ko } from "./resources/ko";
 import { ptBR } from "./resources/pt-BR";
 import { ru } from "./resources/ru";
 import { zhCN } from "./resources/zh-CN";
+import { rebrandTranslations } from "./rebrand";
 
 function flattenKeys(value: unknown, prefix = ""): string[] {
   if (typeof value !== "object" || value === null) {
@@ -104,6 +105,24 @@ function findUntranslatedConnectionErrors(): string[] {
 }
 
 describe("translation resources", () => {
+  it("rebrands the product name in every locale without touching placeholders", () => {
+    const rebranded = [ar, en, es, fr, ja, ko, ptBR, ru, zhCN].map((resource) =>
+      rebrandTranslations(resource),
+    );
+    expect(rebrandTranslations(en).sidebar.help.appName).toBe("Zekoder");
+    for (const resource of rebranded) {
+      const offenders = Object.entries(flattenStrings(resource)).filter(([, value]) =>
+        value.includes("Paseo"),
+      );
+      expect(offenders).toEqual([]);
+    }
+    expect(rebrandTranslations({ a: { b: "Paseo has {{count}} items", $PASEO: "paseo" } })).toEqual(
+      {
+        a: { b: "Zekoder has {{count}} items", $PASEO: "paseo" },
+      },
+    );
+  });
+
   it("keeps all supported language keys in sync with English", () => {
     const englishKeys = flattenKeys(en).sort();
     expect(flattenKeys(ar).sort()).toEqual(englishKeys);

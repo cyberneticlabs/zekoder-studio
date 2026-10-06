@@ -4,14 +4,16 @@
 
 Controlled by `APP_VARIANT` in `packages/app/app.config.js` (vanilla Expo, no custom Gradle plugin):
 
-| Variant       | App name    | Package ID       |
-| ------------- | ----------- | ---------------- |
-| `production`  | Paseo       | `sh.paseo`       |
-| `development` | Paseo Debug | `sh.paseo.debug` |
+| Variant       | App name      | Package ID              |
+| ------------- | ------------- | ----------------------- |
+| `production`  | Zekoder       | `net.zekoder.app`       |
+| `development` | Zekoder Debug | `net.zekoder.app.debug` |
 
 EAS profiles: `development`, `production`, and `production-apk` in `packages/app/eas.json`.
 
 `development` uses Android `debug`.
+
+Delete stale `packages/app/.secrets/google-services.*` and `GoogleService-Info.*` files registered for `sh.paseo` until Zekoder Firebase apps exist; a stale file fails the Android build on a package mismatch.
 
 ## Version codes
 
@@ -75,10 +77,10 @@ For a production-ID release APK that local Android profiling tools can attach to
 PASEO_PROFILE_BUILD=1 npm run android:production
 ```
 
-This keeps the `sh.paseo` package id, release Hermes bundle, and release optimizations. It adds
+This keeps the `net.zekoder.app` package id, release Hermes bundle, and release optimizations. It adds
 `<profileable android:shell="true" />` and enables local Android trace markers for workspace mounts
 and daemon WebSocket traffic. The markers contain message types and sizes, never payload contents,
-and emit only while a system trace records the `sh.paseo` app (`perfetto -a sh.paseo ...`).
+and emit only while a system trace records the `net.zekoder.app` app (`perfetto -a net.zekoder.app ...`).
 
 Or from `packages/app`:
 

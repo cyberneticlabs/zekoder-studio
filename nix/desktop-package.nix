@@ -206,14 +206,14 @@ buildNpmPackage {
     ''}
 
     ${lib.optionalString stdenv.hostPlatform.isDarwin ''
-      app="$(find packages/desktop/release -maxdepth 3 -type d -name Paseo.app -print -quit)"
+      app="$(find packages/desktop/release -maxdepth 3 -type d -name Zekoder.app -print -quit)"
       if [ -z "$app" ]; then
-        echo "electron-builder did not produce Paseo.app" >&2
+        echo "electron-builder did not produce Zekoder.app" >&2
         exit 1
       fi
       mkdir -p "$out/Applications"
-      cp -R "$app" "$out/Applications/Paseo.app"
-      ln -s ../Applications/Paseo.app/Contents/MacOS/Paseo "$out/bin/paseo-desktop"
+      cp -R "$app" "$out/Applications/Zekoder.app"
+      ln -s ../Applications/Zekoder.app/Contents/MacOS/Zekoder "$out/bin/paseo-desktop"
     ''}
 
     runHook postInstall
@@ -222,7 +222,7 @@ buildNpmPackage {
   desktopItems = lib.optionals stdenv.hostPlatform.isLinux [
     (makeDesktopItem {
       name = "paseo-desktop";
-      desktopName = "Paseo";
+      desktopName = "Zekoder";
       genericName = "AI Coding Agents";
       comment = "Self-hosted daemon for AI coding agents";
       exec = "paseo-desktop";
@@ -233,23 +233,23 @@ buildNpmPackage {
     # Hidden alias entry. Which of the two names Electron ends up publishing as
     # the Wayland app_id depends on the Electron version: 41 uses the app-root
     # package.json `name` ("paseo-desktop"), 38 uses the runtime app name that
-    # main.ts sets ("Paseo"). Ship a NoDisplay entry for the second spelling so
+    # main.ts sets ("Zekoder"). Ship a NoDisplay entry for the second spelling so
     # the icon resolves either way without a duplicate launcher item.
     (makeDesktopItem {
-      name = "Paseo";
-      desktopName = "Paseo";
+      name = "Zekoder";
+      desktopName = "Zekoder";
       genericName = "AI Coding Agents";
       comment = "Self-hosted daemon for AI coding agents";
       exec = "paseo-desktop";
       icon = "paseo-desktop";
       categories = [ "Development" ];
-      startupWMClass = "Paseo";
+      startupWMClass = "Zekoder";
       noDisplay = true;
     })
   ];
 
   meta = {
-    description = "Paseo desktop app (Electron wrapper)";
+    description = "Zekoder desktop app (Electron wrapper)";
     homepage = "https://github.com/getpaseo/paseo";
     license = lib.licenses.agpl3Plus;
     mainProgram = "paseo-desktop";

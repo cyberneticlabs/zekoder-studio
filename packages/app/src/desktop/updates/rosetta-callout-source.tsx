@@ -1,3 +1,4 @@
+import { brandUrl } from "@getpaseo/protocol/branding";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SidebarCalloutDescriptionText } from "@/components/sidebar-callout";
@@ -11,7 +12,7 @@ import {
 import { useStableEvent } from "@/hooks/use-stable-event";
 import { openExternalUrl } from "@/utils/open-external-url";
 
-const FALLBACK_DOWNLOAD_URL = "https://paseo.sh/download";
+const FALLBACK_DOWNLOAD_URL = brandUrl("/download");
 
 function RosettaCalloutDescription({ t }: { t: ReturnType<typeof useTranslation>["t"] }) {
   return (

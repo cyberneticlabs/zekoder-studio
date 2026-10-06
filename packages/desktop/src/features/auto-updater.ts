@@ -222,9 +222,12 @@ class ElectronAppUpdateRuntime implements AppUpdateRuntime {
   }
 }
 
+// Zekoder: off until a fork-owned update feed exists (never install upstream builds)
+const BRANDED_AUTO_UPDATE_ENABLED = false;
+
 const appUpdateService = createAppUpdateService({
   runtime: new ElectronAppUpdateRuntime(),
-  isPackaged: () => app.isPackaged,
+  isPackaged: () => BRANDED_AUTO_UPDATE_ENABLED && app.isPackaged,
   now: () => Date.now(),
   bucket: async () => bucketFromStagingUserId(await getStagingUserId()),
   reportCheckError: (error) => {

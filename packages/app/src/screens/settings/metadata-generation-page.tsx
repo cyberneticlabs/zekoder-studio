@@ -1,3 +1,4 @@
+import { brandUrl } from "@getpaseo/protocol/branding";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -13,7 +14,7 @@ import { buildSelectableProviderSelectorProviders } from "@/provider-selection/p
 import { SettingsSection } from "@/components/settings/headings/settings-section";
 import { settingsStyles } from "@/styles/settings";
 
-const METADATA_GENERATION_DOCS_URL = "https://paseo.sh/docs/metadata-generation";
+const METADATA_GENERATION_DOCS_URL = brandUrl("/docs/metadata-generation");
 type SelectionMode = "automatic" | "preferred";
 
 export function MetadataGenerationPage({ serverId }: { serverId: string }) {

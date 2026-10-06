@@ -2,10 +2,11 @@
 id: 002-zekoder-rebrand
 type: feature
 title: Rebrand the app as Zekoder
-status: planned
+status: merged
 createdAt: 2026-10-04
 openedAt: 2026-10-04T13:31:24.147Z
-updatedAt: 2026-10-04T13:42:40.023Z
+updatedAt: 2026-10-06T11:20:57.738Z
+completedAt: 2026-10-06T11:20:57.738Z
 promoted: true
 dependsOn: []
 packages:
@@ -14,13 +15,84 @@ packages:
     file: packages/01-brand-core.md
     branch: 002-zekoder-rebrand-01-brand-core
     dependsOn: []
-    status: planned
+    status: merged
+    commit: 8948da5806ecf9e23ce4c9782431a784893eaf74
+    mergeMode: local
+    filesTouched:
+      - .zekoder/features/002-zekoder-rebrand/packages/01-brand-core.md
+      - docs/development.md
+      - packages/app/src/components/add-host-modal.tsx
+      - packages/app/src/diagnostics/app-diagnostic-report.test.ts
+      - packages/app/src/diagnostics/app-diagnostic-report.ts
+      - packages/app/src/runtime/host-runtime.test.ts
+      - packages/app/src/runtime/host-runtime.ts
+      - packages/cli/src/commands/hub/credentials.ts
+      - packages/cli/src/commands/onboard.ts
+      - packages/cli/src/utils/command-options.ts
+      - packages/protocol/src/agent-deep-link.test.ts
+      - packages/protocol/src/agent-deep-link.ts
+      - packages/protocol/src/branding.test.ts
+      - packages/protocol/src/branding.ts
+      - packages/protocol/src/ssh-transport.ts
+      - packages/server/.env.example
+      - packages/server/src/server/config.ts
+      - packages/server/src/server/paseo-home.ts
+      - packages/server/src/server/persisted-config.test.ts
+      - packages/server/src/server/persisted-config.ts
+      - packages/server/src/server/session/daemon/daemon-session.test.ts
+      - packages/server/src/server/session/daemon/diagnostics.ts
+    verifiedBaseSha: cfb2237b629cdd0da0621a33d25a6fc648ecf076
   - id: "02"
     name: brand-assets
     file: packages/02-brand-assets.md
     branch: 002-zekoder-rebrand-02-brand-assets
     dependsOn: []
-    status: planned
+    status: merged
+    commit: ec7196673a3f72b6f91b33517c37bd1329ae7db2
+    mergeMode: local
+    filesTouched:
+      - .github/workflows/ci.yml
+      - branding/README.md
+      - branding/generate-assets.mjs
+      - branding/generate-assets.test.mjs
+      - branding/source/logo-blue.png
+      - branding/source/logo-dark.png
+      - branding/source/logo-white.png
+      - packages/app/app.config.js
+      - packages/app/assets/images/android-icon-foreground.png
+      - packages/app/assets/images/brand-mark.png
+      - packages/app/assets/images/butterfly-green.svg
+      - packages/app/assets/images/butterfly-white.svg
+      - packages/app/assets/images/favicon-dark-attention.png
+      - packages/app/assets/images/favicon-dark-attention.svg
+      - packages/app/assets/images/favicon-dark-running.png
+      - packages/app/assets/images/favicon-dark-running.svg
+      - packages/app/assets/images/favicon-dark.png
+      - packages/app/assets/images/favicon-dark.svg
+      - packages/app/assets/images/favicon-light-attention.png
+      - packages/app/assets/images/favicon-light-attention.svg
+      - packages/app/assets/images/favicon-light-running.png
+      - packages/app/assets/images/favicon-light-running.svg
+      - packages/app/assets/images/favicon-light.png
+      - packages/app/assets/images/favicon-light.svg
+      - packages/app/assets/images/favicon.png
+      - packages/app/assets/images/icon.png
+      - packages/app/assets/images/notification-icon.png
+      - packages/app/assets/images/splash-icon-dark.png
+      - packages/app/assets/images/splash-icon.png
+      - packages/app/public/apple-touch-icon.png
+      - packages/app/public/pwa-icon-192.png
+      - packages/app/public/pwa-icon-512.png
+      - packages/app/src/components/icons/paseo-logo.tsx
+      - packages/desktop/assets/128x128.png
+      - packages/desktop/assets/128x128@2x.png
+      - packages/desktop/assets/32x32.png
+      - packages/desktop/assets/64x64.png
+      - packages/desktop/assets/icon-dev.png
+      - packages/desktop/assets/icon.icns
+      - packages/desktop/assets/icon.ico
+      - packages/desktop/assets/icon.png
+    verifiedBaseSha: 16d2888f1e73dc8f37fd68e59f42946249370e5b
   - id: "03"
     name: brand-surfaces
     file: packages/03-brand-surfaces.md
@@ -28,7 +100,58 @@ packages:
     dependsOn:
       - "01"
       - "02"
-    status: planned
+    status: merged
+    commit: 6c964ba1071cdf18256720ab78eb7eb077d0af39
+    mergeMode: local
+    filesTouched:
+      - .github/workflows/nix.yml
+      - .zekoder/features/002-zekoder-rebrand/packages/03-brand-surfaces.md
+      - .zekoder/followups/001-restore-auto-updater-service-tests.md
+      - docs/android.md
+      - nix/desktop-package.nix
+      - packages/app/app.config.js
+      - packages/app/public/index.html
+      - packages/app/public/manifest.json
+      - packages/app/src/agent-skills/index.tsx
+      - packages/app/src/changelog/internal/changelog-sheet.tsx
+      - packages/app/src/components/welcome-screen.tsx
+      - packages/app/src/desktop/components/desktop-updates-section.tsx
+      - packages/app/src/desktop/components/integrations-section.tsx
+      - packages/app/src/desktop/components/pair-device-section.tsx
+      - packages/app/src/desktop/updates/rosetta-callout-source.tsx
+      - packages/app/src/diagnostics/app-diagnostic-report.ts
+      - packages/app/src/diagnostics/desktop-diagnostic-report.test.ts
+      - packages/app/src/i18n/i18next.ts
+      - packages/app/src/i18n/rebrand.ts
+      - packages/app/src/i18n/resources.test.ts
+      - packages/app/src/screens/project-settings-screen.tsx
+      - packages/app/src/screens/schedules-screen.tsx
+      - packages/app/src/screens/settings/browser-tools-config.ts
+      - packages/app/src/screens/settings/metadata-generation-page.tsx
+      - packages/app/src/screens/settings/plugins-page.tsx
+      - packages/app/src/screens/startup-splash-screen.tsx
+      - packages/app/src/screens/workspace/workspace-route-state.test.ts
+      - packages/app/src/screens/workspace/workspace-route-state.ts
+      - packages/desktop/bin/paseo
+      - packages/desktop/bin/paseo.cmd
+      - packages/desktop/e2e/linux-artifact-smoke.js
+      - packages/desktop/e2e/packaged-app-smoke.js
+      - packages/desktop/e2e/updates.spec.ts
+      - packages/desktop/electron-builder.yml
+      - packages/desktop/package.json
+      - packages/desktop/scripts/after-pack.js
+      - packages/desktop/scripts/after-sign.js
+      - packages/desktop/scripts/linux-sandbox/index.js
+      - packages/desktop/src/daemon/desktop-packaging.test.ts
+      - packages/desktop/src/daemon/linux-launcher.posix.test.ts
+      - packages/desktop/src/diagnostics/updater.test.ts
+      - packages/desktop/src/diagnostics/updater.ts
+      - packages/desktop/src/features/auto-updater.test.ts
+      - packages/desktop/src/features/auto-updater.ts
+      - packages/desktop/src/integrations/cli-install/install.ts
+      - packages/desktop/src/integrations/cli-install/shell-rc.ts
+      - packages/desktop/src/main.ts
+    verifiedBaseSha: ec7196673a3f72b6f91b33517c37bd1329ae7db2
 contracts:
   - id: brand-module
     type: internal
@@ -36,10 +159,17 @@ contracts:
     owner: "01"
     consumers:
       - "03"
+mergeMode: local
 relatedFeatures: []
 relatedBugs: []
 relatedFollowups: []
-statusHistory: []
+statusHistory:
+  - from: planned
+    to: in-progress
+    at: 2026-10-06T10:52:50.994Z
+  - from: in-progress
+    to: merged
+    at: 2026-10-06T11:20:57.738Z
 ---
 # Feature 002-zekoder-rebrand: Rebrand the app as Zekoder
 

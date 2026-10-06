@@ -1,3 +1,4 @@
+import { brandUrl } from "@getpaseo/protocol/branding";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import Animated, {
@@ -30,7 +31,7 @@ interface StartupSplashScreenProps {
 }
 
 const GITHUB_ISSUE_URL = "https://github.com/getpaseo/paseo/issues/new";
-const DOCS_URL = "https://paseo.sh/docs";
+const DOCS_URL = brandUrl("/docs");
 
 const LOGO_SIZE = 96;
 const SHIMMER_PEAK_WIDTH = 120;
