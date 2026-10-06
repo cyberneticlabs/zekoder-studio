@@ -186,9 +186,16 @@ export class PluginService {
         this.logger.error({ err: error, pluginId: plugin.id }, "Failed to start built-in plugin");
       }
     });
+    for (const pluginId of Object.keys(config.plugins ?? {})) {
+      if (!this.builtinPluginIds.has(pluginId)) continue;
+      this.logger.warn(
+        { pluginId },
+        `Ignoring configured plugin "${pluginId}": a built-in plugin owns this ID. Run "paseo plugin remove ${pluginId}" to drop the stale entry.`,
+      );
+    }
     if (config.pluginsEnabled === true) {
       for (const [pluginId, source] of Object.entries(config.plugins ?? {})) {
-        if (source.enabled === false) continue;
+        if (source.enabled === false || this.builtinPluginIds.has(pluginId)) continue;
         await this.startConfigured(pluginId);
         this.notify(pluginId);
       }
@@ -201,8 +208,12 @@ export class PluginService {
   async listPlugins(): Promise<PluginListItem[]> {
     const config = this.configStore.get();
     const running = new Set(this.runtime.catalog().map((plugin) => plugin.id));
+    // Built-ins are not user-installed; a stale configured entry with a built-in ID is ignored.
+    const configured = Object.entries(config.plugins ?? {}).filter(
+      ([id]) => !this.builtinPluginIds.has(id),
+    );
     const plugins = await Promise.all(
-      Object.entries(config.plugins ?? {}).map(async ([id, source]) => {
+      configured.map(async ([id, source]) => {
         const enabled = source.enabled !== false;
         const item: PluginListItem = {
           id,
@@ -251,9 +262,7 @@ export class PluginService {
       const manifest = await readPluginManifest(directory);
       assertPluginCompatibility({ ...manifest, version: this.daemonVersion, runtime: "daemon" });
       const pluginId = PluginIdSchema.parse(input.id ?? manifest.id);
-      if (this.builtinPluginIds.has(pluginId)) {
-        throw new Error(`Plugin ID "${pluginId}" is reserved for a built-in plugin`);
-      }
+      this.rejectBuiltinId(pluginId);
       if (this.configStore.get().plugins?.[pluginId]) {
         throw new Error(
           `Plugin ID "${pluginId}" is already configured; choose another ID with --id`,
@@ -283,9 +292,7 @@ export class PluginService {
     id?: string;
     ref?: string;
   }): Promise<PluginListItem> {
-    if (input.id && this.builtinPluginIds.has(input.id)) {
-      throw new Error(`Plugin ID "${input.id}" is reserved for a built-in plugin`);
-    }
+    if (input.id) this.rejectBuiltinId(input.id);
     const directDirectory = path.resolve(input.source);
     const explicit = /^(npm:|github:|git:(?!\/\/))/.test(input.source);
     const directInfo = await stat(directDirectory).catch(() => null);
@@ -311,9 +318,7 @@ export class PluginService {
       try {
         await this.checkRequirements(candidate.directory);
         pluginId = PluginIdSchema.parse(input.id ?? candidate.defaultId);
-        if (this.builtinPluginIds.has(pluginId)) {
-          throw new Error(`Plugin ID "${pluginId}" is reserved for a built-in plugin`);
-        }
+        this.rejectBuiltinId(pluginId);
         if (this.configStore.get().plugins?.[pluginId]) {
           throw new Error(
             `Plugin ID "${pluginId}" is already configured; choose another ID with --id`,
@@ -372,8 +377,13 @@ export class PluginService {
   }): Promise<PluginUpdatePreview[]> {
     if (input.target && !input.pluginId)
       throw new Error("An explicit update target requires one plugin ID");
+    if (input.pluginId) this.rejectBuiltinId(input.pluginId);
     const sources = this.configStore.get().plugins ?? {};
-    const ids = input.pluginId ? [input.pluginId] : Object.keys(sources).sort();
+    const ids = input.pluginId
+      ? [input.pluginId]
+      : Object.keys(sources)
+          .filter((id) => !this.builtinPluginIds.has(id))
+          .sort();
     return Promise.all(
       ids.map(async (id) => {
         try {
@@ -395,6 +405,7 @@ export class PluginService {
   }
 
   async applyUpdates(proposals: PluginUpdateProposal[]): Promise<PluginUpdateResult[]> {
+    for (const proposal of proposals) this.rejectBuiltinId(proposal.id);
     return this.enqueue(async () => {
       const results: PluginUpdateResult[] = [];
       for (const proposal of proposals) {
@@ -413,6 +424,7 @@ export class PluginService {
   }
 
   async reloadPlugin(pluginId: string): Promise<PluginListItem> {
+    this.rejectBuiltinId(pluginId);
     return this.enqueue(async () => {
       const source = this.requireEnabledSource(pluginId);
       if (this.configStore.get().pluginsEnabled !== true) {
@@ -427,6 +439,7 @@ export class PluginService {
   }
 
   async enablePlugin(pluginId: string): Promise<PluginListItem> {
+    this.rejectBuiltinId(pluginId);
     const source = this.requireSource(pluginId);
     this.patchSource(pluginId, { ...source, enabled: true });
     this.errors.delete(pluginId);
@@ -441,6 +454,7 @@ export class PluginService {
   }
 
   async disablePlugin(pluginId: string): Promise<PluginListItem> {
+    this.rejectBuiltinId(pluginId);
     const source = this.requireSource(pluginId);
     this.patchSource(pluginId, { ...source, enabled: false });
     const stopping = this.stopPlugin(pluginId);
@@ -454,17 +468,19 @@ export class PluginService {
 
   async removePlugin(pluginId: string): Promise<void> {
     this.requireSource(pluginId);
+    // A built-in keeps running, and keeps its logs and settings, when a stale entry is removed.
+    const isBuiltin = this.builtinPluginIds.has(pluginId);
     const stopping = this.stopPlugin(pluginId);
     const sources = { ...this.configStore.get().plugins };
     delete sources[pluginId];
     this.configStore.patch({ plugins: sources });
     await this.enqueue(async () => {
       await stopping;
-      this.runtime.clearLogs(pluginId);
+      if (!isBuiltin) this.runtime.clearLogs(pluginId);
       this.errors.delete(pluginId);
       this.notify(pluginId);
       await this.managedSources?.remove(pluginId);
-      if (this.dependencies.settingsDirectory)
+      if (!isBuiltin && this.dependencies.settingsDirectory)
         await rm(path.join(this.dependencies.settingsDirectory, pluginId), {
           recursive: true,
           force: true,
@@ -538,6 +554,7 @@ export class PluginService {
   }
 
   private async startPlugin(pluginId: string, sourcePath: string): Promise<void> {
+    if (this.builtinPluginIds.has(pluginId)) return;
     await this.runtime.startPlugin(pluginId, sourcePath, () => this.canPublish(pluginId));
     try {
       await this.publishProviderRegistrations(pluginId, sourcePath);
@@ -554,6 +571,7 @@ export class PluginService {
   }
 
   private stopPlugin(pluginId: string): Promise<boolean> {
+    if (this.builtinPluginIds.has(pluginId)) return Promise.resolve(false);
     this.removeProviderRegistrations(pluginId);
     this.removeUsageSources(pluginId);
     return this.runtime.stopPluginById(pluginId);
@@ -764,6 +782,12 @@ export class PluginService {
       throw new Error("Plugin runtime cannot validate managed sources");
     }
     return this.runtime.validatePlugin(candidate.directory);
+  }
+
+  private rejectBuiltinId(pluginId: string): void {
+    if (this.builtinPluginIds.has(pluginId)) {
+      throw new Error(`Plugin ID "${pluginId}" is reserved for a built-in plugin`);
+    }
   }
 
   private requireManagedSources(): ManagedPluginSources {

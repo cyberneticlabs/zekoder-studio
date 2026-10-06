@@ -1,0 +1,7 @@
+{
+  "id": "zekoder",
+  "description": "Browse Zekoder work items (features, bugs, followups, vendor issues, decisions, ideas), view GitHub org coding-health reports, and manage Zekoder settings.",
+  "requirements": {
+    "paseo": ">=0.9.2"
+  }
+}

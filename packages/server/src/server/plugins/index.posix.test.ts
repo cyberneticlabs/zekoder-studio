@@ -356,6 +356,60 @@ describe("PluginService", () => {
     expect(entries).toEqual([]);
   });
 
+  it("keeps a built-in running when a stale configured entry shares its ID", async () => {
+    const home = await mkdtemp(path.join(tmpdir(), "paseo-plugin-home-"));
+    roots.push(home);
+    const directory = await createPlugin(
+      "b",
+      `export default function contribute() {
+  console.log("built-in b started");
+  return () => {};
+}`,
+    );
+    const builtinRoot = path.join(home, "builtins");
+    await mkdir(builtinRoot);
+    await cp(directory, path.join(builtinRoot, "b"), { recursive: true });
+    const settingsDirectory = path.join(home, "plugin-settings");
+    await mkdir(path.join(settingsDirectory, "b"), { recursive: true });
+    await writeFile(path.join(settingsDirectory, "b", "preferences.json"), "{}");
+    const store = createStore(home, { b: { source: "directory", path: directory } });
+    const service = bindTestSessionHost(
+      new PluginService(pino({ level: "silent" }), store, "0.4.0", {
+        builtinPlugins: new BuiltinPluginLoader(builtinRoot, ["b"]),
+        settingsDirectory,
+      }),
+    );
+    const reserved = /Plugin ID "b" is reserved for a built-in plugin/;
+
+    await service.start();
+    try {
+      expect(catalogIds(service)).toEqual(["b"]);
+      expect(await service.listPlugins()).toEqual([]);
+      const startLines = service.getLogs("b").map((entry) => entry.message);
+      expect(startLines.length).toBeGreaterThan(0);
+
+      await expect(service.disablePlugin("b")).rejects.toThrow(reserved);
+      await expect(service.enablePlugin("b")).rejects.toThrow(reserved);
+      await expect(service.reloadPlugin("b")).rejects.toThrow(reserved);
+      await expect(service.previewUpdates({ pluginId: "b" })).rejects.toThrow(reserved);
+      await expect(
+        service.applyUpdates([{ id: "b" } as Parameters<PluginService["applyUpdates"]>[0][number]]),
+      ).rejects.toThrow(reserved);
+      expect(await service.previewUpdates({})).toEqual([]);
+
+      store.patch({ pluginsEnabled: false });
+      expect(catalogIds(service)).toEqual(["b"]);
+
+      await service.removePlugin("b");
+      expect(store.get().plugins?.b).toBeUndefined();
+      expect(catalogIds(service)).toEqual(["b"]);
+      await stat(path.join(settingsDirectory, "b", "preferences.json"));
+      expect(service.getLogs("b").map((entry) => entry.message)).toEqual(startLines);
+    } finally {
+      await service.stopAllPlugins();
+    }
+  });
+
   it("publishes each configured plugin after its startup state settles", async () => {
     const home = await mkdtemp(path.join(tmpdir(), "paseo-plugin-home-"));
     roots.push(home);

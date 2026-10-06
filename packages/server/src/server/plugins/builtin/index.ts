@@ -14,6 +14,7 @@ export const builtinPlugins = [
   "muse-provider",
   "opencode-go-usage-source",
   "zai-usage-source",
+  "zekoder",
 ] as const;
 
 export function resolveBuiltinPluginsRoot(moduleUrl: string | URL = import.meta.url): string {

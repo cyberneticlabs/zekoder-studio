@@ -3,7 +3,8 @@
   "workspaces": {
     "plugins": {
       "entry": ["**/index.{server,client}.{ts,tsx}", "**/*.test.ts"],
-      "project": ["**/*.{ts,tsx}"]
+      "project": ["**/*.{ts,tsx}"],
+      "ignore": ["zekoder/**"]
     },
     ".": {
       "entry": ["scripts/**/*.{js,mjs,cjs,ts}"],

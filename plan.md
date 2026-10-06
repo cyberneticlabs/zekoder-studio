@@ -42,7 +42,7 @@ Do not assume hooks already exist. Validate boundaries against selected upstream
 
 Paseo installs plugins into individual daemons. Connected clients receive plugin contributions. Mobile packaging alone cannot provision hosts.
 
-- Bundle exact, tested plugin artifacts.
+- Bundle exact, tested plugin artifacts. The Zekoder plugin ships as a non-removable built-in vendored from `cyberneticlabs/zekoder-plugins` tag `v0.11.1` by `scripts/sync-zekoder-plugin.mjs`; `plugins/zekoder.lock.json` (repo, ref, commit, version, checksum) is the release manifest's source for it.
 - Provision desktop daemons during onboarding.
 - Provide equivalent remote-daemon provisioning.
 - Explain bundled plugin trust during onboarding.

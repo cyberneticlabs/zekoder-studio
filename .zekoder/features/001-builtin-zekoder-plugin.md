@@ -2,19 +2,89 @@
 id: 001-builtin-zekoder-plugin
 type: feature
 title: Ship the Zekoder plugin as a non-removable built-in
-status: planned
+status: merged
 createdAt: 2026-10-04
 openedAt: 2026-10-04T11:52:39.549Z
-updatedAt: 2026-10-04T12:05:16.168Z
+updatedAt: 2026-10-06T13:12:42.369Z
+completedAt: 2026-10-06T13:12:42.369Z
 branch: feature-001-builtin-zekoder-plugin
 promoted: false
 dependsOn: []
 packages: []
 contracts: []
+mergeMode: local
+commit: ae3d438104c8ff27a2b35806cafbea3cfab7b094
+filesTouched:
+  - .github/workflows/ci.yml
+  - .oxfmtrc.json
+  - .oxlintrc.json
+  - .zekoder/features/001-builtin-zekoder-plugin.md
+  - docs/plugins.md
+  - knip.json
+  - packages/server/src/server/plugins/builtin/index.ts
+  - packages/server/src/server/plugins/index.posix.test.ts
+  - packages/server/src/server/plugins/index.ts
+  - plan.md
+  - plugins/zekoder.lock.json
+  - plugins/zekoder/client/agent-branch-pills.ts
+  - plugins/zekoder/client/agent-defaults.tsx
+  - plugins/zekoder/client/button.tsx
+  - plugins/zekoder/client/chip.tsx
+  - plugins/zekoder/client/coding-health-tab.tsx
+  - plugins/zekoder/client/config-panel.tsx
+  - plugins/zekoder/client/date-picker.tsx
+  - plugins/zekoder/client/doc-viewer.tsx
+  - plugins/zekoder/client/dropdown.tsx
+  - plugins/zekoder/client/git-panel.tsx
+  - plugins/zekoder/client/git-tab.ts
+  - plugins/zekoder/client/health-aggregate.ts
+  - plugins/zekoder/client/health-charts.tsx
+  - plugins/zekoder/client/issue-detail.tsx
+  - plugins/zekoder/client/issue-row.tsx
+  - plugins/zekoder/client/issues-tab.tsx
+  - plugins/zekoder/client/machine-defaults-panel.tsx
+  - plugins/zekoder/client/panel-location.ts
+  - plugins/zekoder/client/provider-onboarding.tsx
+  - plugins/zekoder/client/report-settings-panel.tsx
+  - plugins/zekoder/client/reports-surface.tsx
+  - plugins/zekoder/client/start-agent-button.tsx
+  - plugins/zekoder/client/styles.ts
+  - plugins/zekoder/client/tab-bar.tsx
+  - plugins/zekoder/client/telemetry-panel.tsx
+  - plugins/zekoder/client/version-panel.tsx
+  - plugins/zekoder/client/zekoder-surface.tsx
+  - plugins/zekoder/index.client.tsx
+  - plugins/zekoder/index.server.ts
+  - plugins/zekoder/paseo-plugin.json
+  - plugins/zekoder/server/branch.ts
+  - plugins/zekoder/server/config.ts
+  - plugins/zekoder/server/git.ts
+  - plugins/zekoder/server/mcp-client.ts
+  - plugins/zekoder/server/org-health-cli.ts
+  - plugins/zekoder/server/report-server.ts
+  - plugins/zekoder/server/reports.ts
+  - plugins/zekoder/server/role-variants.ts
+  - plugins/zekoder/server/telemetry.ts
+  - plugins/zekoder/server/version.ts
+  - plugins/zekoder/server/zekoder.ts
+  - plugins/zekoder/shared/branch.ts
+  - plugins/zekoder/shared/config.ts
+  - plugins/zekoder/shared/errors.ts
+  - plugins/zekoder/shared/git.ts
+  - plugins/zekoder/shared/issues.ts
+  - plugins/zekoder/shared/reports.ts
+  - plugins/zekoder/shared/telemetry.ts
+  - plugins/zekoder/shared/version.ts
+  - scripts/sync-zekoder-plugin.mjs
+  - scripts/sync-zekoder-plugin.test.mjs
+verifiedBaseSha: 34f50d65246e713760cad9daeaf87f50e58a8b16
 relatedFeatures: []
 relatedBugs: []
 relatedFollowups: []
-statusHistory: []
+statusHistory:
+  - from: planned
+    to: merged
+    at: 2026-10-06T13:12:42.369Z
 ---
 # Feature 001-builtin-zekoder-plugin: Ship the Zekoder plugin as a non-removable built-in
 
@@ -29,9 +99,9 @@ statusHistory: []
 
 ## Refined scope
 
-- Ship `zekoder-plugins/paseo` (manifest id `zekoder`, v0.9.0) as a Paseo built-in: always active, independent of `pluginsEnabled`, not removable or disableable.
+- Ship `zekoder-plugins/paseo` (manifest id `zekoder`, v0.11.1) as a Paseo built-in: always active, independent of `pluginsEnabled`, not removable or disableable.
 - Vendor it into `plugins/zekoder/` with `scripts/sync-zekoder-plugin.mjs`, pinned to an exact commit. The script writes `plugins/zekoder.lock.json` (repo, ref, commit SHA, plugin version, content checksum) as release-manifest input. The vendored copy is committed.
-- Initial pin: `cyberneticlabs/zekoder-plugins` commit `8203aaec8757a8115294834021ceecc25447bcda` (on `origin/main`; no version tag exists yet).
+- Initial pin: `cyberneticlabs/zekoder-plugins` tag `v0.11.1` (commit `380f37b044eb5591ae551773256c5a915d7bc5f0`), superseding the planned commit `8203aae`.
 - Users with a pre-existing `plugins.zekoder` config entry (directory/git install): the daemon keeps running the built-in and ignores the configured entry with one warning. Enable, disable, reload, preview-update and apply-update on that id are rejected as reserved. Remove only cleans the stale config entry. Nothing stops the built-in or deletes its settings or logs.
 - Docs: `docs/plugins.md` built-in section and `plan.md` plugin delivery.
 
@@ -72,12 +142,12 @@ No open bugs/followups. No decisions on file. Merged-history search: only this i
 
 ## Tasks
 
-- [ ] 1. Add `scripts/sync-zekoder-plugin.mjs` per Approach, plus `scripts/sync-zekoder-plugin.test.mjs` (`node:test`). Build a temp local git repo fixture (passed via `--repo <path>`, no network) with `paseo/` files including extras outside `files`. Assert: allowlist-only copy, lock fields and stable checksum, lock `repo` is not the local path, branch ref rejected, `--check` passes offline with no `--ref`, `--check` fails after a vendored byte changes and after a malformed lock field. Append the test file to the `node --test` list at `.github/workflows/ci.yml:55`.
-- [ ] 2. Run `node scripts/sync-zekoder-plugin.mjs --ref 8203aaec8757a8115294834021ceecc25447bcda` (default SSH repo; if SSH auth is unavailable, `--repo /Users/ahmedelshalaby/Code/zekoder/zekoder-plugins`, which has the commit). Commit `plugins/zekoder/**` and `plugins/zekoder.lock.json` as generated. If the commit is unreachable or `paseo-plugin.json` id is not `zekoder`, stop and report.
-- [ ] 3. Add `"zekoder"` to the end of `builtinPlugins` (`packages/server/src/server/plugins/builtin/index.ts`). Add the ignore entries to `.oxfmtrc.json`, `.oxlintrc.json`, `knip.json`.
-- [ ] 4. Implement the collision guard in `packages/server/src/server/plugins/index.ts`. Add one case to `packages/server/src/server/plugins/index.posix.test.ts`, reusing `createPlugin`/`createStore`/`BuiltinPluginLoader` as in the test at `:181`. Built-in `b` that logs one line at start, `pluginsEnabled: true`, config entry `plugins.b`, and a file under `settingsDirectory/b`. Assert: after `start()`, `listPlugins()` omits `b`. `disablePlugin("b")` and `applyUpdates([{id: "b", ...}])` reject with the reserved message. Then patch `pluginsEnabled: false` and assert `b` is still in the plugin catalog. Then `removePlugin("b")` resolves, `plugins.b` is gone from config, `b` is still in the catalog, `settingsDirectory/b` still exists, and `getLogs("b")` still holds the start line.
-- [ ] 5. Docs. In `docs/plugins.md` "Built-in plugins" (`:89-108`), rewrite in place. Allowed client imports add `react`, `react-native`, `@tanstack/react-query`. Add the vendored-plugin rule: `plugins/zekoder/` comes from `scripts/sync-zekoder-plugin.mjs` and `plugins/zekoder.lock.json`; never edit it by hand; re-pin to change. Add that a configured entry with a built-in id is ignored with a warning, management RPCs on it are rejected as reserved, and `remove` only drops the config entry. In `plan.md`, update the plugin delivery lines (`:44-54`) to name the built-in mechanism and the lock file as the release-manifest source. Follow CLAUDE.md doc voice.
-- [ ] 6. Run `npm run format:files -- <changed non-vendored files>`, `npm run typecheck`, `npm run lint`.
+- [x] 1. Add `scripts/sync-zekoder-plugin.mjs` per Approach, plus `scripts/sync-zekoder-plugin.test.mjs` (`node:test`). Build a temp local git repo fixture (passed via `--repo <path>`, no network) with `paseo/` files including extras outside `files`. Assert: allowlist-only copy, lock fields and stable checksum, lock `repo` is not the local path, branch ref rejected, `--check` passes offline with no `--ref`, `--check` fails after a vendored byte changes and after a malformed lock field. Append the test file to the `node --test` list at `.github/workflows/ci.yml:55`.
+- [x] 2. Run `node scripts/sync-zekoder-plugin.mjs --ref v0.11.1` (was `8203aaec8757a8115294834021ceecc25447bcda`) (default SSH repo; if SSH auth is unavailable, `--repo /Users/ahmedelshalaby/Code/zekoder/zekoder-plugins`, which has the commit). Commit `plugins/zekoder/**` and `plugins/zekoder.lock.json` as generated. If the commit is unreachable or `paseo-plugin.json` id is not `zekoder`, stop and report.
+- [x] 3. Add `"zekoder"` to the end of `builtinPlugins` (`packages/server/src/server/plugins/builtin/index.ts`). Add the ignore entries to `.oxfmtrc.json`, `.oxlintrc.json`, `knip.json`.
+- [x] 4. Implement the collision guard in `packages/server/src/server/plugins/index.ts`. Add one case to `packages/server/src/server/plugins/index.posix.test.ts`, reusing `createPlugin`/`createStore`/`BuiltinPluginLoader` as in the test at `:181`. Built-in `b` that logs one line at start, `pluginsEnabled: true`, config entry `plugins.b`, and a file under `settingsDirectory/b`. Assert: after `start()`, `listPlugins()` omits `b`. `disablePlugin("b")` and `applyUpdates([{id: "b", ...}])` reject with the reserved message. Then patch `pluginsEnabled: false` and assert `b` is still in the plugin catalog. Then `removePlugin("b")` resolves, `plugins.b` is gone from config, `b` is still in the catalog, `settingsDirectory/b` still exists, and `getLogs("b")` still holds the start line.
+- [x] 5. Docs. In `docs/plugins.md` "Built-in plugins" (`:89-108`), rewrite in place. Allowed client imports add `react`, `react-native`, `@tanstack/react-query`. Add the vendored-plugin rule: `plugins/zekoder/` comes from `scripts/sync-zekoder-plugin.mjs` and `plugins/zekoder.lock.json`; never edit it by hand; re-pin to change. Add that a configured entry with a built-in id is ignored with a warning, management RPCs on it are rejected as reserved, and `remove` only drops the config entry. In `plan.md`, update the plugin delivery lines (`:44-54`) to name the built-in mechanism and the lock file as the release-manifest source. Follow CLAUDE.md doc voice.
+- [x] 6. Run `npm run format:files -- <changed non-vendored files>`, `npm run typecheck`, `npm run lint`.
 
 ## Verification
 
