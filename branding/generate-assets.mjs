@@ -19,7 +19,9 @@ const SOURCE_DIR = path.join(BRANDING_DIR, "source");
 const IMAGES = "packages/app/assets/images";
 const PUBLIC = "packages/app/public";
 const DESKTOP = "packages/desktop/assets";
+const FDROID = "fastlane/metadata/android/en-US/images";
 
+const BRAND_BLUE = [0x14, 0x61, 0xbd];
 const DOT_COLORS = { running: [0x3b, 0x82, 0xf6], attention: [0x22, 0xc5, 0x5e] };
 // Status dot geometry from the previous favicon SVGs: center (570,570), r=130 on a 700 canvas.
 const DOT = { cx: 570 / 700, cy: 570 / 700, r: 130 / 700 };
@@ -65,6 +67,7 @@ export const PNG_OUTPUTS = [
   { path: `${PUBLIC}/apple-touch-icon.png`, size: 180, kind: "app" },
   { path: `${PUBLIC}/pwa-icon-192.png`, size: 192, kind: "app" },
   { path: `${PUBLIC}/pwa-icon-512.png`, size: 512, kind: "app" },
+  { path: `${FDROID}/icon.png`, size: 512, kind: "app" },
   { path: `${DESKTOP}/icon.png`, size: 512, kind: "tile" },
   { path: `${DESKTOP}/icon-dev.png`, size: 1254, kind: "tile" },
   { path: `${DESKTOP}/32x32.png`, size: 32, kind: "tile" },
@@ -429,32 +432,26 @@ function placeMark(canvas, mark, markWidth) {
 // ---------------------------------------------------------------------------------------------
 
 /**
- * kind: app = blue mark (62% wide) on opaque white; tile = macOS Big Sur rounded white square
- * (824/1024 of the canvas, radius 22.5%) with the blue mark at 62% of the tile; fg = blue mark
- * (55%) on transparent for Android adaptive icons; mark = mark fitted to 92% width, transparent.
+ * kind: app = white mark (62% wide) on opaque brand blue; tile = macOS Big Sur rounded brand-blue
+ * square (824/1024 of the canvas, radius 22.5%) with the white mark at 62% of the tile; fg = white
+ * mark (55%) on transparent for Android adaptive icons, whose background color is set in
+ * app.config.js; mark = mark fitted to 92% width, transparent.
  */
 export function renderPng({ size, kind, color, dot }, marks) {
   const canvas = createImage(size, size);
   switch (kind) {
     case "app":
-      fillOpaque(canvas, [255, 255, 255]);
-      placeMark(canvas, marks.blue, Math.round(size * 0.62));
+      fillOpaque(canvas, BRAND_BLUE);
+      placeMark(canvas, marks.white, Math.round(size * 0.62));
       break;
     case "tile": {
       const tile = (size * 824) / 1024;
-      fillRoundedRect(
-        canvas,
-        (size - tile) / 2,
-        (size - tile) / 2,
-        tile,
-        tile * 0.225,
-        [255, 255, 255],
-      );
-      placeMark(canvas, marks.blue, Math.round(tile * 0.62));
+      fillRoundedRect(canvas, (size - tile) / 2, (size - tile) / 2, tile, tile * 0.225, BRAND_BLUE);
+      placeMark(canvas, marks.white, Math.round(tile * 0.62));
       break;
     }
     case "fg":
-      placeMark(canvas, marks.blue, Math.round(size * 0.55));
+      placeMark(canvas, marks.white, Math.round(size * 0.55));
       break;
     case "mark":
       placeMark(canvas, marks[color], Math.round(size * 0.92));

@@ -119,7 +119,7 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "#1461BD",
         foregroundImage: "./assets/images/android-icon-foreground.png",
       },
       edgeToEdgeEnabled: true,

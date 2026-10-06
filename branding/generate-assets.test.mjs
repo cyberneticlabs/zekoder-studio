@@ -46,12 +46,12 @@ test("source marks must be 8-bit RGBA", () => {
   assert.throws(() => decodePng(Buffer.from("not a png")), /Not a PNG/);
 });
 
-test("app icon is an opaque white square with the mark in the middle", () => {
+test("app icon is an opaque brand-blue square with the white mark in the middle", () => {
   const icon = decode("packages/app/assets/images/icon.png");
-  assert.deepEqual(pixel(icon, 0, 0), [255, 255, 255, 255]);
-  assert.deepEqual(pixel(icon, 1023, 1023), [255, 255, 255, 255]);
-  // Left bracket stem: brand blue #1461BD.
-  assert.deepEqual(pixel(icon, 270, 400), [0x14, 0x61, 0xbd, 255]);
+  assert.deepEqual(pixel(icon, 0, 0), [0x14, 0x61, 0xbd, 255]);
+  assert.deepEqual(pixel(icon, 1023, 1023), [0x14, 0x61, 0xbd, 255]);
+  // Left bracket stem.
+  assert.deepEqual(pixel(icon, 270, 400), [255, 255, 255, 255]);
 });
 
 test("running favicon carries the status dot color at the dot center", () => {
@@ -64,12 +64,12 @@ test("running favicon carries the status dot color at the dot center", () => {
   assert.deepEqual(pixel(attention, 39, 39), [0x22, 0xc5, 0x5e, 255]);
 });
 
-test("desktop icon is a rounded tile: transparent corner, white top edge", () => {
+test("desktop icon is a rounded tile: transparent corner, brand-blue top edge", () => {
   const icon = decode("packages/desktop/assets/icon.png");
   assert.equal(pixel(icon, 0, 0)[3], 0);
   assert.deepEqual(
     pixel(icon, Math.floor(icon.width * 0.5), Math.floor(icon.height * 0.12)),
-    [255, 255, 255, 255],
+    [0x14, 0x61, 0xbd, 255],
   );
 });
 
