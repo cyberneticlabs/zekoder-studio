@@ -3,6 +3,7 @@
 Each entry: rule, reason, check. All trace to plan.md, CLAUDE.md, the spine-oidc skill (relayed) or a repo fact. Checks marked (inferred) are proposals, not user-stated.
 
 ## Fork discipline
+
 1. Keep fork changes small and isolated within plan.md customization boundaries; do not assume upstream hooks exist.
    Why: minimizes upstream merge conflicts. Check: PR diff touches owned modules or narrow hooks; hooks validated against the selected upstream revision.
 2. Preserve upstream directory and internal names; no permanent branding branch.
@@ -15,6 +16,7 @@ Each entry: rule, reason, check. All trace to plan.md, CLAUDE.md, the spine-oidc
    Why: those are upstream's and the fork must stay mergeable. Check: review question: does this change execution, transport or pairing?
 
 ## Login, authorization and secrets
+
 6. Login is account identity only; never treat it or a UI gate as daemon or backend authorization.
    Why: current daemon permissions apply to whole daemons (docs/permissions.md). Check: review question: does anything rely on login for isolation?
 7. Use Spine OIDC: Authorization Code + PKCE via the system browser; tokens in platform-secure storage; verify ES256 against Spine JWKS; never accept HS256 or unverified tokens.
@@ -27,6 +29,7 @@ Each entry: rule, reason, check. All trace to plan.md, CLAUDE.md, the spine-oidc
     Why: security. Check: review of diff; secret scan if available (inferred).
 
 ## Distribution and plugins
+
 11. Use distinct bundle IDs, URL schemes, app data, ports and `PASEO_HOME` from upstream; branded updates must never install upstream binaries.
     Why: branded app must install beside upstream. Check: compare identifiers and update feed URLs with upstream; install-beside test.
 12. Pin plugins to exact tested versions (no floating git branches); preserve user-installed plugins and config.
@@ -35,6 +38,7 @@ Each entry: rule, reason, check. All trace to plan.md, CLAUDE.md, the spine-oidc
     Why: avoid publishing to upstream destinations. Check: CI workflow review before enabling any publish job; LICENSE and notices intact.
 
 ## Engineering hygiene
+
 14. Never restart the main daemon on :6767. Why: it manages all running agents. Check: only the dev daemon (`npm run dev`, port 6768) is touched.
 15. Never run the full test suite locally; run only the changed file with `--bail=1` (`npx vitest run <file> --bail=1`). Why: heavy suites freeze the machine. Check: CI runs the full suite.
 16. Run typecheck and lint after every change and format before commit, via npm scripts only; use npm only. Check: `npm run typecheck`, `npm run lint`, `npm run format:check`.

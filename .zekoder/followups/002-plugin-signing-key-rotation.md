@@ -18,6 +18,7 @@ relatedFollowups: []
 resolvedBy: null
 statusHistory: []
 ---
+
 # Followup 002-plugin-signing-key-rotation: Rotate the plugin signing key without affecting current users (Studio side)
 
 ## Summary

@@ -19,6 +19,7 @@ export function brandUrl(path?: string): string;
 ```
 
 Rules:
+
 - Constants only. No zod schema, no wire type, no import from other protocol modules (keeps it cycle-free and
   importable from `ssh-transport.ts` and `agent-deep-link.ts`).
 - Adding a field is fine; renaming or removing one breaks 03. Bundle ids live in `app.config.js` and

@@ -9,6 +9,7 @@ Worktree: `git worktree add ../worktrees/004-plugin-auto-update-01-update-engine
 Implements contract **builtin-plugin-updater** and consumes **plugin-release-channel** (contracts.md; format owned by zekoder-plugins feature 023). Self-contained module under `packages/server/src/server/plugins/builtin/updates/`; no daemon wiring (package 03 does that).
 
 Reuse:
+
 - `writeJsonFileAtomic` — `packages/server/src/server/atomic-file.ts:23`.
 - Fetch pattern with `redirect: "error"` and `AbortSignal.timeout` — `packages/server/src/server/plugins/managed-source/registry.ts:32-36`.
 - `semver` (already a server dependency): ordering, prerelease detection, `satisfies` on `requires.paseo` against the daemon version's stable core.
@@ -17,6 +18,7 @@ Reuse:
 - Tree checksum algorithm: `computeTreeChecksum` in `scripts/sync-zekoder-plugin.mjs:104-130` (`listFiles` + hash loop). The server package cannot import from `scripts/`, so port the ~25 lines into `updates/tree-checksum.ts` unchanged in behaviour (files only, sorted by `/`-joined relative path, `"<path>\0<byteLength>\0"` + bytes + `"\0"`, lowercase hex). A comment names the script as the reference. A test pins the two together (Tasks).
 
 Check order in `checkNow()` and the `lastError.code` each step emits:
+
 1. Fetch `manifest.json` (30 s timeout) — `manifest-fetch-failed`. One fetch only; there is no `.sig`.
 2. Parse the envelope (`schemaVersion: 1`, `payload` string, `signatures[]`) — `manifest-invalid`.
 3. Base64-decode `payload`; valid when ≥1 entry with `alg: "ed25519"` and a `keyId` in `TRUSTED_KEYS` verifies over those bytes; unknown key ids ignored — else `signature-invalid` (state unchanged except `lastCheckAt`).

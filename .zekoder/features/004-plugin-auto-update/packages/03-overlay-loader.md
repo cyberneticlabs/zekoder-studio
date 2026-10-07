@@ -22,6 +22,7 @@ Consumes **builtin-plugin-updater** (01) and **builtin-plugin-update-status** (0
   - **`null`:** start bundled with `fallbackReason: null`.
 
   Then call `recordRunning({ source, version, fallbackReason })` and pass the directory actually started to `publishProviderRegistrations`.
+
 - [ ] `BuiltinPluginLoader` (`builtin/index.ts`): make `root` a public `readonly` property. In bootstrap, derive the updater's bundled root from the loader actually used (`resolveBuiltinPluginLoader(dependencies).root`), never from a second `resolveBuiltinPluginsRoot()` call. This keeps an injected test loader and the updater on one root.
 - [ ] Bootstrap: build the updater only when all of these hold:
   - `config.desktopManaged === true`
@@ -29,6 +30,7 @@ Consumes **builtin-plugin-updater** (01) and **builtin-plugin-update-status** (0
   - the loader root's basename is `builtin-plugins` and it contains `zekoder.lock.json` (packaged or built daemon, never the repo `plugins/`)
 
   Read `bundledVersion` from that lock. Pass the updater as `builtinUpdater`, plus a `builtinUpdateStatus` adapter whose `list()` returns `[updater.getStatus()]`, filtered by `pluginId` (an injected `dependencies.builtinUpdateStatus` from 02 wins). When the updater is not built: if the loader's list does not include `zekoder`, the adapter returns `[]`; otherwise it returns `[{ pluginId: "zekoder", runningVersion: <lock version>, source: "bundled", bundledVersion: <lock version>, enabled: false }]`, version from the loader root's `zekoder.lock.json`, so 023 can show "Updates are managed by the desktop app". Replace 01's local status/code types with 02's protocol exports. Call `start()` after `PluginService.start()`, and `stop()` on daemon shutdown next to the existing plugin teardown.
+
 - [ ] Desktop (`packages/desktop/src/daemon/daemon-manager.ts`): in `startDaemon()`, write `$PASEO_HOME/builtin-plugin-updates/desktop-channel.json` `{ channel }` atomically (temp + rename) before both the reuse return (~L291) and a fresh spawn. Get the channel from the desktop settings store `releaseChannel`, the same source `resolveRequestedReleaseChannel` (~L394) falls back to. A settings change then applies at the next check after the next app launch. Extend `daemon-manager.test.ts` to cover both paths.
 - [ ] CI keeps updates off:
   - `scripts/builtin-plugins-dist.test.mjs` starts the daemon without desktop management, so it is already off. Add one assertion that the update status is `enabled: false` or empty.

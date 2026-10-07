@@ -23,12 +23,12 @@
 
 ## Integration-test mapping
 
-| Walkthrough step | Automated coverage |
-| --- | --- |
-| 1, 7 | `plugins/index.posix.test.ts` (bundled path, not built without `desktopManaged`), `updates/index.test.ts` (disabled), `scripts/builtin-plugins-dist.test.mjs` (off) |
-| 2 | `updates/index.test.ts` (newer stable installs; envelope, size, sha256, tree checksum), `updates/tree-checksum.test.ts` |
-| 3 | `plugins/index.posix.test.ts` (downloaded starts, locks), `runtime.posix.test.ts` (compile outside repo) |
-| 4 | `updates/index.test.ts` (revoked → previous good → null) |
-| 5 | `plugins/index.posix.test.ts` (fallback + failure recorded) |
-| 6 | `updates/index.test.ts` (channel rules), `daemon-manager.test.ts` (channel file on reuse and fresh paths) |
-| status RPC | `messages.plugins.test.ts`, `daemon-client.test.ts`, `plugin-paseo-api.e2e.test.ts` (plugin server handler calls `paseo.pluginUpdates.status("zekoder")`) |
+| Walkthrough step | Automated coverage                                                                                                                                                  |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1, 7             | `plugins/index.posix.test.ts` (bundled path, not built without `desktopManaged`), `updates/index.test.ts` (disabled), `scripts/builtin-plugins-dist.test.mjs` (off) |
+| 2                | `updates/index.test.ts` (newer stable installs; envelope, size, sha256, tree checksum), `updates/tree-checksum.test.ts`                                             |
+| 3                | `plugins/index.posix.test.ts` (downloaded starts, locks), `runtime.posix.test.ts` (compile outside repo)                                                            |
+| 4                | `updates/index.test.ts` (revoked → previous good → null)                                                                                                            |
+| 5                | `plugins/index.posix.test.ts` (fallback + failure recorded)                                                                                                         |
+| 6                | `updates/index.test.ts` (channel rules), `daemon-manager.test.ts` (channel file on reuse and fresh paths)                                                           |
+| status RPC       | `messages.plugins.test.ts`, `daemon-client.test.ts`, `plugin-paseo-api.e2e.test.ts` (plugin server handler calls `paseo.pluginUpdates.status("zekoder")`)           |

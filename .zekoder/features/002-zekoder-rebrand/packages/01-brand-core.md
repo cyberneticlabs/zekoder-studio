@@ -35,27 +35,27 @@ cd ../worktrees/002-zekoder-rebrand-01-brand-core && npm install && npm run buil
 ## Tasks
 
 - [x] 1. Create `packages/protocol/src/branding.ts` exactly per contract `brand-module`. Add
-  `packages/protocol/src/branding.test.ts`: `brandUrl()` returns `https://zekoder.net`, `brandUrl("/docs/cli")`
-  returns `https://zekoder.net/docs/cli`, and a path without a leading slash is normalized.
+     `packages/protocol/src/branding.test.ts`: `brandUrl()` returns `https://zekoder.net`, `brandUrl("/docs/cli")`
+     returns `https://zekoder.net/docs/cli`, and a path without a leading slash is normalized.
 - [x] 2. Home default: in `paseo-home.ts` replace `"~/.paseo"` with `` `~/${BRAND.defaultHomeDirName}` ``.
-  Delete the private resolver in `cli/src/commands/hub/credentials.ts:139-143` and import `resolvePaseoHome`
-  from `@getpaseo/server` (as `cli/src/utils/daemon-target.ts` does). Update help text
-  "(default: ~/.paseo)" in `cli/src/utils/command-options.ts:12,28`.
+     Delete the private resolver in `cli/src/commands/hub/credentials.ts:139-143` and import `resolvePaseoHome`
+     from `@getpaseo/server` (as `cli/src/utils/daemon-target.ts` does). Update help text
+     "(default: ~/.paseo)" in `cli/src/utils/command-options.ts:12,28`.
 - [x] 3. Port default: `DEFAULT_PORT = BRAND.defaultDaemonPort` (`config.ts:38`); `persisted-config.ts:348`
-  becomes `` `127.0.0.1:${BRAND.defaultDaemonPort}` ``; `DEFAULT_SSH_DAEMON_PORT = BRAND.defaultDaemonPort`;
-  `LOCALHOST_FALLBACK_ENDPOINT` and the three `add-host-modal.tsx` values derive from `BRAND.defaultDaemonPort`;
-  `cli/src/commands/onboard.ts:155,212` help text. Leave sample-data uses of 6767 in tests alone.
+     becomes `` `127.0.0.1:${BRAND.defaultDaemonPort}` ``; `DEFAULT_SSH_DAEMON_PORT = BRAND.defaultDaemonPort`;
+     `LOCALHOST_FALLBACK_ENDPOINT` and the three `add-host-modal.tsx` values derive from `BRAND.defaultDaemonPort`;
+     `cli/src/commands/onboard.ts:155,212` help text. Leave sample-data uses of 6767 in tests alone.
 - [x] 4. Deep links: `buildAgentDeepLink` emits `${BRAND.deepLinkScheme}:/...`; `parseAgentDeepLink` accepts
-  `zekoder:` and `paseo:` (local `const ACCEPTED_SCHEMES`, comment that `paseo:` stays parseable for links
-  produced by upstream daemons). Update `agent-deep-link.test.ts:14` expectation and add one case each:
-  `zekoder://h/...` parses; `paseo://h/...` still parses; `other://h/...` rejected.
+     `zekoder:` and `paseo:` (local `const ACCEPTED_SCHEMES`, comment that `paseo:` stays parseable for links
+     produced by upstream daemons). Update `agent-deep-link.test.ts:14` expectation and add one case each:
+     `zekoder://h/...` parses; `paseo://h/...` still parses; `other://h/...` rejected.
 - [x] 5. Redaction: both regexes become `/(?:paseo|zekoder):\/\/\S+/gi`. Add a `zekoder://` case next to the
-  existing ones in `app/src/diagnostics/app-diagnostic-report.test.ts:111` and
-  `server/src/server/session/daemon/daemon-session.test.ts:360`.
+     existing ones in `app/src/diagnostics/app-diagnostic-report.test.ts:111` and
+     `server/src/server/session/daemon/daemon-session.test.ts:360`.
 - [x] 6. Update pinned-default tests: `server/src/server/persisted-config.test.ts:691,703,747,754,765` and the
-  fallback-endpoint assertions in `app/src/runtime/host-runtime.test.ts:39-51` to `6777`.
+     fallback-endpoint assertions in `app/src/runtime/host-runtime.test.ts:39-51` to `6777`.
 - [x] 7. Docs: `docs/development.md:30,49-52,65-71` — packaged app uses `~/.zekoder` and port `6777`; dev
-  unchanged. Rewrite in place, CLAUDE.md doc voice. `server/.env.example:22,24` port comment.
+     unchanged. Rewrite in place, CLAUDE.md doc voice. `server/.env.example:22,24` port comment.
 - [x] 8. `npm run build:client`, `npm run typecheck`, `npm run lint -- <changed files>`, `npm run format:files -- <changed files>`.
 
 ## Verification

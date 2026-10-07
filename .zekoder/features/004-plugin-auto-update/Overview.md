@@ -58,6 +58,7 @@ relatedFollowups:
   - 002-plugin-signing-key-rotation
 statusHistory: []
 ---
+
 # Signed Zekoder plugin auto-update without app rebuild
 
 ## User's request (verbatim)

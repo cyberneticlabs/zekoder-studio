@@ -22,20 +22,20 @@
 
 ### Shape (`BuiltinPluginUpdateStatusSchema`, `packages/protocol/src/messages.ts`)
 
-| Field | Type | Meaning |
-| --- | --- | --- |
-| `pluginId` | `string` (required) | |
-| `runningVersion` | `string` (required) | version this daemon run actually started |
-| `source` | `"bundled" \| "downloaded"` (required) | |
-| `stagedVersion` | `string \| null`, optional | verified version that loads on next start |
-| `restartRequired` | `boolean`, optional | true whenever the next start runs a different version than now, incl. rollback to bundled after a revoke |
-| `fallbackReason` | `string \| null`, optional | why bundled runs although a downloaded copy exists |
-| `lastCheckAt` | `string \| null`, optional | ISO time of the last completed check |
-| `lastError` | `{ code: string; message: string; at: string } \| null`, optional | |
-| `bundledVersion` | `string`, optional | |
-| `latestAvailable` | `string \| null`, optional | highest eligible version in the last verified manifest |
-| `channel` | `"stable" \| "beta"`, optional | from the desktop app; display only |
-| `enabled` | `boolean`, optional | false when not desktop-launched, no trusted keys, or `ZEKODER_PLUGIN_UPDATES=off` |
+| Field             | Type                                                              | Meaning                                                                                                  |
+| ----------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `pluginId`        | `string` (required)                                               |                                                                                                          |
+| `runningVersion`  | `string` (required)                                               | version this daemon run actually started                                                                 |
+| `source`          | `"bundled" \| "downloaded"` (required)                            |                                                                                                          |
+| `stagedVersion`   | `string \| null`, optional                                        | verified version that loads on next start                                                                |
+| `restartRequired` | `boolean`, optional                                               | true whenever the next start runs a different version than now, incl. rollback to bundled after a revoke |
+| `fallbackReason`  | `string \| null`, optional                                        | why bundled runs although a downloaded copy exists                                                       |
+| `lastCheckAt`     | `string \| null`, optional                                        | ISO time of the last completed check                                                                     |
+| `lastError`       | `{ code: string; message: string; at: string } \| null`, optional |                                                                                                          |
+| `bundledVersion`  | `string`, optional                                                |                                                                                                          |
+| `latestAvailable` | `string \| null`, optional                                        | highest eligible version in the last verified manifest                                                   |
+| `channel`         | `"stable" \| "beta"`, optional                                    | from the desktop app; display only                                                                       |
+| `enabled`         | `boolean`, optional                                               | false when not desktop-launched, no trusted keys, or `ZEKODER_PLUGIN_UPDATES=off`                        |
 
 - `fallbackReason` known values (`BuiltinPluginUpdateFallbackReason`): `start-failed`, `revoked`, `previously-failed`, `incompatible`.
 - `lastError.code` known values (`BuiltinPluginUpdateErrorCode`): `manifest-fetch-failed`, `manifest-invalid`, `signature-invalid`, `sequence-replay`, `incompatible`, `revoked`, `download-failed`, `sha256-mismatch`, `size-mismatch`, `unpack-failed`, `tree-checksum-mismatch`, `start-failed`.

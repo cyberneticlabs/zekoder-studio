@@ -86,6 +86,7 @@ statusHistory:
     to: merged
     at: 2026-10-06T13:12:42.369Z
 ---
+
 # Feature 001-builtin-zekoder-plugin: Ship the Zekoder plugin as a non-removable built-in
 
 > **Light-tier plan.** One area, one branch, one document — no `packages/` folder, and no separate
@@ -119,12 +120,14 @@ statusHistory:
 **Constraints verified.** Plugin imports are only `@getpaseo/plugin{,/server,/client,/client/react-native}`, `zod`, `react`, `react-native`, `@tanstack/react-query`, `node:*` — all allowed by `packages/server/src/server/plugins/compiler.ts:246-256` and client externals `:400-410`. Planner typechecked the copied files under `plugins/tsconfig.json` settings against the current SDK: 0 errors. Activation registers handlers and schedules unref'd timers only; no synchronous spawn/network, so offline, credential-free startup (smoke check) holds. Do not copy the plugin's `tsconfig.json`, `package.json`, `package-lock.json` or `README.md`: a nested `tsconfig.json` changes compiler resolution (`compiler-imports.ts:21`).
 
 **Sync script.** `scripts/sync-zekoder-plugin.mjs`, Node ESM like `scripts/sync-fdroid-changelogs.mjs`, CLI guard via `scripts/is-main-module.mjs`. Two modes:
+
 - **Sync** (`--ref <full-sha|tag>`, required): `--repo <ssh-url|local-path>`, default `git@github.com:cyberneticlabs/zekoder-plugins.git` (the repo is private; SSH uses the developer's git credentials, and a local path such as `../zekoder-plugins` needs no network). Clone to a temp dir, resolve `ref` to a commit, and reject anything that is not a 40-hex SHA or an existing tag (no branches). Read `paseo/package.json` `files` as the copy allowlist. Replace `plugins/zekoder/` wholesale. Checksum = sha256 over sorted `relativePath\0content` entries. Write `plugins/zekoder.lock.json`: `{repo, ref, commit, version, checksum}`, 2-space JSON plus trailing newline. `repo` records the default SSH URL even when a local path was used, so the lock never holds a machine path.
 - **Check** (`--check`, no other args, offline): validate the lock's own fields (`repo` non-empty, `commit` 40-hex, `ref` is the commit or a non-empty tag name, `version` a semver string, taken at sync from `paseo/package.json` since that file is not vendored, `checksum` 64-hex). Then recompute the vendored tree checksum and exit non-zero on mismatch. It does not contact the remote and does not re-resolve `ref`.
 
 Export the checksum, copy and lock-validation functions for the test.
 
 **Collision guard.** `packages/server/src/server/plugins/index.ts`. Today a configured id equal to a built-in id records a failure ("Plugin is already running", `runtime.ts:332`), lists as `running` (catalog-derived, `:201-236`), and `disablePlugin`/`removePlugin`/global switch-off call `stopPlugin` (`:556`), which stops the built-in. `removePlugin` also deletes `settingsDirectory/<id>` and calls `runtime.clearLogs` (`:463`), the built-in's settings and logs. `applyUpdates` -> `updateSource` (`:694`) can build a candidate and rewrite the stale entry. Fix in place, reusing `this.builtinPlugins.ids` and the existing message `Plugin ID "<id>" is reserved for a built-in plugin` (`:255`), extracted into one private `rejectBuiltinId(id)` helper that the install paths also use:
+
 - `enablePlugin`, `disablePlugin`, `reloadPlugin`: call `rejectBuiltinId` first, before any config patch or `requireItem` (`:793`).
 - `previewUpdates`: explicit `pluginId` that is built-in -> `rejectBuiltinId` throws before any work. The all-sources path skips built-in ids.
 - `applyUpdates`: if any proposal id is built-in, throw the reserved error before `enqueue`, so `updateSource` never runs.

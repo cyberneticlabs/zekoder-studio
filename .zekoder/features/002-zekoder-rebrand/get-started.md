@@ -29,11 +29,11 @@ node branding/generate-assets.mjs --check
 
 ## Integration-test mapping
 
-| Step | Covered by |
-|------|-----------|
-| 1-3 | `branding/generate-assets.test.mjs` (pixels, dot color); favicon swap logic unchanged |
-| 4-5 | `packages/app/src/i18n/resources.test.ts` |
-| 5 links | `packages/protocol/src/branding.test.ts` |
-| 7 | `packages/protocol/src/agent-deep-link.test.ts` |
-| 8 | `packages/server/src/server/persisted-config.test.ts`, `packages/app/src/runtime/host-runtime.test.ts` |
-| 6, 9, desktop packaging | `packages/desktop/src/daemon/desktop-packaging.test.ts`; packaged smoke and nix in CI |
+| Step                    | Covered by                                                                                             |
+| ----------------------- | ------------------------------------------------------------------------------------------------------ |
+| 1-3                     | `branding/generate-assets.test.mjs` (pixels, dot color); favicon swap logic unchanged                  |
+| 4-5                     | `packages/app/src/i18n/resources.test.ts`                                                              |
+| 5 links                 | `packages/protocol/src/branding.test.ts`                                                               |
+| 7                       | `packages/protocol/src/agent-deep-link.test.ts`                                                        |
+| 8                       | `packages/server/src/server/persisted-config.test.ts`, `packages/app/src/runtime/host-runtime.test.ts` |
+| 6, 9, desktop packaging | `packages/desktop/src/daemon/desktop-packaging.test.ts`; packaged smoke and nix in CI                  |

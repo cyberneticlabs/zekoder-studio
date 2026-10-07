@@ -171,6 +171,7 @@ statusHistory:
     to: merged
     at: 2026-10-06T11:20:57.738Z
 ---
+
 # Feature 002-zekoder-rebrand: Rebrand the app as Zekoder
 
 ## User's request (verbatim)
@@ -216,11 +217,11 @@ Source marks (860x666 RGBA, mark fills the canvas, brand blue sampled `#1461BD`)
 
 ## Packages
 
-| # | Package | Branch | Depends on | Summary |
-|---|---------|--------|-----------|---------|
-| 01 | brand-core | `002-zekoder-rebrand-01-brand-core` | — | `BRAND` module; home, port and deep-link defaults in server/CLI/app/protocol; dev docs |
-| 02 | brand-assets | `002-zekoder-rebrand-02-brand-assets` | — | Generator script + test, all regenerated icons, `PaseoLogo`, asset lines in `app.config.js` |
-| 03 | brand-surfaces | `002-zekoder-rebrand-03-brand-surfaces` | 01, 02 | App/desktop ids, names, scheme, PWA manifest, UI strings, links, desktop shims and nix, auto-update gate |
+| #   | Package        | Branch                                  | Depends on | Summary                                                                                                  |
+| --- | -------------- | --------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------- |
+| 01  | brand-core     | `002-zekoder-rebrand-01-brand-core`     | —          | `BRAND` module; home, port and deep-link defaults in server/CLI/app/protocol; dev docs                   |
+| 02  | brand-assets   | `002-zekoder-rebrand-02-brand-assets`   | —          | Generator script + test, all regenerated icons, `PaseoLogo`, asset lines in `app.config.js`              |
+| 03  | brand-surfaces | `002-zekoder-rebrand-03-brand-surfaces` | 01, 02     | App/desktop ids, names, scheme, PWA manifest, UI strings, links, desktop shims and nix, auto-update gate |
 
 ```
 01-brand-core ──┐

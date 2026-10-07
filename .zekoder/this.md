@@ -68,4 +68,3 @@ Run after every change (npm scripts only, never raw npx eslint/oxlint/oxfmt):
 - `kb/guardrails.md` — Hard boundaries: each rule, why it exists, and how to check compliance
 - `kb/preflight.md` — Pre-flight caveats
 - `kb/quality-gates.md` — Quality gate detail and CI/hook wiring
-

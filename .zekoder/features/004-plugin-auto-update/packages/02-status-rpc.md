@@ -11,6 +11,7 @@ Owns contract **builtin-plugin-update-status** (contracts.md). Studio owns this 
 Naming: new types use the `BuiltinPluginUpdate*` prefix. Never reuse or extend the existing `PluginUpdate*` source-update schemas (`messages.ts` ~L1473-1508, ~L6720-6745).
 
 Templates to copy, same file each:
+
 - Request/response: `plugin.source.status.request` — `packages/protocol/src/messages.ts:1510` (request), `:6701` (response), registered in the unions near `:3223` and `:6824`.
 - Feature flag: `pluginSourceUpdates` — `messages.ts:3607-3608` (schema), `packages/server/src/server/websocket-server.ts:1839` (advertise).
 - Session handler: `packages/server/src/server/session.ts:2485-2494`.

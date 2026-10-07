@@ -3,6 +3,7 @@
 None block any package.
 
 Non-blocking follow-ups for the owners, outside this feature:
+
 1. **zekoder.net paths** (type: website content; owner: Cybernetic Labs marketing). `brandUrl()` keeps the
    upstream paths: `/changelog`, `/download`, `/docs`, `/docs/{skills,configuration,security,cli,worktrees,schedules,metadata-generation}`,
    `/docs/plugins/reference`. Until those exist on zekoder.net, the in-app links 404. Blocks nothing in the repo.

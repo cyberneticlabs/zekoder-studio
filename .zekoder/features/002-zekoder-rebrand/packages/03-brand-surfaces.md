@@ -7,6 +7,7 @@
 ## Worktree setup
 
 Cut from the batch staging branch after 01 and 02 are merged onto it (the supervisor names it; `<staging>` below).
+
 ```bash
 git worktree add ../worktrees/002-zekoder-rebrand-03-brand-surfaces -b 002-zekoder-rebrand-03-brand-surfaces <staging>
 cd ../worktrees/002-zekoder-rebrand-03-brand-surfaces && npm install && npm run build:client
@@ -55,43 +56,43 @@ cd ../worktrees/002-zekoder-rebrand-03-brand-surfaces && npm install && npm run 
 ## Tasks
 
 - [x] 1. `app.config.js`: production `name: "Zekoder"`, `packageId: "net.zekoder.app"`; development
-  `name: "Zekoder Debug"`, `packageId: "net.zekoder.app.debug"`; `scheme: "zekoder"`. Web: manifest
-  `name`/`short_name` `Zekoder`, index.html apple title `Zekoder`. Update `docs/android.md:3-12,78,81` variant table
-  and ids, and add one line there: delete stale `packages/app/.secrets/google-services.*` / `GoogleService-Info.*`
-  files registered for `sh.paseo` until Zekoder Firebase apps exist.
+     `name: "Zekoder Debug"`, `packageId: "net.zekoder.app.debug"`; `scheme: "zekoder"`. Web: manifest
+     `name`/`short_name` `Zekoder`, index.html apple title `Zekoder`. Update `docs/android.md:3-12,78,81` variant table
+     and ids, and add one line there: delete stale `packages/app/.secrets/google-services.*` / `GoogleService-Info.*`
+     files registered for `sh.paseo` until Zekoder Firebase apps exist.
 - [x] 2. UI strings: add `packages/app/src/i18n/rebrand.ts` exporting `rebrandTranslations<T>(resource: T): T`,
-  a deep copy replacing the substring `/Paseo/g` with `BRAND.name` in string values only (keys untouched;
-  case-sensitive, so `$PASEO_PORT` and lowercase `paseo` CLI commands are unaffected; covers compounds like
-  "PaseoDesktop"). Wrap each resource in `i18next.ts`. Add cases to
-  `packages/app/src/i18n/resources.test.ts`: `en` `sidebar.help.appName` is `Zekoder`; no string value in any
-  rewritten locale contains the substring `Paseo`; a `{{count}}` placeholder survives.
+     a deep copy replacing the substring `/Paseo/g` with `BRAND.name` in string values only (keys untouched;
+     case-sensitive, so `$PASEO_PORT` and lowercase `paseo` CLI commands are unaffected; covers compounds like
+     "PaseoDesktop"). Wrap each resource in `i18next.ts`. Add cases to
+     `packages/app/src/i18n/resources.test.ts`: `en` `sidebar.help.appName` is `Zekoder`; no string value in any
+     rewritten locale contains the substring `Paseo`; a `{{count}}` placeholder survives.
 - [x] 2b. Hardcoded strings: in the three files listed in Context, build the text with `BRAND.name` instead of
-  the literal "Paseo". Update any test that pins those exact strings (grep the three messages).
+      the literal "Paseo". Update any test that pins those exact strings (grep the three messages).
 - [x] 3. Links: each listed URL becomes `brandUrl("<same path>")` (bare site: `brandUrl()`); welcome link
-  label shows `zekoder.net` (derive from `BRAND.websiteUrl`, strip scheme).
+     label shows `zekoder.net` (derive from `BRAND.websiteUrl`, strip scheme).
 - [x] 4. Desktop config: electron-builder `appId: net.zekoder.desktop`, `productName`/`executableName: Zekoder`,
-  protocol `name: Zekoder agent link`, `schemes: [zekoder]`, every `Paseo-` artifact prefix to `Zekoder-`,
-  `vendor: Zekoder`, `--class=Zekoder`. Leave `publish` and `maintainer`. `desktop/package.json` description
-  `Zekoder desktop app (Electron wrapper)`, homepage `https://zekoder.net`, `desktopName: Zekoder.desktop`.
-  `main.ts`: `APP_NAME` default `BRAND.name`, `setDesktopName("Zekoder.desktop")`, class `Zekoder`.
-  Desktop appId is `net.zekoder.desktop` (mobile stays `net.zekoder.app`).
+     protocol `name: Zekoder agent link`, `schemes: [zekoder]`, every `Paseo-` artifact prefix to `Zekoder-`,
+     `vendor: Zekoder`, `--class=Zekoder`. Leave `publish` and `maintainer`. `desktop/package.json` description
+     `Zekoder desktop app (Electron wrapper)`, homepage `https://zekoder.net`, `desktopName: Zekoder.desktop`.
+     `main.ts`: `APP_NAME` default `BRAND.name`, `setDesktopName("Zekoder.desktop")`, class `Zekoder`.
+     Desktop appId is `net.zekoder.desktop` (mobile stays `net.zekoder.app`).
 - [x] 5. Executable coupling: replace `Paseo` with `Zekoder` in every file listed under that Context bullet
-  (paths and helper names only). `updater.ts` ShipIt dir becomes `net.zekoder.desktop.ShipIt`. `.github/workflows/nix.yml:107` expected
-  CFBundleIdentifier becomes `net.zekoder.desktop`. Shell-rc comment and
-  shim message say Zekoder.
+     (paths and helper names only). `updater.ts` ShipIt dir becomes `net.zekoder.desktop.ShipIt`. `.github/workflows/nix.yml:107` expected
+     CFBundleIdentifier becomes `net.zekoder.desktop`. Shell-rc comment and
+     shim message say Zekoder.
 - [x] 6. Tests that pin those values: `desktop/src/daemon/desktop-packaging.test.ts:28-39,122-126,173` (also
-  assert `appId: net.zekoder.desktop` there), `desktop/src/daemon/linux-launcher.posix.test.ts:32-59`,
-  `desktop/src/diagnostics/updater.test.ts`, `app/src/diagnostics/desktop-diagnostic-report.test.ts:36-52`,
-  `desktop/src/features/opener.test.ts:30` only if it asserts the OS scheme (it uses the renderer origin — leave if so).
+     assert `appId: net.zekoder.desktop` there), `desktop/src/daemon/linux-launcher.posix.test.ts:32-59`,
+     `desktop/src/diagnostics/updater.test.ts`, `app/src/diagnostics/desktop-diagnostic-report.test.ts:36-52`,
+     `desktop/src/features/opener.test.ts:30` only if it asserts the OS scheme (it uses the renderer origin — leave if so).
 - [x] 6b. Auto-update gate: in `auto-updater.ts` add
-  `const BRANDED_AUTO_UPDATE_ENABLED = false; // Zekoder: off until a fork-owned update feed exists (never install upstream builds)`
-  and pass `isPackaged: () => BRANDED_AUTO_UPDATE_ENABLED && app.isPackaged`. No other updater change; leave
-  `publish` in electron-builder.yml (release audit owns it). Add one case to `desktop/src/features/auto-updater.test.ts`
-  only if it already constructs the module-level service; otherwise the service tests already cover the
-  `isPackaged() === false` path.
+      `const BRANDED_AUTO_UPDATE_ENABLED = false; // Zekoder: off until a fork-owned update feed exists (never install upstream builds)`
+      and pass `isPackaged: () => BRANDED_AUTO_UPDATE_ENABLED && app.isPackaged`. No other updater change; leave
+      `publish` in electron-builder.yml (release audit owns it). Add one case to `desktop/src/features/auto-updater.test.ts`
+      only if it already constructs the module-level service; otherwise the service tests already cover the
+      `isPackaged() === false` path.
 - [x] 7. `npx expo config --json` from `packages/app` (default and `APP_VARIANT=development`) shows the new name,
-  scheme, bundle id and package. `npm run build:client`, `npm run typecheck`, `npm run lint -- <changed files>`,
-  `npm run format:files -- <changed files>`.
+     scheme, bundle id and package. `npm run build:client`, `npm run typecheck`, `npm run lint -- <changed files>`,
+     `npm run format:files -- <changed files>`.
 
 ## Verification
 
