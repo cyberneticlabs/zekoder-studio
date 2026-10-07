@@ -26,14 +26,14 @@ Make the zekoder-plugins CI signing key rotatable with zero user impact: ship th
 
 ## Why it's out of scope now
 
-User decision 2026-10-07: feature 004-plugin-auto-update ships only the list-shaped hooks (`TRUSTED_KEYS` as `{keyId, publicKey}[]`, manifest `.sig` as `{ signatures: [{keyId, sig}] }`, accept any trusted entry). Rotation is a separate, later step and depends on 004 shipping.
+User decision 2026-10-07: feature 004-plugin-auto-update ships only the list-shaped hooks (`TRUSTED_KEYS` as a list of zekoder-plugins keyring entries `{keyId, alg, publicKey, addedAt}`; one signed envelope `plugins/zekoder/manifest.json` carrying `signatures: [{keyId, alg, sig}]` beside the base64 `payload`, no separate `.sig`; accept any trusted `ed25519` entry). The format is owned by zekoder-plugins feature 023-plugin-auto-update-publishing; this pairs with zekoder-plugins followup 001-plugin-signing-key-rotation. Rotation is a separate, later step and depends on 004 shipping.
 
 ## Proposed approach
 
 Rotation order (the runbook this followup documents):
 
-1. Add the new `{keyId, publicKey}` to `TRUSTED_KEYS` and ship it in a desktop release. Wait until supported app versions have it.
-2. CI (zekoder-plugins repo) dual-signs the manifest during the overlap: `.sig` lists entries for both keys.
+1. Add the new `{keyId, alg, publicKey, addedAt}` entry (copied from zekoder-plugins `scripts/plugin-release-keys.json`) to `TRUSTED_KEYS` and ship it in a desktop release. Wait until supported app versions have it.
+2. CI (zekoder-plugins repo) dual-signs the manifest during the overlap: the envelope's `signatures[]` holds entries for both keys.
 3. CI switches to the new key only (secret swap).
 4. In a later desktop release, remove the old key from `TRUSTED_KEYS` once every supported app version trusts the new key.
 
@@ -42,7 +42,7 @@ Apps older than the first release that trusts the new key keep running the bundl
 Files (004 has not shipped; paths come from 004 package 01 and are approximate until it lands):
 
 - `packages/server/src/server/plugins/builtin/updates/trusted-keys.ts` (approximate, created by 004 package 01): the `TRUSTED_KEYS` list.
-- `packages/server/src/server/plugins/builtin/updates/manifest.ts` (approximate): `verifyManifestSignature`, already any-trusted-entry.
+- `packages/server/src/server/plugins/builtin/updates/manifest.ts` (approximate): `verifyEnvelope`, already any-trusted-entry.
 - `packages/server/src/server/plugins/builtin/updates/index.test.ts` (approximate): updater tests.
 - `docs/plugins.md` (exists): owns plugin update/signing per 004.
 

@@ -1,18 +1,21 @@
 # External dependencies
 
-## 1. zekoder-plugins publishing feature
+Neither blocks merging code. Both block the live end-to-end walkthrough (get-started.md).
+
+## 1. zekoder-plugins feature 023-plugin-auto-update-publishing
 
 - Type: other repository feature (cyberneticlabs/zekoder-plugins)
-- Owner: zekoder-plugins maintainers; filed by Paseo agent 4dafbbdd-3d4a-4468-95f1-53c301418fd4 (worktree `/Users/ahmedelshalaby/.paseo/worktrees/0pgjyo23/plugin-auto-update-publishing`)
-- Feature id: pending — fill in when the plugins agent reports it.
-- Related contracts: zekoder-plugin-release-manifest, plugin-update-status-api
-- Blocks: package 01 final field names and artifact format (code against contracts.md, adapt on confirmation); live end-to-end check in get-started.md. Does not block 02 or 03 unit work.
-- Needs from them: build + sign + publish to `gs://zekoder-releases/plugins/zekoder/` on tag CI; signed manifest with an incrementing `sequence`, channel pointers, compat range (daemon version), revoked list, immutable artifacts with sha256, and a `{keyId, sig}` signature list; their own WIF/service account confined to the `plugins/` prefix (separate from the desktop identity in feature 003 and skills' `releases/`); Version tab reading `paseo.pluginUpdates.status()`, showing "Restart the daemon to apply (Settings → Host → Restart daemon)" when `restartRequired` is true (no plugin-invoked restart in this feature) and "updates are managed by the desktop app" when `enabled` is false; final status field list (contract builtin-plugin-update-status, *(pending)* fields) forwarded via the coordinator.
+- Owner: zekoder-plugins maintainers
+- Feature id: `023-plugin-auto-update-publishing`
+- Related contracts: plugin-release-channel (023 owns; Studio consumes), builtin-plugin-update-status (Studio owns; 023 package 02 consumes)
+- Blocks: live end-to-end check only. 01 codes against contracts.md › plugin-release-channel, which mirrors 023's final format; 02 and 03 are unaffected.
+- They deliver: tag CI that builds, signs and publishes to `gs://zekoder-releases/plugins/zekoder/` — the signed envelope `manifest.json`, immutable `releases/vX.Y.Z[-beta.N]/zekoder-plugin-vX.Y.Z[-beta.N].tar.gz` artifacts with `sha256`, `size` and `treeChecksum`, `sequence`, `requires.paseo`, append-only `revoked` objects — under their own GCS identity confined to `plugins/zekoder/`. Their Version tab calls `paseo.pluginUpdates.status("zekoder")` from its `server.handle` handlers, shows "Restart the daemon to apply (Settings → Host → Restart daemon)" when a restart is needed and "Updates are managed by the desktop app" when `enabled` is false.
+- We deliver to them: the status API exactly as contracts.md › builtin-plugin-update-status states (final field list, no open requests).
 
-## 2. Release signing public key(s)
+## 2. Release signing public key
 
-- Type: key material / CI secret (non-coding)
-- Owner: Cybernetic Labs release maintainer. The private key lives in a zekoder-plugins CI secret guarded by a GitHub tag ruleset (user decision); Studio is affected only through its trusted key list.
-- Related contract: zekoder-plugin-release-manifest
-- Blocks: enabling updates in shipped builds (package 01 `TRUSTED_KEYS`). Code, tests and wiring proceed with a test keypair generated inside tests.
-- Deliver the `keyId` and base64 raw Ed25519 public key. Only the public key enters this repo. The rotation process is a separate followup, out of scope here.
+- Type: key material (non-coding)
+- Owner: Cybernetic Labs release maintainer, via 023's external dependency 2: a PR adding the key entry to zekoder-plugins `scripts/plugin-release-keys.json`. The private key stays a zekoder-plugins CI secret.
+- Related contract: plugin-release-channel (keyring)
+- Blocks: enabling updates in shipped builds. Until it lands, `TRUSTED_KEYS` (package 01) ships empty and the updater is disabled with no network calls. Code, tests and wiring proceed with a keypair generated inside tests.
+- Action once merged there: copy the `{keyId, alg, publicKey, addedAt}` entry verbatim into `packages/server/src/server/plugins/builtin/updates/trusted-keys.ts` in a small Studio PR. Only the public key enters this repo. Rotation is followup 002-plugin-signing-key-rotation.
