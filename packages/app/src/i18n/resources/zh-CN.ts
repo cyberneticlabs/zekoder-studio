@@ -30,6 +30,7 @@ export const zhCN: TranslationResources = {
     back: "返回",
     loading: "加载中...",
     actions: {
+      save: "保存",
       back: "返回",
       cancel: "取消",
       close: "关闭",
@@ -965,6 +966,9 @@ export const zhCN: TranslationResources = {
         actions: {
           viewPullRequest: "查看",
           openOn: "在 {{brand}} 上打开",
+          addToChat: "添加到聊天",
+          addAllToChat: "全部添加到聊天",
+          addingToChat: "正在添加...",
         },
         checksOverview: {
           headline: {
@@ -1016,17 +1020,21 @@ export const zhCN: TranslationResources = {
           checks: "Checks",
           pipeline: "流水线",
           reviews: "Reviews",
+          activity: "动态",
         },
         empty: {
           noJobs: "无作业",
           loadingPipeline: "正在加载流水线...",
           pipelineJobsLoadFailed: "无法加载流水线作业",
           allowedToFail: "允许失败",
+          noActivity: "暂无动态",
         },
         approvals: "{{given}} / {{required}} 批准",
         accessibility: {
           pullRequest: "Pull request #{{number}}",
           pullRequest_mr: "合并请求 !{{number}}",
+          commentActions: "评论操作",
+          threadActions: "讨论串操作",
           checkStatus: {
             passed: "成功",
             failed: "失败",
@@ -1039,22 +1047,24 @@ export const zhCN: TranslationResources = {
           },
         },
         states: {
-          draft: "Draft",
-          merged: "已 merge",
+          draft: "草稿",
+          merged: "已合并",
           closed: "已关闭",
-          open: "Open",
+          open: "开放",
         },
         activity: {
           commented: "已评论",
           approved: "已批准",
           requestedChanges: "请求修改",
-          reviewed: "已 review",
+          reviewed: "已审查",
         },
         time: {
           justNow: "刚刚",
         },
         thread: {
           discussion: "讨论主题",
+          resolved: "已解决",
+          outdated: "已过时",
         },
         errors: {
           statusLoadFailed: "无法加载 Pull Request 状态",
@@ -1121,6 +1131,7 @@ export const zhCN: TranslationResources = {
     },
   },
   sidebar: {
+    statusGroupAccessibility: "{{label}} 分组",
     statusBucket: {
       needsInput: "需要输入",
       failed: "失败",
@@ -1129,6 +1140,7 @@ export const zhCN: TranslationResources = {
       done: "已完成",
     },
     display: {
+      showBackground: "显示后台工作区",
       trigger: "显示偏好",
       heading: "显示",
       grouping: {
@@ -1972,6 +1984,17 @@ export const zhCN: TranslationResources = {
     accessibility: "上下文窗口已使用 {{percentage}}%",
   },
   review: {
+    feedback: {
+      send: "发送反馈 ({{count}})",
+      sending: "正在发送反馈 ({{count}})",
+      chooseAgent: "选择智能体",
+      sent: "已向 {{recipient}} 发送反馈",
+      "no-agents": "请在此工作区打开智能体标签页以发送反馈。",
+      disconnected: "请连接到主机以发送反馈。",
+      "no-context": "保存的评论不再匹配此差异。",
+      failed: "发送反馈失败。请重试。",
+      prompt: "请处理此代码审查。",
+    },
     comment: {
       add: "添加 review 评论",
       edit: "编辑 review 评论",

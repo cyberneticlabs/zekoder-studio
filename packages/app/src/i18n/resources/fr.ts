@@ -31,6 +31,7 @@ export const fr: TranslationResources = {
     back: "Retour",
     loading: "Chargement…",
     actions: {
+      save: "Enregistrer",
       back: "Retour",
       cancel: "Annuler",
       close: "Fermer",
@@ -997,6 +998,9 @@ export const fr: TranslationResources = {
         actions: {
           viewPullRequest: "Voir",
           openOn: "Ouvrir sur {{brand}}",
+          addToChat: "Ajouter à la conversation",
+          addAllToChat: "Tout ajouter à la conversation",
+          addingToChat: "Ajout…",
         },
         checksOverview: {
           headline: {
@@ -1048,17 +1052,21 @@ export const fr: TranslationResources = {
           checks: "Vérifications",
           pipeline: "Pipeline",
           reviews: "Revues",
+          activity: "Activité",
         },
         empty: {
           noJobs: "Aucun job",
           loadingPipeline: "Chargement du pipeline…",
           pipelineJobsLoadFailed: "Impossible de charger les jobs du pipeline",
           allowedToFail: "échec autorisé",
+          noActivity: "Aucune activité pour le moment",
         },
         approvals: "{{given}} sur {{required}} approbations",
         accessibility: {
           pullRequest: "Pull request #{{number}}",
           pullRequest_mr: "Merge request !{{number}}",
+          commentActions: "Actions du commentaire",
+          threadActions: "Actions du fil",
           checkStatus: {
             passed: "Réussie",
             failed: "Échec",
@@ -1087,6 +1095,8 @@ export const fr: TranslationResources = {
         },
         thread: {
           discussion: "Fil de discussion",
+          resolved: "Résolu",
+          outdated: "Obsolète",
         },
         errors: {
           statusLoadFailed: "Impossible de charger le statut de la pull request",
@@ -1156,6 +1166,7 @@ export const fr: TranslationResources = {
     },
   },
   sidebar: {
+    statusGroupAccessibility: "Groupe {{label}}",
     statusBucket: {
       needsInput: "Attend une réponse",
       failed: "Échec",
@@ -1164,6 +1175,7 @@ export const fr: TranslationResources = {
       done: "Terminé",
     },
     display: {
+      showBackground: "Afficher les espaces en arrière-plan",
       trigger: "Préférences d’affichage",
       heading: "Affichage",
       grouping: {
@@ -2039,6 +2051,18 @@ export const fr: TranslationResources = {
     accessibility: "Fenêtre de contexte : {{percentage}} % utilisés",
   },
   review: {
+    feedback: {
+      send: "Envoyer les commentaires ({{count}})",
+      sending: "Envoi des commentaires ({{count}})",
+      chooseAgent: "Choisir un agent",
+      sent: "Commentaires envoyés à {{recipient}}",
+      "no-agents":
+        "Ouvrez un onglet d’agent dans cet espace de travail pour envoyer les commentaires.",
+      disconnected: "Connectez-vous à l’hôte pour envoyer les commentaires.",
+      "no-context": "Les commentaires enregistrés ne correspondent plus à ce diff.",
+      failed: "Échec de l’envoi des commentaires. Réessayez.",
+      prompt: "Veuillez traiter cette revue de code.",
+    },
     comment: {
       add: "Ajouter un commentaire de revue",
       edit: "Modifier le commentaire de revue",
