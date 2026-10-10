@@ -7,6 +7,13 @@ import {
   type AppUpdateRuntimeConfiguration,
   type RuntimeUpdateInfo,
 } from "./app-update-service";
+import {
+  createHarness,
+  publishFollowingRelease,
+  releaseOf,
+  targetOf,
+} from "./test-utils/branded-update-harness";
+import { loadWireCatalogFixture } from "./test-utils/fake-electron-updater";
 
 class FakeAppUpdateRuntime implements AppUpdateRuntime {
   private checks: Array<
@@ -840,5 +847,144 @@ describe("app update service", () => {
       date: "2026-04-28T00:00:00.000Z",
       errorMessage: null,
     });
+  });
+});
+
+// The branded runtime over an in-memory electron-updater: these cases cover what the service
+// cannot see on its own, namely which immutable feed each download and recheck is bound to.
+describe("app update service on immutable catalog feeds", () => {
+  const fixture = loadWireCatalogFixture();
+  const stableFeed = targetOf(releaseOf(fixture, "v0.1.0"), "darwin", "arm64").feedUrl;
+  const manual = { currentVersion: "0.0.9", releaseChannel: "stable" } as const;
+
+  it("keeps a running download on its feed while a recheck pins the newer snapshot", async () => {
+    const harness = createHarness({
+      currentVersion: "0.0.9",
+      bucket: 0,
+      now: "2026-10-20T00:00:00.000Z",
+    });
+
+    await harness.service.checkForAppUpdate({ ...manual, intent: "automatic" });
+    const nextFeed = publishFollowingRelease(harness, { from: "v0.1.0", tag: "v0.1.1" });
+    const recheck = await harness.service.checkForAppUpdate({ ...manual, intent: "automatic" });
+
+    expect(recheck).toMatchObject({
+      hasUpdate: true,
+      latestVersion: "0.1.1",
+      readyToInstall: false,
+    });
+    expect(harness.updater.feedCalls.map((call) => call.url)).toEqual([stableFeed, nextFeed]);
+    // Re-pointing the updater did not restart or redirect the download already in flight.
+    expect(harness.updater.downloads).toEqual([{ version: "0.1.0", feedUrl: stableFeed }]);
+
+    const install = harness.service.downloadAndInstallUpdate(manual);
+    await Promise.resolve();
+    harness.updater.finishDownload();
+    await new Promise((resolve) => setTimeout(resolve));
+    harness.updater.finishDownload();
+    const result = await install;
+
+    expect(result).toMatchObject({ installed: true, version: "0.1.1" });
+    expect(harness.updater.downloaded).toEqual([
+      { version: "0.1.0", feedUrl: stableFeed },
+      { version: "0.1.1", feedUrl: nextFeed },
+    ]);
+    expect(harness.updater.installs).toEqual([{ isSilent: false, isForceRunAfter: true }]);
+  });
+
+  it("does not install a stale download once the catalog withdraws its release", async () => {
+    const harness = createHarness({ currentVersion: "0.0.9", bucket: 0 });
+    await harness.service.checkForAppUpdate({ ...manual, intent: "automatic" });
+    harness.updater.finishDownload();
+
+    const withdrawn = loadWireCatalogFixture();
+    withdrawn.channels.stable = null;
+    harness.transport.catalog = withdrawn;
+    const installed = await harness.service.installUpdateOnQuit({
+      ...manual,
+      signal: new AbortController().signal,
+    });
+
+    expect(installed).toBe(false);
+    expect(harness.updater.installs).toEqual([]);
+  });
+
+  it("does not install a download when quit-time revalidation cannot read the catalog", async () => {
+    const harness = createHarness({ currentVersion: "0.0.9", bucket: 0 });
+    await harness.service.checkForAppUpdate({ ...manual, intent: "automatic" });
+    harness.updater.finishDownload();
+
+    harness.transport.failure = new Error("offline");
+    const installed = await harness.service.installUpdateOnQuit({
+      ...manual,
+      signal: new AbortController().signal,
+    });
+
+    expect(installed).toBe(false);
+    expect(harness.updater.installs).toEqual([]);
+  });
+
+  it("installs the newest release at quit instead of the older downloaded one", async () => {
+    const harness = createHarness({ currentVersion: "0.0.9", bucket: 0 });
+    await harness.service.checkForAppUpdate({ ...manual, intent: "automatic" });
+    harness.updater.finishDownload();
+    const nextFeed = publishFollowingRelease(harness, { from: "v0.1.0", tag: "v0.1.1" });
+
+    const quit = harness.service.installUpdateOnQuit({
+      ...manual,
+      signal: new AbortController().signal,
+    });
+    await new Promise((resolve) => setTimeout(resolve));
+    harness.updater.finishDownload();
+    const installed = await quit;
+
+    expect(installed).toBe(true);
+    expect(harness.updater.downloaded.at(-1)).toEqual({ version: "0.1.1", feedUrl: nextFeed });
+    expect(harness.updater.installs).toEqual([{ isSilent: true, isForceRunAfter: false }]);
+  });
+
+  it("never offers an older stable to a beta build when the user switches back to stable", async () => {
+    const harness = createHarness({ currentVersion: "0.2.0-beta.1" });
+
+    const beta = await harness.service.checkForAppUpdate({
+      currentVersion: "0.2.0-beta.1",
+      releaseChannel: "beta",
+      intent: "manual",
+    });
+    const stable = await harness.service.checkForAppUpdate({
+      currentVersion: "0.2.0-beta.1",
+      releaseChannel: "stable",
+      intent: "manual",
+    });
+    const install = await harness.service.downloadAndInstallUpdate({
+      currentVersion: "0.2.0-beta.1",
+      releaseChannel: "stable",
+    });
+
+    expect(beta.hasUpdate).toBe(false);
+    expect(stable.hasUpdate).toBe(false);
+    expect(install.installed).toBe(false);
+    expect(harness.updater.allowDowngrade).toBe(false);
+    expect(harness.updater.downloads).toEqual([]);
+    expect(harness.updater.installs).toEqual([]);
+  });
+
+  it("drops a downloaded stable candidate when the user moves to the beta channel", async () => {
+    const harness = createHarness({ currentVersion: "0.0.9", bucket: 0 });
+    await harness.service.checkForAppUpdate({ ...manual, intent: "automatic" });
+    harness.updater.finishDownload();
+
+    const beta = await harness.service.checkForAppUpdate({
+      currentVersion: "0.0.9",
+      releaseChannel: "beta",
+      intent: "manual",
+    });
+
+    expect(beta).toMatchObject({
+      hasUpdate: true,
+      latestVersion: "0.2.0-beta.1",
+      readyToInstall: false,
+    });
+    expect(harness.updater.feedCalls.at(-1)).toMatchObject({ channel: "beta" });
   });
 });

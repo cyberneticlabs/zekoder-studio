@@ -137,7 +137,8 @@ jobs:
 
   publish:
     needs: setup
-    if: needs.setup.outputs.publish == 'true'
+    # Upstream-only: the fork does not publish container images.
+    if: needs.setup.outputs.publish == 'true' && github.repository == 'getpaseo/paseo'
     runs-on: ubuntu-latest
     permissions:
       contents: read

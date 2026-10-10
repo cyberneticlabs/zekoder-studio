@@ -26,6 +26,9 @@ concurrency:
 
 jobs:
   sync-release-notes:
+    # Upstream-only: Zekoder fork releases ship desktop builds through desktop-release.yml.
+    # Zekoder GitHub Release notes are written by hand before the tag, never from CHANGELOG.md.
+    if: ${{ github.repository == 'getpaseo/paseo' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write

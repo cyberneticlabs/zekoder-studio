@@ -1,0 +1,460 @@
+{
+  "schemaVersion": 1,
+  "channels": {
+    "stable": "v0.1.0",
+    "beta": "v0.2.0-beta.1"
+  },
+  "releases": {
+    "v0.2.0-beta.1": {
+      "tag": "v0.2.0-beta.1",
+      "version": "0.2.0-beta.1",
+      "channel": "beta",
+      "publishedAt": "2026-10-12T10:00:00.000Z",
+      "sourceCommit": "a557f43c1e6a19740c9f20f79a53caca4a4ada64",
+      "upstreamCommit": "205e2bba8c11a06bb8f62b3c369ec243c3311419",
+      "plugins": {
+        "repo": "git@github.com:cyberneticlabs/zekoder-plugins.git",
+        "ref": "v0.11.1",
+        "commit": "380f37b044eb5591ae551773256c5a915d7bc5f0",
+        "version": "0.11.1",
+        "checksum": "1b15aeccbfd8c9eb7381b9c651b5b5958bbb342e78bc0a6b66a75ca52ff43c97"
+      },
+      "releaseNotesUrl": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/release-notes.md",
+      "releaseNotes": {
+        "name": "release-notes.md",
+        "kind": "notes",
+        "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/release-notes.md",
+        "sha256": "8385520d53b68791fbfff63a50bb11d812400f184ae2db73561fd7959fc5e6b7",
+        "size": 117
+      },
+      "githubReleaseUrl": "https://github.com/cyberneticlabs/zekoder-studio/releases/tag/v0.2.0-beta.1",
+      "targets": [
+        {
+          "platform": "darwin",
+          "arch": "arm64",
+          "feedUrl": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/darwin/arm64/",
+          "artifacts": [
+            {
+              "name": "Zekoder-0.2.0-beta.1-arm64.dmg",
+              "kind": "installer",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/darwin/arm64/Zekoder-0.2.0-beta.1-arm64.dmg",
+              "sha256": "fbb0af19fa27c6bb62d0420d50f0ce121209e5a7cca0399daf7cd6f214a0e319",
+              "size": 64
+            },
+            {
+              "name": "Zekoder-0.2.0-beta.1-arm64.zip",
+              "kind": "archive",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/darwin/arm64/Zekoder-0.2.0-beta.1-arm64.zip",
+              "sha256": "7eea891dbc3426a1c1a9faa5c4a80a9aebf19bce049bb00c61a23623aba477da",
+              "size": 64
+            },
+            {
+              "name": "Zekoder-0.2.0-beta.1-arm64.zip.blockmap",
+              "kind": "blockmap",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/darwin/arm64/Zekoder-0.2.0-beta.1-arm64.zip.blockmap",
+              "sha256": "50d8cb190fe1d5d343704eb6bb15d956d90670cbf1757b905551cf49aa927cc2",
+              "size": 73
+            },
+            {
+              "name": "beta-mac.yml",
+              "kind": "feed",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/darwin/arm64/beta-mac.yml",
+              "sha256": "a11eecbe4edd9fbe327be661125e4d9bd8377c6ca55a942c9caab2149f184c99",
+              "size": 543
+            }
+          ]
+        },
+        {
+          "platform": "darwin",
+          "arch": "x64",
+          "feedUrl": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/darwin/x64/",
+          "artifacts": [
+            {
+              "name": "Zekoder-0.2.0-beta.1-x64.dmg",
+              "kind": "installer",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/darwin/x64/Zekoder-0.2.0-beta.1-x64.dmg",
+              "sha256": "b9835c9b3538c494fd57354157d0099b7695fdb4d076e291f62780ad7901e1c8",
+              "size": 60
+            },
+            {
+              "name": "Zekoder-0.2.0-beta.1-x64.zip",
+              "kind": "archive",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/darwin/x64/Zekoder-0.2.0-beta.1-x64.zip",
+              "sha256": "6370b2c94f0a884aa6f5adf5ba01739f1edc5707fcf5323c81615bc8d0e5f375",
+              "size": 60
+            },
+            {
+              "name": "Zekoder-0.2.0-beta.1-x64.zip.blockmap",
+              "kind": "blockmap",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/darwin/x64/Zekoder-0.2.0-beta.1-x64.zip.blockmap",
+              "sha256": "1ff9cb54449f4940f2e43f6c1c395eb92acda6248207a92eeb7f9448ac137514",
+              "size": 69
+            },
+            {
+              "name": "beta-mac.yml",
+              "kind": "feed",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/darwin/x64/beta-mac.yml",
+              "sha256": "f2002242f664459e8c44c8c2a54e7d82b5186ade8911dc9eeb8ca740f9b9375a",
+              "size": 539
+            }
+          ]
+        },
+        {
+          "platform": "win32",
+          "arch": "x64",
+          "feedUrl": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/win32/x64/",
+          "artifacts": [
+            {
+              "name": "Zekoder-Setup-0.2.0-beta.1-x64.exe",
+              "kind": "installer",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/win32/x64/Zekoder-Setup-0.2.0-beta.1-x64.exe",
+              "sha256": "83782312506a079b86f8db304ddd50e2fdd61a12899d8adc697f2de630baf686",
+              "size": 65
+            },
+            {
+              "name": "Zekoder-Setup-0.2.0-beta.1-x64.exe.blockmap",
+              "kind": "blockmap",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/win32/x64/Zekoder-Setup-0.2.0-beta.1-x64.exe.blockmap",
+              "sha256": "a927d1e77e11dbad4126f929318fa237e8c7c84acc88e1280dfccfa0e40cfd0d",
+              "size": 74
+            },
+            {
+              "name": "Zekoder-Setup-0.2.0-beta.1-x64.zip",
+              "kind": "archive",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/win32/x64/Zekoder-Setup-0.2.0-beta.1-x64.zip",
+              "sha256": "1e623457b743d11648df4af64b7a1de952807de775ac9c5cafa314bb860679e2",
+              "size": 65
+            },
+            {
+              "name": "beta.yml",
+              "kind": "feed",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/win32/x64/beta.yml",
+              "sha256": "1430809e7afb3cae5a1b91b6c96db7033087d27599a425177c421483021cafd1",
+              "size": 522
+            }
+          ]
+        },
+        {
+          "platform": "win32",
+          "arch": "arm64",
+          "feedUrl": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/win32/arm64/",
+          "artifacts": [
+            {
+              "name": "Zekoder-Setup-0.2.0-beta.1-arm64.exe",
+              "kind": "installer",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/win32/arm64/Zekoder-Setup-0.2.0-beta.1-arm64.exe",
+              "sha256": "0ed013e25178b1c24a7d91322e8772cbc8c16159963f77b4eec7e5518c626c10",
+              "size": 69
+            },
+            {
+              "name": "Zekoder-Setup-0.2.0-beta.1-arm64.exe.blockmap",
+              "kind": "blockmap",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/win32/arm64/Zekoder-Setup-0.2.0-beta.1-arm64.exe.blockmap",
+              "sha256": "2990a138fb6ef76aaf1ead7aa9ba3ea503e646e0f7f47f7fa146b1883427d516",
+              "size": 78
+            },
+            {
+              "name": "Zekoder-Setup-0.2.0-beta.1-arm64.zip",
+              "kind": "archive",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/win32/arm64/Zekoder-Setup-0.2.0-beta.1-arm64.zip",
+              "sha256": "ecc28759090264b95c0d712b59e80e6b4bdfe921b2f5aa7c8c4dc7cc069817d6",
+              "size": 69
+            },
+            {
+              "name": "beta.yml",
+              "kind": "feed",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/win32/arm64/beta.yml",
+              "sha256": "f998bfecd112331d9a1d7779f724d5c371f524419574f27568787947699b957f",
+              "size": 526
+            }
+          ]
+        },
+        {
+          "platform": "linux",
+          "arch": "x64",
+          "feedUrl": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/linux/x64/",
+          "artifacts": [
+            {
+              "name": "Zekoder-0.2.0-beta.1-x64.deb",
+              "kind": "installer",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/linux/x64/Zekoder-0.2.0-beta.1-x64.deb",
+              "sha256": "cd6604cec19aad2a52cf12e7afc1b9a28926703dee9d2a10a65324681019a3e6",
+              "size": 59
+            },
+            {
+              "name": "Zekoder-0.2.0-beta.1-x64.rpm",
+              "kind": "installer",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/linux/x64/Zekoder-0.2.0-beta.1-x64.rpm",
+              "sha256": "9853477113db84b416c6a2efddf4ce25d1169a381f5576a231d1ef2c535ee507",
+              "size": 59
+            },
+            {
+              "name": "Zekoder-0.2.0-beta.1-x64.tar.gz",
+              "kind": "archive",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/linux/x64/Zekoder-0.2.0-beta.1-x64.tar.gz",
+              "sha256": "d49819977ee215d877ec780fca008c11e0065e83021bd5234a92a24ac548817e",
+              "size": 62
+            },
+            {
+              "name": "Zekoder-x64.AppImage",
+              "kind": "installer",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/linux/x64/Zekoder-x64.AppImage",
+              "sha256": "0eb5fd7fc106d88e00fae665c738090ee74ab7457ab420fbf6fbf65495819915",
+              "size": 51
+            },
+            {
+              "name": "beta-linux.yml",
+              "kind": "feed",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/linux/x64/beta-linux.yml",
+              "sha256": "809da17f20bfc271bd0098d1c4b1c23fcc220327c6842bb3b5acc7881073fb0d",
+              "size": 494
+            }
+          ]
+        }
+      ]
+    },
+    "v0.1.0": {
+      "tag": "v0.1.0",
+      "version": "0.1.0",
+      "channel": "stable",
+      "publishedAt": "2026-10-10T10:00:00.000Z",
+      "sourceCommit": "a557f43c1e6a19740c9f20f79a53caca4a4ada64",
+      "upstreamCommit": "205e2bba8c11a06bb8f62b3c369ec243c3311419",
+      "plugins": {
+        "repo": "git@github.com:cyberneticlabs/zekoder-plugins.git",
+        "ref": "v0.11.1",
+        "commit": "380f37b044eb5591ae551773256c5a915d7bc5f0",
+        "version": "0.11.1",
+        "checksum": "1b15aeccbfd8c9eb7381b9c651b5b5958bbb342e78bc0a6b66a75ca52ff43c97"
+      },
+      "releaseNotesUrl": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/release-notes.md",
+      "releaseNotes": {
+        "name": "release-notes.md",
+        "kind": "notes",
+        "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/release-notes.md",
+        "sha256": "8385520d53b68791fbfff63a50bb11d812400f184ae2db73561fd7959fc5e6b7",
+        "size": 117
+      },
+      "githubReleaseUrl": "https://github.com/cyberneticlabs/zekoder-studio/releases/tag/v0.1.0",
+      "targets": [
+        {
+          "platform": "darwin",
+          "arch": "arm64",
+          "feedUrl": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/darwin/arm64/",
+          "artifacts": [
+            {
+              "name": "Zekoder-0.1.0-arm64.dmg",
+              "kind": "installer",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/darwin/arm64/Zekoder-0.1.0-arm64.dmg",
+              "sha256": "3bad591a51c4b2becf12279eefaa30c58d4cad4a6045fbade9fdce0740e8ebcd",
+              "size": 50
+            },
+            {
+              "name": "Zekoder-0.1.0-arm64.zip",
+              "kind": "archive",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/darwin/arm64/Zekoder-0.1.0-arm64.zip",
+              "sha256": "d00e3a97a53c44557525df8350437bbfd1981dbda5c0ea2c8be51a7657eaa07a",
+              "size": 50
+            },
+            {
+              "name": "Zekoder-0.1.0-arm64.zip.blockmap",
+              "kind": "blockmap",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/darwin/arm64/Zekoder-0.1.0-arm64.zip.blockmap",
+              "sha256": "5fc10429d3986c529c4bf904114d3e400f9ea0c7a3d520939efc4dde87544790",
+              "size": 59
+            },
+            {
+              "name": "beta-mac.yml",
+              "kind": "feed",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/darwin/arm64/beta-mac.yml",
+              "sha256": "5fb34c55443ecf4952b02b0f1ab07e3410b2bbc434031486ce92f63f04b327ba",
+              "size": 523
+            },
+            {
+              "name": "latest-mac.yml",
+              "kind": "feed",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/darwin/arm64/latest-mac.yml",
+              "sha256": "5fb34c55443ecf4952b02b0f1ab07e3410b2bbc434031486ce92f63f04b327ba",
+              "size": 523
+            }
+          ]
+        },
+        {
+          "platform": "darwin",
+          "arch": "x64",
+          "feedUrl": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/darwin/x64/",
+          "artifacts": [
+            {
+              "name": "Zekoder-0.1.0-x64.dmg",
+              "kind": "installer",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/darwin/x64/Zekoder-0.1.0-x64.dmg",
+              "sha256": "8e34c1a439ea4e759e2f242a33d05af9a372a4f8273c258bccf95e364e6299cf",
+              "size": 46
+            },
+            {
+              "name": "Zekoder-0.1.0-x64.zip",
+              "kind": "archive",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/darwin/x64/Zekoder-0.1.0-x64.zip",
+              "sha256": "b8d019b111652d20039a897620c4ba6173d9e6a31c0b8dc2a641281002ff89d7",
+              "size": 46
+            },
+            {
+              "name": "Zekoder-0.1.0-x64.zip.blockmap",
+              "kind": "blockmap",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/darwin/x64/Zekoder-0.1.0-x64.zip.blockmap",
+              "sha256": "bb88e64c04a0df19fe57f9aae5a71f4523d3802ff6e7f953947ef5d537701113",
+              "size": 55
+            },
+            {
+              "name": "beta-mac.yml",
+              "kind": "feed",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/darwin/x64/beta-mac.yml",
+              "sha256": "0ab2825a72ec2d4b8c40f9a3dc389c4a509767b2873a36c295bb8c2ad458760f",
+              "size": 519
+            },
+            {
+              "name": "latest-mac.yml",
+              "kind": "feed",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/darwin/x64/latest-mac.yml",
+              "sha256": "0ab2825a72ec2d4b8c40f9a3dc389c4a509767b2873a36c295bb8c2ad458760f",
+              "size": 519
+            }
+          ]
+        },
+        {
+          "platform": "win32",
+          "arch": "x64",
+          "feedUrl": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/win32/x64/",
+          "artifacts": [
+            {
+              "name": "Zekoder-Setup-0.1.0-x64.exe",
+              "kind": "installer",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/win32/x64/Zekoder-Setup-0.1.0-x64.exe",
+              "sha256": "cafb0df1b63e4b446329b7ba3c41efff3fe7600876f45841feeb4a9bba33e6e1",
+              "size": 51
+            },
+            {
+              "name": "Zekoder-Setup-0.1.0-x64.exe.blockmap",
+              "kind": "blockmap",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/win32/x64/Zekoder-Setup-0.1.0-x64.exe.blockmap",
+              "sha256": "53e26a6aa731ccc88dd10d7c67d9207f51aec1ad3eb1db8cdf3dcc089fecec9b",
+              "size": 60
+            },
+            {
+              "name": "Zekoder-Setup-0.1.0-x64.zip",
+              "kind": "archive",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/win32/x64/Zekoder-Setup-0.1.0-x64.zip",
+              "sha256": "576c68cbdec9dcb61339accadf90a562fb2abca1106284efab121991ad88967d",
+              "size": 51
+            },
+            {
+              "name": "beta.yml",
+              "kind": "feed",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/win32/x64/beta.yml",
+              "sha256": "3c88c298a1a0a6c772094f6ebb7d7e18f828ba19d7d6dd8c34ca3715fa4faa61",
+              "size": 502
+            },
+            {
+              "name": "latest.yml",
+              "kind": "feed",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/win32/x64/latest.yml",
+              "sha256": "3c88c298a1a0a6c772094f6ebb7d7e18f828ba19d7d6dd8c34ca3715fa4faa61",
+              "size": 502
+            }
+          ]
+        },
+        {
+          "platform": "win32",
+          "arch": "arm64",
+          "feedUrl": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/win32/arm64/",
+          "artifacts": [
+            {
+              "name": "Zekoder-Setup-0.1.0-arm64.exe",
+              "kind": "installer",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/win32/arm64/Zekoder-Setup-0.1.0-arm64.exe",
+              "sha256": "018702e72a9a9aa879f77adbc1cf60622ea7435f8086e001bcab4c2614d133f8",
+              "size": 55
+            },
+            {
+              "name": "Zekoder-Setup-0.1.0-arm64.exe.blockmap",
+              "kind": "blockmap",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/win32/arm64/Zekoder-Setup-0.1.0-arm64.exe.blockmap",
+              "sha256": "d9c9b88fcc132e7468f411635a53ab3a1281d27d59694602a67ed190f50c1703",
+              "size": 64
+            },
+            {
+              "name": "Zekoder-Setup-0.1.0-arm64.zip",
+              "kind": "archive",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/win32/arm64/Zekoder-Setup-0.1.0-arm64.zip",
+              "sha256": "77b6fb021213fbef2d368b8e03be57b1e0d8205acf9bae72e3e24777a6345941",
+              "size": 55
+            },
+            {
+              "name": "beta.yml",
+              "kind": "feed",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/win32/arm64/beta.yml",
+              "sha256": "9038926f1dab72b42fc74528791afd7fe1d5b6d64adb1271b1ed8e0f697d82f8",
+              "size": 506
+            },
+            {
+              "name": "latest.yml",
+              "kind": "feed",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/win32/arm64/latest.yml",
+              "sha256": "9038926f1dab72b42fc74528791afd7fe1d5b6d64adb1271b1ed8e0f697d82f8",
+              "size": 506
+            }
+          ]
+        },
+        {
+          "platform": "linux",
+          "arch": "x64",
+          "feedUrl": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/linux/x64/",
+          "artifacts": [
+            {
+              "name": "Zekoder-0.1.0-x64.deb",
+              "kind": "installer",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/linux/x64/Zekoder-0.1.0-x64.deb",
+              "sha256": "7c43ae558a14bb11dac71c861b841a5157d7828fdcdd02962ab86492d419d96d",
+              "size": 45
+            },
+            {
+              "name": "Zekoder-0.1.0-x64.rpm",
+              "kind": "installer",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/linux/x64/Zekoder-0.1.0-x64.rpm",
+              "sha256": "b496c73998c365edbfd036b457c0eede134ffad64d854f32022492469e12d2cc",
+              "size": 45
+            },
+            {
+              "name": "Zekoder-0.1.0-x64.tar.gz",
+              "kind": "archive",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/linux/x64/Zekoder-0.1.0-x64.tar.gz",
+              "sha256": "6b8262f012f31996a237c755720ae35b25ed669f78afda171c1125d2c54e1873",
+              "size": 48
+            },
+            {
+              "name": "Zekoder-x64.AppImage",
+              "kind": "installer",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/linux/x64/Zekoder-x64.AppImage",
+              "sha256": "9bcf3ff3cd66d385bead8c942ad4cabf56a241bb2ae87043e54f3faa08311a12",
+              "size": 44
+            },
+            {
+              "name": "beta-linux.yml",
+              "kind": "feed",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/linux/x64/beta-linux.yml",
+              "sha256": "0ec1e4bfa1ebc98e255d528ef53647a18f788287c43d60e8718e67b9362be295",
+              "size": 488
+            },
+            {
+              "name": "latest-linux.yml",
+              "kind": "feed",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/linux/x64/latest-linux.yml",
+              "sha256": "0ec1e4bfa1ebc98e255d528ef53647a18f788287c43d60e8718e67b9362be295",
+              "size": 488
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

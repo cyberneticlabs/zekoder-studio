@@ -3,7 +3,11 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { getGitHubRelease, getReleaseLookupTag } from "./github-release.mjs";
+import {
+  getCanonicalReleaseUrl,
+  getGitHubRelease,
+  getReleaseLookupTag,
+} from "./github-release.mjs";
 import { syncReleaseNotes } from "./sync-release-notes-from-changelog.mjs";
 
 function withTempChangelog(fn, changelogText = "## 0.1.60-beta.1 - 2026-04-20\n\n- Beta notes.\n") {
@@ -49,6 +53,78 @@ test("does not treat GitHub authentication failures as missing releases", () => 
     authError,
   );
   assert.equal(calls.length, 1, "authentication failures must not fall back to draft lookup");
+});
+
+function draftPagesExec(pages) {
+  const requested = [];
+  const execFileSync = (_command, args) => {
+    if (args[1].includes("/releases/tags/")) throw notFoundError();
+    requested.push(args[1]);
+    const page = Number(new URL(`https://x/${args[1]}`).searchParams.get("page"));
+    return JSON.stringify(pages[page - 1] ?? []);
+  };
+  return { execFileSync, requested };
+}
+
+function fillerReleases(count, startId) {
+  return Array.from({ length: count }, (_, index) => ({
+    id: startId + index,
+    draft: false,
+    tag_name: `v0.0.${startId + index}`,
+  }));
+}
+
+test("finds a tagged draft on a later page by exact tag_name regardless of title", () => {
+  const draft = {
+    id: 9,
+    draft: true,
+    name: "Zekoder v0.1.0",
+    tag_name: "v0.1.0",
+    html_url: "https://github.com/cyberneticlabs/zekoder-studio/releases/tag/untagged-abc",
+  };
+  const { execFileSync, requested } = draftPagesExec([fillerReleases(100, 100), [draft]]);
+  const release = getGitHubRelease("cyberneticlabs/zekoder-studio", "v0.1.0", execFileSync);
+  assert.equal(release.id, 9);
+  assert.equal(requested.length, 2, "pagination stops at the first short page");
+});
+
+test("ignores drafts whose tag_name or draft state does not match exactly", () => {
+  const { execFileSync } = draftPagesExec([
+    [
+      { id: 1, draft: true, name: "Paseo v0.1.0", tag_name: "v0.1.0-beta.1" },
+      { id: 2, draft: false, name: "Paseo v0.1.0", tag_name: "v0.1.0" },
+    ],
+  ]);
+  assert.equal(getGitHubRelease("o/r", "v0.1.0", execFileSync), null);
+});
+
+test("rejects ambiguous draft matches unless duplicates are explicitly allowed", () => {
+  const drafts = [
+    { id: 12, draft: true, tag_name: "v0.1.0" },
+    { id: 11, draft: true, tag_name: "v0.1.0" },
+  ];
+  const { execFileSync } = draftPagesExec([drafts]);
+  assert.throws(() => getGitHubRelease("o/r", "v0.1.0", execFileSync), /Ambiguous draft releases/);
+  assert.equal(getGitHubRelease("o/r", "v0.1.0", execFileSync, { allowDuplicates: true }).id, 11);
+});
+
+test("returns the canonical tag URL for draft and published releases", () => {
+  assert.equal(
+    getCanonicalReleaseUrl(
+      { draft: true, html_url: "https://github.com/o/r/releases/tag/untagged-abc" },
+      "o/r",
+      "v0.1.0-beta.1",
+    ),
+    "https://github.com/o/r/releases/tag/v0.1.0-beta.1",
+  );
+  assert.equal(
+    getCanonicalReleaseUrl(
+      { draft: false, html_url: "https://github.com/o/r/releases/tag/v0.1.0" },
+      "o/r",
+      "v0.1.0",
+    ),
+    "https://github.com/o/r/releases/tag/v0.1.0",
+  );
 });
 
 test("updates an existing release body through the release id API", () => {
@@ -107,13 +183,13 @@ test("updates a draft release body without publishing it", () => {
         throw notFoundError();
       }
 
-      if (args[0] === "api" && args[1] === "repos/getpaseo/paseo/releases?per_page=100") {
+      if (args[0] === "api" && args[1] === "repos/getpaseo/paseo/releases?per_page=100&page=1") {
         return JSON.stringify([
           {
             id: 311163621,
             draft: true,
             name: "Paseo v0.1.60-beta.1",
-            tag_name: "untagged-draft",
+            tag_name: "v0.1.60-beta.1",
             html_url: "https://github.com/getpaseo/paseo/releases/tag/untagged-draft",
           },
         ]);
@@ -154,7 +230,7 @@ test("creates missing beta releases as drafts", () => {
         throw notFoundError();
       }
 
-      if (args[0] === "api" && args[1] === "repos/getpaseo/paseo/releases?per_page=100") {
+      if (args[0] === "api" && args[1] === "repos/getpaseo/paseo/releases?per_page=100&page=1") {
         return created
           ? JSON.stringify([
               {

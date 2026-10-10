@@ -1,23 +1,30 @@
-<!-- discovery-stamp: sha=1b6694c1f4fe6164bb0a7b1c3791c265a6f54aad globs=["packages/desktop/**","scripts/*release*","scripts/*manifest*","scripts/*rollout*",".github/workflows/**","plugins/zekoder.lock.json","docs/release.md","plan.md"] updatedAt=2026-10-06T13:29:57Z -->
-
 # Desktop releases
 
-- .github/workflows/desktop-release.yml — current macOS arm64/x64, Linux x64, Windows x64/arm64; manual dispatch/alternate tags; GitHub publication. Finalizer must not publish partial matrix.
-- packages/desktop/electron-builder.yml — Zekoder IDs/artifacts but upstream GitHub publisher. mac DMG+ZIP, Windows NSIS+ZIP, Linux AppImage+deb+rpm+tar.gz.
-- AppImage basename Zekoder-x64.AppImage must remain stable for in-place updater and CLI links; immutable version directory can encode version.
-- mac workflow has signing/notarization inputs; Windows has no signing configuration.
-- scripts/release-version-utils.mjs — broad upstream tag parser; strict desktop validation belongs at desktop entry point.
-- scripts/merge-mac-manifest.mjs, stamp-rollout.mjs, validate-desktop-manifests.mjs — reuse metadata generation, rollout stamp, Darwin floor validation.
-- scripts/github-release.mjs — full GitHub release body lookup; Paseo title fallback must be audited for branded draft notes.
-- scripts/\*test.mjs use node:test; .github/workflows/ci.yml contract job is existing home for new script tests.
-- packages/desktop/src/features/auto-updater.ts — branded update gate false; existing runtime wraps electron-updater.
-- GenericProvider requires YAML (latest/beta, -mac/-linux suffix), not JSON pointer. setFeedURL can select immutable platform/arch snapshot before check; beta requires explicit stable promotion behavior.
-- app-update-service.ts — serialized checks, injected runtime, rollout, download and install revalidation; releaseNotes must be string for UI body.
-- app-update-rollout.ts — preserve stable rollout, beta instant, manual intent bypass.
-- Existing auto-updater.test.ts/app-update-service.test.ts/app-update-rollout.test.ts plus e2e/updates.spec.ts own focused update coverage.
-- .github/workflows/release-notes-sync.yml — unguarded inherited tag/main/manual GitHub notes mutations.
-- deploy-app.yml and android-apk-release.yml — unguarded inherited fork-tag Cloudflare/mobile publishing; desktop-rollout.yml manually edits GitHub updater metadata.
-- docker.yml — tag publication enabled in fork unless explicitly guarded; preserve ordinary CI builds.
-- plugins/zekoder.lock.json — exact plugin ref/commit/version/checksum source; current upstream sync commit 76761c78b second parent a7f7405c04acda76f0d2c4cfd0290621753dd4bc.
-- Cross-project consultation: skills ADR009 records public gs://zekoder-releases, project zekoder-484012, skills-only WIF trust. Desktop prefix recommended desktop/releases/; existing skills releases/ is separate.
-- docs/release.md owns agent preparation/go-ahead, channel semantics and publishing/recovery facts; agent-only desktop tagging procedure must integrate there rather than invoke upstream npm publishing scripts.
+Shipped by feature 003-desktop-gcs-release-pipeline. Process owner: docs/release.md (Zekoder desktop releases section); CLAUDE.md links the agent-only tagging rules.
+
+## Pipeline
+
+- .github/workflows/desktop-release.yml — push tags `v*` only (no dispatch, no desktop-* tags). Jobs: preflight -> release-notes (contents write, reads private draft) -> build (5-row matrix, build+smoke only) -> publish (contents read + id-token write, GCP OIDC) -> finalize (contents write, after catalog lists tag). Per-tag concurrency, never cancelled; CAS on catalog handles cross-tag races.
+- scripts/desktop-release/release-ci.mjs — CI subcommands: preflight, verify-tag, set-version, fetch-notes, verify-packaged, provenance, finalize.
+- scripts/desktop-release/release-data.mjs — strict stable/beta tag grammar, 5-target matrix, catalog validation, semantic channel merge. Keep separate from permissive scripts/release-version-utils.mjs.
+- scripts/desktop-release/prepare-release.mjs — build outputs + GitHub Release body -> immutable per-target YAML snapshots, release-notes.md, catalog candidate. `--published-at` must stay fixed per tag across reruns (CI uses tagger date). `--release-json` for jobs that cannot read drafts.
+- scripts/desktop-release/publish-release.mjs — GCS JSON API, ifGenerationMatch=0 for immutable objects, byte-exact replay allowed, catalog CAS-merged last. Token from GCS_ACCESS_TOKEN.
+- Layout: gs://zekoder-releases/desktop/releases/TAG/PLATFORM/ARCH/ plus desktop/releases/manifest.json (max-age 60). Skills-owned releases/ untouched.
+- packages/desktop/electron-builder.yml — generic provider at the desktop/releases/ root; CI passes --publish never, -c.publish.channel, per-row output dir. AppImage basename Zekoder-x64.AppImage stays stable.
+- Upstream publishers guarded to `github.repository == 'getpaseo/paseo'`: deploy-app, android-apk-release, release-notes-sync, docker publish, desktop-rollout. deploy-website release-event trigger still open (followup 003-guard-deploy-website-release-event).
+- scripts/github-release.mjs — drafts matched by exact tag_name across pages; duplicates error unless --cleanup-duplicates.
+- Tests: scripts/desktop-release/*.test.mjs (node:test), registered in ci.yml "Validate CI contracts" step (that job installs root+protocol deps for js-yaml). scripts/ci-workflow.test.mjs asserts trigger/permissions/guards.
+
+## Runtime
+
+- packages/desktop/src/features/desktop-release-catalog.ts — pure catalog reader: schema, tag/version/channel, URL prefix pinning, OS/arch target selection. 404 = no update.
+- catalog-app-update-runtime.ts — sets electron-updater generic feed to the immutable snapshot before every check; never sets `autoUpdater.channel` (its setter flips allowDowngrade). Rejects YAML/catalog version mismatch via isUserWithinRollout.
+- auto-updater.ts — createBrandedAppUpdateService wires real updater + HTTP transport; branded updates enabled for packaged apps.
+- Tests use injected fakes in src/features/test-utils/ (no module mocks); shared wire fixture src/features/__fixtures__/desktop-release-catalog.wire.json, also validated by release-data.test.mjs.
+- app-update-service.ts / app-update-rollout.ts unchanged contracts: serialized checks, 36h stable rollout, instant beta, quit-time revalidation, allowDowngrade=false.
+
+## External dependencies (not provisioned at ship time)
+
+- Dedicated WIF provider + desktop service account (vars ZEKODER_RELEASE_BUCKET, GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_SERVICE_ACCOUNT).
+- Apple signing/notarization secrets (macOS preflight fails without them); Windows unsigned unless WINDOWS_CSC_LINK set.
+- Matching GitHub draft Release with high-level notes before tagging.

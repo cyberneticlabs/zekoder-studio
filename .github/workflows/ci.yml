@@ -51,8 +51,12 @@ jobs:
         with:
           filters: .github/ci-paths.yml
 
+      # The desktop release tests import js-yaml; nothing else here needs a workspace install.
+      - name: Install release tooling test dependencies
+        run: node scripts/npm-retry.mjs ci --ignore-scripts --include-workspace-root --workspace=@getpaseo/protocol
+
       - name: Validate CI contracts
-        run: node --test scripts/ci-workflow.test.mjs scripts/daemon-launch-contract.test.mjs scripts/sync-fdroid-changelogs.test.mjs scripts/sync-zekoder-plugin.test.mjs scripts/upload-release-assets.test.mjs branding/generate-assets.test.mjs
+        run: node --test scripts/ci-workflow.test.mjs scripts/daemon-launch-contract.test.mjs scripts/sync-fdroid-changelogs.test.mjs scripts/sync-zekoder-plugin.test.mjs scripts/upload-release-assets.test.mjs scripts/release-version-utils.test.mjs scripts/sync-release-notes-from-changelog.test.mjs scripts/desktop-release/release-data.test.mjs scripts/desktop-release/release-ci.test.mjs branding/generate-assets.test.mjs
 
   format:
     name: format

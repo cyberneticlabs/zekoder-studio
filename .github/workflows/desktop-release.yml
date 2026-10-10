@@ -1,128 +1,159 @@
 name: Desktop Release
 
+# Zekoder desktop distribution. A pushed annotated version tag (vX.Y.Z or vX.Y.Z-beta.N) is the
+# only trigger: no branch pushes, manual dispatch, or GitHub Release events start a build. The
+# release process, credentials, recovery and rollback are owned by docs/release.md.
+#
+#   preflight       strict tag, source and provenance checks; detects an already published tag
+#   release-notes   the only job that reads the private GitHub Release draft (contents: write)
+#   build           five matrix targets; build + packaged smoke only, never publishes
+#   publish         the only job with GCP OIDC (id-token: write) and no GitHub write access
+#   finalize        makes the GitHub Release visible after the catalog lists the tag
+#
+# Rerun failed jobs to retry the same tag: the same commit is rebuilt only for failed rows, and
+# the publisher reuses byte-identical objects already stored in GCS.
 on:
   push:
     tags:
       - "v*"
-      - "desktop-v*"
-      - "desktop-macos-v*"
-      - "desktop-linux-v*"
-      - "desktop-windows-v*"
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Existing tag to build (e.g. v0.1.0)"
-        required: true
-        type: string
-      platform:
-        description: "Optional desktop platform to build."
-        required: false
-        default: "all"
-        type: choice
-        options:
-          - all
-          - macos
-          - linux
-          - windows
-      checkout_ref:
-        description: "Optional branch/ref to checkout while using tag for release metadata."
-        required: false
-        default: ""
-        type: string
-      publish:
-        description: "Publish built artifacts to GitHub Releases."
-        required: false
-        default: "true"
-        type: choice
-        options:
-          - "true"
-          - "false"
-      rollout_hours:
-        description: "Linear rollout duration in hours. Use 0 for instant rollout."
-        required: false
-        default: "36"
-        type: string
 
+# One run per tag, never canceled. Different tags publish concurrently on purpose: the catalog
+# update is a generation-guarded compare-and-swap that merges with whatever is already there, so
+# serializing across tags (where GitHub keeps only one pending run) could drop a queued tag.
 concurrency:
   group: desktop-release-${{ github.ref }}
   cancel-in-progress: false
 
-env:
-  SOURCE_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
-  CHECKOUT_REF: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.checkout_ref || github.ref_name) || github.ref_name }}
-  SHOULD_PUBLISH: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.publish != 'false' }}
-  ROLLOUT_HOURS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.rollout_hours || '36' }}
-  DESKTOP_PACKAGE_PATH: "packages/desktop"
+permissions:
+  contents: read
 
 jobs:
-  create-release:
-    if: ${{ (github.event_name == 'push' && !startsWith(github.ref_name, 'desktop-macos-v') && !startsWith(github.ref_name, 'desktop-linux-v') && !startsWith(github.ref_name, 'desktop-windows-v')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.platform == 'all' && github.event.inputs.publish != 'false') }}
+  preflight:
+    if: ${{ github.repository == 'cyberneticlabs/zekoder-studio' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      tag: ${{ steps.preflight.outputs.tag }}
+      version: ${{ steps.preflight.outputs.version }}
+      channel: ${{ steps.preflight.outputs.channel }}
+      builder_channel: ${{ steps.preflight.outputs.builder_channel }}
+      source_sha: ${{ steps.preflight.outputs.source_sha }}
+      published_at: ${{ steps.preflight.outputs.published_at }}
+      already_published: ${{ steps.preflight.outputs.already_published }}
+    steps:
+      # The exact pushed tag commit, with full history for upstream provenance.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Install release tooling dependencies
+        run: node scripts/npm-retry.mjs ci --ignore-scripts --include-workspace-root --workspace=@getpaseo/protocol
+
+      - name: Fetch the pushed tag object
+        run: git fetch --force origin "+refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+
+      - name: Check tag, source and provenance
+        id: preflight
+        env:
+          ZEKODER_RELEASE_BUCKET: ${{ vars.ZEKODER_RELEASE_BUCKET }}
+        run: node scripts/desktop-release/release-ci.mjs preflight --tag "$GITHUB_REF_NAME" --sha "$GITHUB_SHA"
+
+  release-notes:
+    needs: [preflight]
+    if: ${{ needs.preflight.outputs.already_published != 'true' }}
+    # Reading a private draft needs contents: write. This job holds no cloud identity and
+    # builds nothing; it hands validated notes to publish as an artifact.
     permissions:
       contents: write
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          sparse-checkout: scripts
-          ref: ${{ env.CHECKOUT_REF }}
+          ref: ${{ needs.preflight.outputs.source_sha }}
 
-      - name: Resolve release metadata
-        shell: bash
-        run: node scripts/emit-release-env.mjs --source-tag "$SOURCE_TAG" >> "$GITHUB_ENV"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
 
-      - name: Create GitHub release
-        if: env.IS_SMOKE_TAG != 'true'
+      - name: Install release tooling dependencies
+        run: node scripts/npm-retry.mjs ci --ignore-scripts --include-workspace-root --workspace=@getpaseo/protocol
+
+      - name: Capture the matching GitHub Release draft
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if node scripts/github-release.mjs --repo "${{ github.repository }}" --tag "$RELEASE_TAG" > /dev/null 2>&1; then
-            echo "Release $RELEASE_TAG already exists, skipping creation"
-          else
-            prerelease_flag=""
-            if [[ "$IS_PRERELEASE" == "true" ]]; then
-              prerelease_flag="--prerelease"
-            fi
-            gh release create "$RELEASE_TAG" \
-              --repo "${{ github.repository }}" \
-              --title "Paseo $RELEASE_TAG" \
-              --notes "" \
-              --draft \
-              $prerelease_flag || {
-                echo "Release creation raced with another workflow; continuing."
-                node scripts/github-release.mjs --repo "${{ github.repository }}" --tag "$RELEASE_TAG" > /dev/null
-              }
-          fi
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/desktop-release/release-ci.mjs fetch-notes --tag "${{ needs.preflight.outputs.tag }}" --repo "${{ github.repository }}" --output "$RUNNER_TEMP/release-notes"
 
-  publish-macos:
-    needs: [create-release]
-    if: ${{ always() && (needs.create-release.result == 'success' || needs.create-release.result == 'skipped') && ((github.event_name == 'workflow_dispatch' && (github.event.inputs.platform == 'all' || github.event.inputs.platform == 'macos')) || (github.event_name == 'push' && (startsWith(github.ref_name, 'v') || startsWith(github.ref_name, 'desktop-v') || startsWith(github.ref_name, 'desktop-macos-v')))) }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: desktop-release-notes
+          path: ${{ runner.temp }}/release-notes
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 30
+
+  build:
+    needs: [preflight, release-notes]
+    if: ${{ needs.preflight.outputs.already_published != 'true' }}
+    name: build (${{ matrix.target }})
     strategy:
       fail-fast: false
       matrix:
         include:
-          - runner: macos-14
-            electron_arch: arm64
-            node_heap_mb: 4096
-          - runner: macos-15-intel
-            electron_arch: x64
-            node_heap_mb: 8192
+          - target: darwin-arm64
+            platform: darwin
+            runner: macos-14
+            builder_flags: --mac --arm64
+            node_options: --max-old-space-size=4096
+          - target: darwin-x64
+            platform: darwin
+            runner: macos-15-intel
+            builder_flags: --mac --x64
+            # Metro's jest workers OOM on the generated ws-outbound.aot.js validator, the last
+            # module in the web bundle. The Intel runner needs the larger heap.
+            node_options: --max-old-space-size=8192
+          - target: win32-x64
+            platform: win32
+            runner: windows-latest
+            builder_flags: --win --x64
+            node_options: ""
+          # Cross-built on the x64 runner: after-pack.js skips the packaged smoke when the
+          # build arch differs from the host arch, so this row proves packaging and version only.
+          - target: win32-arm64
+            platform: win32
+            runner: windows-latest
+            builder_flags: --win --arm64
+            node_options: ""
+          - target: linux-x64
+            platform: linux
+            runner: ubuntu-22.04
+            builder_flags: --linux --x64
+            node_options: ""
     permissions:
-      contents: write
+      contents: read
       packages: read
     runs-on: ${{ matrix.runner }}
-
+    timeout-minutes: 90
+    env:
+      RELEASE_TAG: ${{ needs.preflight.outputs.tag }}
+      RELEASE_VERSION: ${{ needs.preflight.outputs.version }}
+      SOURCE_SHA: ${{ needs.preflight.outputs.source_sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
+          ref: ${{ needs.preflight.outputs.source_sha }}
           fetch-depth: 0
-          ref: ${{ env.CHECKOUT_REF }}
 
-      - name: Resolve release metadata
-        shell: bash
-        run: node scripts/emit-release-env.mjs --source-tag "$SOURCE_TAG" >> "$GITHUB_ENV"
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
           cache: "npm"
@@ -131,430 +162,291 @@ jobs:
           scope: "@boudra"
 
       - name: Install JS dependencies
+        shell: bash
         run: node scripts/npm-retry.mjs ci
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set desktop package version from tag
+      - name: Verify the tag still resolves to the built commit
         shell: bash
         run: |
-          node <<'NODE'
-          const fs = require('node:fs');
-          const path = require('node:path');
+          git fetch --force origin "+refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
+          node scripts/desktop-release/release-ci.mjs verify-tag --tag "$RELEASE_TAG" --sha "$SOURCE_SHA"
 
-          const version = process.env.DESKTOP_VERSION;
-          if (!version) throw new Error('DESKTOP_VERSION env var is missing');
-
-          const packageJsonPath = path.join(process.env.DESKTOP_PACKAGE_PATH, 'package.json');
-          const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-          packageJson.version = version;
-          fs.writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
-          NODE
-
-      - name: Build desktop release
+      - name: Declare signing policy and require owned identities
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          EP_GH_IGNORE_TIME: true
-          CSC_LINK: ${{ secrets.APPLE_CERTIFICATE }}
-          CSC_KEY_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          PASEO_DESKTOP_SMOKE: "1"
-          PASEO_DESKTOP_SMOKE_ARTIFACT_DIR: ${{ runner.temp }}/desktop-smoke
-          # Metro's jest workers OOM on the generated ws-outbound.aot.js validator,
-          # the last module in the web bundle. Node's default heap is sized from
-          # runner RAM, which is not enough on the Intel runner.
-          NODE_OPTIONS: --max-old-space-size=${{ matrix.node_heap_mb }}
+          PLATFORM: ${{ matrix.platform }}
+          HAS_APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE != '' }}
+          HAS_APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD != '' }}
+          HAS_APPLE_ID: ${{ secrets.APPLE_ID != '' }}
+          HAS_APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD != '' }}
+          HAS_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID != '' }}
+          HAS_WINDOWS_CSC_LINK: ${{ secrets.WINDOWS_CSC_LINK != '' }}
         run: |
           set -euo pipefail
-          build_args=(-- --publish never --mac --${{ matrix.electron_arch }})
-          build_args+=("-c.publish.releaseType=$RELEASE_TYPE")
-          build_args+=("-c.publish.channel=$RELEASE_CHANNEL")
-          npm run build:desktop "${build_args[@]}"
+          case "$PLATFORM" in
+            darwin)
+              # Zekoder macOS builds are always signed and notarized with fork-owned identities.
+              missing=()
+              [[ "$HAS_APPLE_CERTIFICATE" == "true" ]] || missing+=(APPLE_CERTIFICATE)
+              [[ "$HAS_APPLE_CERTIFICATE_PASSWORD" == "true" ]] || missing+=(APPLE_CERTIFICATE_PASSWORD)
+              [[ "$HAS_APPLE_ID" == "true" ]] || missing+=(APPLE_ID)
+              [[ "$HAS_APPLE_PASSWORD" == "true" ]] || missing+=(APPLE_PASSWORD)
+              [[ "$HAS_APPLE_TEAM_ID" == "true" ]] || missing+=(APPLE_TEAM_ID)
+              if (( ${#missing[@]} > 0 )); then
+                echo "::error::macOS signing and notarization need the repository secrets: ${missing[*]}"
+                exit 1
+              fi
+              echo "SIGNING_POLICY=notarized" >> "$GITHUB_ENV"
+              ;;
+            win32)
+              # Windows installers stay unsigned (documented in docs/release.md) unless an owned
+              # code-signing certificate is configured.
+              if [[ "$HAS_WINDOWS_CSC_LINK" == "true" ]]; then
+                echo "SIGNING_POLICY=signed" >> "$GITHUB_ENV"
+              else
+                echo "SIGNING_POLICY=unsigned" >> "$GITHUB_ENV"
+                echo "::notice::Windows build is unsigned by documented policy (no WINDOWS_CSC_LINK)."
+              fi
+              ;;
+            *)
+              echo "SIGNING_POLICY=none" >> "$GITHUB_ENV"
+              ;;
+          esac
 
-      - name: Upload packaged smoke diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: desktop-smoke-macos-${{ matrix.electron_arch }}
-          path: ${{ runner.temp }}/desktop-smoke
-          if-no-files-found: ignore
-          retention-days: 7
-
-      - name: Upload desktop artifacts to release
-        if: env.SHOULD_PUBLISH == 'true' && env.IS_SMOKE_TAG != 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Stamp the tag version into the desktop package
         shell: bash
-        run: |
-          set -euo pipefail
-          release_dir="${DESKTOP_PACKAGE_PATH}/release"
-          release_lookup="$(node scripts/github-release.mjs --repo "${{ github.repository }}" --tag "$RELEASE_TAG")"
-          node scripts/upload-release-assets.mjs "$release_lookup" "$release_dir" "${{ github.repository }}"
-
-      - name: Upload desktop artifacts to workflow
-        if: env.SHOULD_PUBLISH != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: desktop-macos-${{ matrix.electron_arch }}
-          path: ${{ env.DESKTOP_PACKAGE_PATH }}/release/*.dmg
-          retention-days: 7
-
-      - name: Upload manifest artifact
-        if: env.SHOULD_PUBLISH == 'true' && env.IS_SMOKE_TAG != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: mac-manifest-${{ matrix.electron_arch }}
-          path: ${{ env.DESKTOP_PACKAGE_PATH }}/release/${{ env.RELEASE_CHANNEL }}-mac.yml
-          retention-days: 1
-
-  publish-linux:
-    needs: [create-release]
-    if: ${{ always() && (needs.create-release.result == 'success' || needs.create-release.result == 'skipped') && ((github.event_name == 'workflow_dispatch' && (github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux')) || (github.event_name == 'push' && (startsWith(github.ref_name, 'v') || startsWith(github.ref_name, 'desktop-v') || startsWith(github.ref_name, 'desktop-linux-v')))) }}
-    permissions:
-      contents: write
-      packages: read
-    runs-on: ubuntu-22.04
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ env.CHECKOUT_REF }}
-
-      - name: Resolve release metadata
-        shell: bash
-        run: node scripts/emit-release-env.mjs --source-tag "$SOURCE_TAG" >> "$GITHUB_ENV"
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-          cache-dependency-path: package-lock.json
-          registry-url: "https://npm.pkg.github.com"
-          scope: "@boudra"
-
-      - name: Install JS dependencies
-        run: node scripts/npm-retry.mjs ci
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set desktop package version from tag
-        shell: bash
-        run: |
-          node <<'NODE'
-          const fs = require('node:fs');
-          const path = require('node:path');
-
-          const version = process.env.DESKTOP_VERSION;
-          if (!version) throw new Error('DESKTOP_VERSION env var is missing');
-
-          const packageJsonPath = path.join(process.env.DESKTOP_PACKAGE_PATH, 'package.json');
-          const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-          packageJson.version = version;
-          fs.writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
-          NODE
+        run: node scripts/desktop-release/release-ci.mjs set-version --tag "$RELEASE_TAG"
 
       - name: Install Linux smoke display
+        if: matrix.platform == 'linux'
         run: sudo apt-get update && sudo apt-get install -y xvfb xauth rpm
 
-      - name: Build desktop release
+      - name: Build and smoke desktop release
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          EP_GH_IGNORE_TIME: true
           PASEO_DESKTOP_SMOKE: "1"
           PASEO_DESKTOP_SMOKE_ARTIFACT_DIR: ${{ runner.temp }}/desktop-smoke
+          NODE_OPTIONS: ${{ matrix.node_options }}
+          # macOS: fork-owned Developer ID certificate and notarization credentials.
+          # Windows: optional fork-owned certificate; empty means the documented unsigned policy.
+          CSC_LINK: ${{ matrix.platform == 'darwin' && secrets.APPLE_CERTIFICATE || matrix.platform == 'win32' && secrets.WINDOWS_CSC_LINK || '' }}
+          CSC_KEY_PASSWORD: ${{ matrix.platform == 'darwin' && secrets.APPLE_CERTIFICATE_PASSWORD || matrix.platform == 'win32' && secrets.WINDOWS_CSC_KEY_PASSWORD || '' }}
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ matrix.platform == 'linux' && 'false' || '' }}
+          APPLE_ID: ${{ matrix.platform == 'darwin' && secrets.APPLE_ID || '' }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ matrix.platform == 'darwin' && secrets.APPLE_PASSWORD || '' }}
+          APPLE_TEAM_ID: ${{ matrix.platform == 'darwin' && secrets.APPLE_TEAM_ID || '' }}
         run: |
           set -euo pipefail
-          build_args=(-- --publish never --linux --x64)
-          build_args+=("-c.publish.releaseType=$RELEASE_TYPE")
-          build_args+=("-c.publish.channel=$RELEASE_CHANNEL")
-          npm run build:desktop "${build_args[@]}"
+          # Publishing is never done by the builder. Each target writes its own output directory
+          # so Windows x64 and arm64 cannot overwrite each other's latest.yml.
+          npm run build:desktop -- --publish never ${{ matrix.builder_flags }} \
+            "-c.directories.output=release/${{ matrix.target }}" \
+            "-c.publish.channel=${{ needs.preflight.outputs.builder_channel }}"
 
       - name: Upload packaged smoke diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: desktop-smoke-linux-x64
+          name: desktop-smoke-${{ matrix.target }}
           path: ${{ runner.temp }}/desktop-smoke
           if-no-files-found: ignore
+          overwrite: true
           retention-days: 7
 
-      - name: Upload desktop artifacts to release
-        if: env.SHOULD_PUBLISH == 'true' && env.IS_SMOKE_TAG != 'true'
+      - name: Verify the packaged app version
+        shell: bash
+        run: node scripts/desktop-release/release-ci.mjs verify-packaged --tag "$RELEASE_TAG" --dir "packages/desktop/release/${{ matrix.target }}"
+
+      - name: Verify macOS signature and notarization
+        if: matrix.platform == 'darwin'
+        shell: bash
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          app="$(find "packages/desktop/release/${{ matrix.target }}" -maxdepth 2 -name Zekoder.app -print -quit)"
+          test -n "$app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          codesign -dv --verbose=4 "$app" 2>&1 | tee "$RUNNER_TEMP/codesign.txt"
+          grep -Fx "TeamIdentifier=${APPLE_TEAM_ID}" "$RUNNER_TEMP/codesign.txt"
+          xcrun stapler validate "$app"
+          spctl --assess --type execute --verbose=4 "$app"
+
+      - name: Verify Windows signing policy
+        if: matrix.platform == 'win32'
         shell: bash
         run: |
           set -euo pipefail
-          release_dir="${DESKTOP_PACKAGE_PATH}/release"
-          release_lookup="$(node scripts/github-release.mjs --repo "${{ github.repository }}" --tag "$RELEASE_TAG")"
-          node scripts/upload-release-assets.mjs "$release_lookup" "$release_dir" "${{ github.repository }}"
+          installer="$(find "packages/desktop/release/${{ matrix.target }}" -maxdepth 1 -name 'Zekoder-Setup-*.exe' -print -quit)"
+          test -n "$installer"
+          status="$(powershell -NoProfile -Command "(Get-AuthenticodeSignature -LiteralPath '$installer').Status")"
+          echo "Authenticode status: $status (policy: $SIGNING_POLICY)"
+          if [[ "$SIGNING_POLICY" == "signed" && "$status" != "Valid" ]]; then
+            echo "::error::Windows signing is configured but the installer signature is $status"
+            exit 1
+          fi
 
-      - name: Upload desktop artifacts to workflow
-        if: env.SHOULD_PUBLISH != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: desktop-linux
-          path: ${{ env.DESKTOP_PACKAGE_PATH }}/release/*
-          retention-days: 7
-
-      - name: Upload manifest artifact
-        if: env.SHOULD_PUBLISH == 'true' && env.IS_SMOKE_TAG != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-manifest
-          path: ${{ env.DESKTOP_PACKAGE_PATH }}/release/${{ env.RELEASE_CHANNEL }}-linux.yml
-          retention-days: 1
-
-  publish-windows:
-    needs: [create-release]
-    if: ${{ always() && (needs.create-release.result == 'success' || needs.create-release.result == 'skipped') && ((github.event_name == 'workflow_dispatch' && (github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows')) || (github.event_name == 'push' && (startsWith(github.ref_name, 'v') || startsWith(github.ref_name, 'desktop-v') || startsWith(github.ref_name, 'desktop-windows-v')))) }}
-    permissions:
-      contents: write
-      packages: read
-    runs-on: windows-latest
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ env.CHECKOUT_REF }}
-
-      - name: Resolve release metadata
+      - name: Collect build outputs and provenance
         shell: bash
-        run: node scripts/emit-release-env.mjs --source-tag "$SOURCE_TAG" >> "$GITHUB_ENV"
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/upload/${{ matrix.target }}"
+          mkdir -p "$out"
+          find "packages/desktop/release/${{ matrix.target }}" -maxdepth 1 -type f ! -name 'builder-*' -exec cp {} "$out/" \;
+          node scripts/desktop-release/release-ci.mjs provenance --tag "$RELEASE_TAG" --sha "$SOURCE_SHA" --dir "$out" --target "${{ matrix.target }}" --signing "$SIGNING_POLICY" --runner "${{ matrix.runner }}"
+          ls -l "$out"
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: desktop-build-${{ matrix.target }}
+          path: ${{ runner.temp }}/upload/${{ matrix.target }}
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 30
+
+  publish:
+    needs: [preflight, release-notes, build]
+    if: ${{ needs.preflight.outputs.already_published != 'true' }}
+    # Cloud identity only. Nothing here can modify GitHub Releases; finalize does that after the
+    # catalog is visible.
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      RELEASE_TAG: ${{ needs.preflight.outputs.tag }}
+      SOURCE_SHA: ${{ needs.preflight.outputs.source_sha }}
+      PUBLISHED_AT: ${{ needs.preflight.outputs.published_at }}
+      ZEKODER_RELEASE_BUCKET: ${{ vars.ZEKODER_RELEASE_BUCKET }}
+    steps:
+      - name: Require GCP configuration
+        env:
+          WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          SERVICE_ACCOUNT: ${{ vars.GCP_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          missing=()
+          [[ -n "${ZEKODER_RELEASE_BUCKET:-}" ]] || missing+=(ZEKODER_RELEASE_BUCKET)
+          [[ -n "$WORKLOAD_IDENTITY_PROVIDER" ]] || missing+=(GCP_WORKLOAD_IDENTITY_PROVIDER)
+          [[ -n "$SERVICE_ACCOUNT" ]] || missing+=(GCP_SERVICE_ACCOUNT)
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error::Missing repository variables: ${missing[*]}. See docs/release.md."
+            exit 1
+          fi
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ needs.preflight.outputs.source_sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
           cache: "npm"
           cache-dependency-path: package-lock.json
-          registry-url: "https://npm.pkg.github.com"
-          scope: "@boudra"
 
-      - name: Install JS dependencies
-        run: node scripts/npm-retry.mjs ci
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install release tooling dependencies
+        run: node scripts/npm-retry.mjs ci --ignore-scripts --include-workspace-root --workspace=@getpaseo/protocol
 
-      - name: Set desktop package version from tag
-        shell: bash
+      - name: Verify the tag still resolves to the built commit
         run: |
-          node <<'NODE'
-          const fs = require('node:fs');
-          const path = require('node:path');
+          git fetch --force origin "+refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
+          node scripts/desktop-release/release-ci.mjs verify-tag --tag "$RELEASE_TAG" --sha "$SOURCE_SHA"
 
-          const version = process.env.DESKTOP_VERSION;
-          if (!version) throw new Error('DESKTOP_VERSION env var is missing');
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: desktop-build-*
+          path: artifacts
 
-          const packageJsonPath = path.join(process.env.DESKTOP_PACKAGE_PATH, 'package.json');
-          const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-          packageJson.version = version;
-          fs.writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
-          NODE
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: desktop-release-notes
+          path: release-notes
 
-      - name: Build desktop release
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          EP_GH_IGNORE_TIME: true
-          PASEO_DESKTOP_SMOKE: "1"
-          PASEO_DESKTOP_SMOKE_ARTIFACT_DIR: ${{ runner.temp }}/desktop-smoke
+      - name: Prepare the immutable release snapshot
         run: |
           set -euo pipefail
-          build_args=(-- --publish never --win --x64 --arm64)
-          build_args+=("-c.publish.releaseType=$RELEASE_TYPE")
-          build_args+=("-c.publish.channel=$RELEASE_CHANNEL")
-          npm run build:desktop "${build_args[@]}"
+          mkdir build-input
+          for dir in artifacts/desktop-build-*; do
+            mv "$dir" "build-input/${dir#artifacts/desktop-build-}"
+          done
+          ls build-input
+          node scripts/desktop-release/prepare-release.mjs \
+            --tag "$RELEASE_TAG" \
+            --input build-input \
+            --output release-snapshot \
+            --repo "${{ github.repository }}" \
+            --published-at "$PUBLISHED_AT" \
+            --source-commit "$SOURCE_SHA" \
+            --release-json release-notes/release.json
 
-      - name: Upload packaged smoke diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: desktop-smoke-windows-x64
-          path: ${{ runner.temp }}/desktop-smoke
-          if-no-files-found: ignore
-          retention-days: 7
+          name: desktop-release-snapshot
+          path: release-snapshot
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 30
 
-      - name: Upload desktop artifacts to release
-        if: env.SHOULD_PUBLISH == 'true' && env.IS_SMOKE_TAG != 'true'
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@b7593ed2efd1c1617e1b0254da33b86225adb2a5 # v2.1.12
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/devstorage.read_write
+          create_credentials_file: false
+
+      # Uploads missing immutable objects with generation=0, reuses byte-identical ones, reads
+      # every object back, and only then updates desktop/releases/manifest.json by
+      # compare-and-swap. A catalog conflict reloads and merges instead of overwriting.
+      - name: Publish to GCS
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
+          GCS_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
         run: |
           set -euo pipefail
-          release_dir="${DESKTOP_PACKAGE_PATH}/release"
-          release_lookup="$(node scripts/github-release.mjs --repo "${{ github.repository }}" --tag "$RELEASE_TAG")"
-          node scripts/upload-release-assets.mjs "$release_lookup" "$release_dir" "${{ github.repository }}"
+          node scripts/desktop-release/publish-release.mjs \
+            --candidate release-snapshot/catalog-candidate.json \
+            --release-root release-snapshot | tee "$RUNNER_TEMP/publish-result.json"
+          {
+            echo "## Desktop release published"
+            echo ""
+            echo "Tag: \`$RELEASE_TAG\` (commit \`$SOURCE_SHA\`)"
+            echo ""
+            echo '```json'
+            cat "$RUNNER_TEMP/publish-result.json"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload desktop artifacts to workflow
-        if: env.SHOULD_PUBLISH != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: desktop-windows
-          path: ${{ env.DESKTOP_PACKAGE_PATH }}/release/*
-          retention-days: 7
-
-      - name: Upload manifest artifact
-        if: env.SHOULD_PUBLISH == 'true' && env.IS_SMOKE_TAG != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-manifest
-          path: ${{ env.DESKTOP_PACKAGE_PATH }}/release/${{ env.RELEASE_CHANNEL }}.yml
-          retention-days: 1
-
-  finalize-rollout:
-    needs: [publish-macos, publish-linux, publish-windows]
-    if: ${{ always() && (github.event_name != 'workflow_dispatch' || github.event.inputs.publish != 'false') }}
+  finalize:
+    needs: [preflight, publish]
+    # Also runs when preflight found the tag already published, so an interrupted finalization
+    # is retried without rebuilding anything.
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && (needs.publish.result == 'success' || needs.preflight.outputs.already_published == 'true') }}
     permissions:
       contents: write
     runs-on: ubuntu-latest
-    concurrency:
-      group: desktop-rollout-${{ github.event.inputs.tag || github.ref_name }}
-      cancel-in-progress: false
-
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          sparse-checkout: |
-            package.json
-            package-lock.json
-            scripts
-          ref: ${{ env.CHECKOUT_REF }}
+          ref: ${{ needs.preflight.outputs.source_sha }}
 
-      - name: Resolve release tag
-        shell: bash
-        run: node scripts/emit-release-env.mjs --source-tag "$SOURCE_TAG" >> "$GITHUB_ENV"
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
           cache: "npm"
           cache-dependency-path: package-lock.json
-          registry-url: "https://npm.pkg.github.com"
-          scope: "@boudra"
 
-      - name: Install JS dependencies
-        run: node scripts/npm-retry.mjs ci
+      - name: Install release tooling dependencies
+        run: node scripts/npm-retry.mjs ci --ignore-scripts --include-workspace-root --workspace=@getpaseo/protocol
+
+      - name: Publish the GitHub Release
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download mac manifest artifacts
-        if: env.IS_SMOKE_TAG != 'true' && needs.publish-macos.result == 'success'
-        uses: actions/download-artifact@v4
-        with:
-          pattern: mac-manifest-*
-          path: release-manifests
-
-      - name: Download Linux manifest artifact
-        if: env.IS_SMOKE_TAG != 'true' && needs.publish-linux.result == 'success'
-        uses: actions/download-artifact@v4
-        with:
-          name: linux-manifest
-          path: release-manifests/linux-manifest
-
-      - name: Download Windows manifest artifact
-        if: env.IS_SMOKE_TAG != 'true' && needs.publish-windows.result == 'success'
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-manifest
-          path: release-manifests/windows-manifest
-
-      - name: Assemble manifests and publish release
-        if: env.IS_SMOKE_TAG != 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd release-manifests
-          manifests_dir="$PWD/final"
-          mkdir -p "$manifests_dir"
-
-          expected_manifests=(
-            "${RELEASE_CHANNEL}-mac.yml"
-            "${RELEASE_CHANNEL}-linux.yml"
-            "${RELEASE_CHANNEL}.yml"
-          )
-          release_lookup="$(node ../scripts/github-release.mjs --repo "${{ github.repository }}" --tag "$RELEASE_TAG" --cleanup-duplicates)"
-          existing_assets="$(gh release view "$release_lookup" --repo "${{ github.repository }}" --json assets --jq '.assets[].name')"
-          for manifest_name in "${expected_manifests[@]}"; do
-            if grep -Fxq "$manifest_name" <<< "$existing_assets"; then
-              case "$manifest_name" in
-                "${RELEASE_CHANNEL}-mac.yml") platform_result="${{ needs.publish-macos.result }}" ;;
-                "${RELEASE_CHANNEL}-linux.yml") platform_result="${{ needs.publish-linux.result }}" ;;
-                "${RELEASE_CHANNEL}.yml") platform_result="${{ needs.publish-windows.result }}" ;;
-              esac
-              if [[ "$platform_result" =~ ^(success|skipped)$ ]]; then
-                gh release download "$release_lookup" \
-                  --repo "${{ github.repository }}" \
-                  --pattern "$manifest_name" \
-                  --dir "$manifests_dir"
-              else
-                gh release delete-asset "$release_lookup" "$manifest_name" \
-                  --repo "${{ github.repository }}" \
-                  --yes
-              fi
-            fi
-          done
-
-          if [[ "${{ needs.publish-macos.result }}" == "success" ]]; then
-            manifest_name="${RELEASE_CHANNEL}-mac.yml"
-            node ../scripts/merge-mac-manifest.mjs \
-              "mac-manifest-arm64/${manifest_name}" \
-              "mac-manifest-x64/${manifest_name}" \
-              "$manifests_dir/${manifest_name}"
-          fi
-
-          if [[ "${{ needs.publish-linux.result }}" == "success" ]]; then
-            cp "linux-manifest/${RELEASE_CHANNEL}-linux.yml" "$manifests_dir/"
-          fi
-
-          if [[ "${{ needs.publish-windows.result }}" == "success" ]]; then
-            cp "windows-manifest/${RELEASE_CHANNEL}.yml" "$manifests_dir/"
-          fi
-
-          shopt -s nullglob
-          files=( "$manifests_dir"/*.yml )
-          if (( ${#files[@]} == 0 )); then
-            echo "::error::No manifest artifacts were available to publish"
-            exit 1
-          fi
-          timestamp="$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")"
-          node ../scripts/stamp-rollout.mjs --release-date "$timestamp" --rollout-hours "$ROLLOUT_HOURS" "${files[@]}"
-          node ../scripts/validate-desktop-manifests.mjs \
-            --release-date "$timestamp" \
-            --rollout-hours "$ROLLOUT_HOURS" \
-            "${files[@]}"
-          gh release upload "$release_lookup" "${files[@]}" --clobber --repo "${{ github.repository }}"
-
-          failed_builds=()
-          [[ "${{ needs.publish-macos.result }}" =~ ^(success|skipped)$ ]] || failed_builds+=(macOS)
-          [[ "${{ needs.publish-linux.result }}" =~ ^(success|skipped)$ ]] || failed_builds+=(Linux)
-          [[ "${{ needs.publish-windows.result }}" =~ ^(success|skipped)$ ]] || failed_builds+=(Windows)
-          if (( ${#failed_builds[@]} > 0 )); then
-            echo "::error::Desktop builds did not complete for ${failed_builds[*]}; the release remains a draft"
-            exit 1
-          fi
-
-          missing_manifests=()
-          for manifest_name in "${expected_manifests[@]}"; do
-            [[ -f "$manifests_dir/$manifest_name" ]] || missing_manifests+=("$manifest_name")
-          done
-          if (( ${#missing_manifests[@]} > 0 )); then
-            echo "::error::Missing updater manifests: ${missing_manifests[*]}; the release remains a draft"
-            exit 1
-          fi
-
-          publish_args=(release edit "$release_lookup" --tag "$RELEASE_TAG" --draft=false --repo "${{ github.repository }}")
-          if [[ "$IS_PRERELEASE" == "true" ]]; then
-            publish_args+=(--prerelease)
-          fi
-          gh "${publish_args[@]}"
+          GH_TOKEN: ${{ github.token }}
+          ZEKODER_RELEASE_BUCKET: ${{ vars.ZEKODER_RELEASE_BUCKET }}
+        run: node scripts/desktop-release/release-ci.mjs finalize --tag "${{ needs.preflight.outputs.tag }}" --sha "${{ needs.preflight.outputs.source_sha }}" --repo "${{ github.repository }}"

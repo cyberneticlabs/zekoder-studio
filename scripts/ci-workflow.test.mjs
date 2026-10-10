@@ -303,3 +303,95 @@ test("desktop packaging smokes main pushes and only the pull requests that touch
     assert.match(source, new RegExp(`${action}@[0-9a-f]{40} # v\\d+\\.\\d+\\.\\d+`));
   }
 });
+
+const desktopReleasePath = new URL(".github/workflows/desktop-release.yml", repoRoot);
+
+function withoutComments(source) {
+  return source
+    .split("\n")
+    .filter((line) => !/^\s*#/.test(line))
+    .join("\n");
+}
+
+// Only the entries under `jobs:`, so trigger keys such as `push:` are not mistaken for jobs.
+function jobsOf(source) {
+  return jobBlocks(source.slice(source.indexOf("\njobs:")));
+}
+
+function jobPermissions(jobSource) {
+  const match = /^ {4}permissions:\n((?: {6}.+\n)+)/m.exec(`${jobSource}\n`);
+  return match
+    ? match[1]
+        .trim()
+        .split("\n")
+        .map((line) => line.trim())
+    : [];
+}
+
+test("desktop release starts only from a pushed version tag", () => {
+  const source = withoutComments(readFileSync(desktopReleasePath, "utf8"));
+  const trigger = source.split("\njobs:", 1)[0];
+
+  assert.match(trigger, /^on:\n {2}push:\n {4}tags:\n {6}- "v\*"\n/m);
+  assert.doesNotMatch(trigger, /workflow_dispatch|pull_request|release:|schedule|branches/);
+  assert.doesNotMatch(source, /desktop-(?:macos-|linux-|windows-)?v|checkout_ref|inputs\./);
+  assert.doesNotMatch(source, /npm version|npm publish|release:(?:patch|minor|promote|beta)/);
+  assert.doesNotMatch(source, /gh release create|--clobber/);
+  assert.match(source, /--publish never/);
+  assert.match(source, /cancel-in-progress: false/);
+});
+
+test("desktop release jobs hold the narrowest permissions", () => {
+  const jobs = jobsOf(readFileSync(desktopReleasePath, "utf8"));
+  const names = [...jobs.keys()];
+  assert.deepEqual(names, ["preflight", "release-notes", "build", "publish", "finalize"]);
+
+  const permissions = new Map(
+    names.map((name) => [name, jobPermissions(jobs.get(name).join("\n"))]),
+  );
+  // Only the publication job can mint cloud credentials, and it cannot write to GitHub.
+  assert.deepEqual(permissions.get("publish"), ["contents: read", "id-token: write"]);
+  for (const [name, granted] of permissions) {
+    if (name !== "publish") assert.ok(!granted.includes("id-token: write"), name);
+  }
+  // Only the notes and finalization jobs can touch GitHub Releases.
+  assert.deepEqual(permissions.get("release-notes"), ["contents: write"]);
+  assert.deepEqual(permissions.get("finalize"), ["contents: write"]);
+  assert.ok(!permissions.get("build").includes("contents: write"));
+  assert.ok(!permissions.get("preflight").includes("contents: write"));
+  assert.match(readFileSync(desktopReleasePath, "utf8"), /^permissions:\n {2}contents: read$/m);
+});
+
+test("desktop release publishes only after every target and finalizes after publication", () => {
+  const source = readFileSync(desktopReleasePath, "utf8");
+  const jobs = jobsOf(source);
+  const build = jobs.get("build").join("\n");
+
+  for (const target of ["darwin-arm64", "darwin-x64", "win32-x64", "win32-arm64", "linux-x64"]) {
+    assert.match(build, new RegExp(`- target: ${target}\\n`));
+  }
+  assert.match(build, /fail-fast: false/);
+  assert.match(jobs.get("publish").join("\n"), /needs: \[preflight, release-notes, build\]/);
+  assert.match(jobs.get("finalize").join("\n"), /needs: \[preflight, publish\]/);
+  assert.match(jobs.get("build").join("\n"), /needs: \[preflight, release-notes\]/);
+  assert.doesNotMatch(jobs.get("build").join("\n"), /google-github-actions|publish-release/);
+  assert.match(jobs.get("publish").join("\n"), /google-github-actions\/auth@[0-9a-f]{40}/);
+  assert.match(jobs.get("publish").join("\n"), /verify-tag/);
+});
+
+test("inherited upstream publishing jobs only run in the upstream repository", () => {
+  const guard = "github.repository == 'getpaseo/paseo'";
+  const expectations = [
+    ["desktop-rollout.yml", ["stamp"]],
+    ["deploy-app.yml", ["deploy"]],
+    ["android-apk-release.yml", ["ensure-release", "publish-android-apk"]],
+    ["release-notes-sync.yml", ["sync-release-notes"]],
+    ["docker.yml", ["publish"]],
+  ];
+  for (const [file, guardedJobs] of expectations) {
+    const jobs = jobsOf(readFileSync(new URL(`.github/workflows/${file}`, repoRoot), "utf8"));
+    for (const job of guardedJobs) {
+      assert.ok(jobs.get(job)?.join("\n").includes(guard), `${file}:${job} must be upstream-only`);
+    }
+  }
+});

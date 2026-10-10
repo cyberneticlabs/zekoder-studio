@@ -10,11 +10,14 @@ import {
   type AppUpdateCheckResult,
   type AppUpdateInstallRequest,
   type AppUpdateInstallResult,
-  type AppUpdateRuntime,
-  type AppUpdateRuntimeConfiguration,
-  type RuntimeUpdateCheckResult,
-  type RuntimeUpdateInfo,
+  type AppUpdateService,
 } from "./app-update-service.js";
+import { CatalogAppUpdateRuntime, type ElectronUpdaterPort } from "./catalog-app-update-runtime.js";
+import {
+  createHttpCatalogTransport,
+  resolveDesktopFeed,
+  type DesktopCatalogTransport,
+} from "./desktop-release-catalog.js";
 import {
   bucketFromStagingUserId,
   rolloutManifestSchema,
@@ -34,8 +37,6 @@ export {
 };
 
 let cachedStagingUserIdPromise: Promise<string> | null = null;
-
-const UPDATE_CHANNEL_NOT_PUBLISHED_CODE = "ERR_UPDATER_CHANNEL_FILE_NOT_FOUND";
 
 interface AppUpdateLogSink {
   info(message: string, details: object): void;
@@ -78,15 +79,6 @@ export function createAppUpdateLifecycleLogger(logger: AppUpdateLogSink) {
 }
 
 const updateLifecycleLog = createAppUpdateLifecycleLogger(log);
-
-function isUpdateChannelNotPublished(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === UPDATE_CHANNEL_NOT_PUBLISHED_CODE
-  );
-}
 
 export function shouldAdmitToRollout(args: {
   channel: AppReleaseChannel;
@@ -140,106 +132,69 @@ export function shouldInstallAppUpdateOnQuit(input: {
   return !(input.platform === "linux" && input.isAppImage);
 }
 
-class ElectronAppUpdateRuntime implements AppUpdateRuntime {
-  private configured = false;
-
-  configure(input: AppUpdateRuntimeConfiguration): void {
-    autoUpdater.autoDownload = true;
-    autoUpdater.autoRunAppAfterInstall = true;
-    // Paseo revalidates the current manifest before explicitly installing on quit.
-    // Electron's built-in handler would install an older download without checking
-    // whether a newer release has superseded it.
-    autoUpdater.autoInstallOnAppQuit = false;
-    autoUpdater.allowPrerelease = input.releaseChannel === "beta";
-    autoUpdater.channel = input.releaseChannel === "beta" ? "beta" : "latest";
-    autoUpdater.allowDowngrade = false;
-    autoUpdater.isUserWithinRollout = async (info) => {
-      try {
-        return await input.shouldAdmitUpdate(info as RuntimeUpdateInfo);
-      } catch {
-        return true;
-      }
-    };
-
-    if (this.configured) return;
-    this.configured = true;
-
-    // electron-updater logs every emitted error before consumers can classify it.
-    // Paseo reports genuine check, runtime, and install failures through the
-    // callbacks below, so leave internal error logging disabled to avoid both
-    // duplicate logs and expected missing-channel noise.
-    const updaterLogger = autoUpdater.logger;
-    autoUpdater.logger = {
-      debug: updaterLogger?.debug ? (message) => updaterLogger.debug?.(message) : undefined,
-      error: () => undefined,
-      info: (message) => updaterLogger?.info(message),
-      warn: (message) => updaterLogger?.warn(message),
-    };
-
-    autoUpdater.on("update-available", (info) => {
-      const updateInfo = info as RuntimeUpdateInfo;
-      updateLifecycleLog.updateAvailable(updateInfo.version);
-      input.onUpdateAvailable(updateInfo);
-    });
-    autoUpdater.on("update-downloaded", (info) => {
-      const updateInfo = info as RuntimeUpdateInfo;
-      updateLifecycleLog.updateDownloaded(updateInfo.version);
-      input.onUpdateDownloaded(updateInfo);
-    });
-    autoUpdater.on("error", (error) => {
-      if (isUpdateChannelNotPublished(error)) return;
-      input.onError(error);
-    });
-  }
-
-  async checkForUpdates(): Promise<RuntimeUpdateCheckResult | null> {
-    try {
-      const result = await autoUpdater.checkForUpdates();
-      if (!result) return null;
-      return {
-        isUpdateAvailable: result.isUpdateAvailable,
-        updateInfo: result.updateInfo as RuntimeUpdateInfo,
-      };
-    } catch (error) {
-      if (isUpdateChannelNotPublished(error)) return null;
-      throw error;
-    }
-  }
-
-  downloadUpdate(targetVersion: string): Promise<unknown> {
-    updateLifecycleLog.downloadRequested(targetVersion);
-    return autoUpdater.downloadUpdate();
-  }
-
-  quitAndInstall({ targetVersion, isSilent, isForceRunAfter }: AppUpdateInstallRequest): void {
-    autoUpdater.autoRunAppAfterInstall = isForceRunAfter;
-    updateLifecycleLog.quitAndInstallRequested({
-      targetVersion,
-      isSilent,
-      isForceRunAfter,
-    });
-    autoUpdater.quitAndInstall(isSilent, isForceRunAfter);
-  }
+export interface BrandedAppUpdateServiceDeps {
+  /** Resolved on first use; unpackaged apps never instantiate electron-updater. */
+  updater: () => ElectronUpdaterPort;
+  transport: DesktopCatalogTransport;
+  platform: string;
+  arch: string;
+  isPackaged(): boolean;
+  now(): number;
+  bucket(): Promise<number>;
+  reportCheckError?(error: unknown): void;
+  reportRuntimeError?(error: unknown): void;
+  reportInstallError?(message: string): void;
 }
 
-// Zekoder: off until a fork-owned update feed exists (never install upstream builds)
-const BRANDED_AUTO_UPDATE_ENABLED = false;
+/**
+ * Update service for the Zekoder fork: every check reads the fork-owned release catalog and
+ * pins electron-updater to the selected immutable snapshot, so upstream feeds are never queried.
+ */
+export function createBrandedAppUpdateService(deps: BrandedAppUpdateServiceDeps): AppUpdateService {
+  return createAppUpdateService({
+    runtime: new CatalogAppUpdateRuntime({
+      updater: deps.updater,
+      resolveFeed: (releaseChannel) =>
+        resolveDesktopFeed({
+          transport: deps.transport,
+          releaseChannel,
+          platform: deps.platform,
+          arch: deps.arch,
+        }),
+      log: updateLifecycleLog,
+    }),
+    isPackaged: deps.isPackaged,
+    now: deps.now,
+    bucket: deps.bucket,
+    reportCheckError: deps.reportCheckError,
+    reportRuntimeError: deps.reportRuntimeError,
+    reportInstallError: deps.reportInstallError,
+  });
+}
 
-const appUpdateService = createAppUpdateService({
-  runtime: new ElectronAppUpdateRuntime(),
-  isPackaged: () => BRANDED_AUTO_UPDATE_ENABLED && app.isPackaged,
-  now: () => Date.now(),
-  bucket: async () => bucketFromStagingUserId(await getStagingUserId()),
-  reportCheckError: (error) => {
-    console.error("[auto-updater] Failed to check for updates:", error);
-  },
-  reportRuntimeError: (error) => {
-    console.error("[auto-updater] Updater event failed:", error);
-  },
-  reportInstallError: (message) => {
-    console.error("[auto-updater] Failed to download/install update:", message);
-  },
-});
+let appUpdateService: AppUpdateService | null = null;
+
+function getAppUpdateService(): AppUpdateService {
+  appUpdateService ??= createBrandedAppUpdateService({
+    updater: () => autoUpdater as unknown as ElectronUpdaterPort,
+    transport: createHttpCatalogTransport(),
+    platform: process.platform,
+    arch: process.arch,
+    isPackaged: () => app.isPackaged,
+    now: () => Date.now(),
+    bucket: async () => bucketFromStagingUserId(await getStagingUserId()),
+    reportCheckError: (error) => {
+      console.error("[auto-updater] Failed to check for updates:", error);
+    },
+    reportRuntimeError: (error) => {
+      console.error("[auto-updater] Updater event failed:", error);
+    },
+    reportInstallError: (message) => {
+      console.error("[auto-updater] Failed to download/install update:", message);
+    },
+  });
+  return appUpdateService;
+}
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -255,7 +210,7 @@ export async function checkForAppUpdate({
   intent: AppUpdateCheckIntent;
 }): Promise<AppUpdateCheckResult> {
   updateLifecycleLog.checkStarted({ currentVersion, releaseChannel, intent });
-  const result = await appUpdateService.checkForAppUpdate({
+  const result = await getAppUpdateService().checkForAppUpdate({
     currentVersion,
     releaseChannel,
     intent,
@@ -282,7 +237,7 @@ export async function downloadAndInstallUpdate(
   },
   onBeforeQuit?: () => Promise<void>,
 ): Promise<AppUpdateInstallResult> {
-  return appUpdateService.downloadAndInstallUpdate(
+  return getAppUpdateService().downloadAndInstallUpdate(
     { currentVersion, releaseChannel },
     onBeforeQuit,
   );
@@ -306,5 +261,5 @@ export async function installAppUpdateOnQuit({
     return false;
   }
 
-  return appUpdateService.installUpdateOnQuit({ currentVersion, releaseChannel, signal });
+  return getAppUpdateService().installUpdateOnQuit({ currentVersion, releaseChannel, signal });
 }

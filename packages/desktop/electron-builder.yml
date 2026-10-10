@@ -35,10 +35,14 @@ extraResources:
     to: app-dist
   - from: assets/editor-targets
     to: editor-target-icons
+# Bootstrap location of the Zekoder desktop release area. Builds never publish from here
+# (release CI runs electron-builder with --publish never and the release pipeline uploads
+# immutable per-target snapshots); the packaged app-update.yml records this root so clients can
+# locate the catalog, never a mutable channel directory or the upstream GitHub repository.
+# CI passes -c.publish.channel=latest|beta to name the feed files.
 publish:
-  provider: github
-  owner: getpaseo
-  repo: paseo
+  provider: generic
+  url: https://storage.googleapis.com/zekoder-releases/desktop/releases/
 mac:
   artifactName: "Zekoder-${version}-${arch}.${ext}"
   minimumSystemVersion: "13.0.0"

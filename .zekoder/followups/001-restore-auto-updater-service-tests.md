@@ -2,10 +2,11 @@
 id: 001-restore-auto-updater-service-tests
 type: followup
 title: Restore module-level auto-updater tests once branded auto-update is enabled
-status: planned
+status: merged
 createdAt: 2026-10-06
 openedAt: 2026-10-06T11:15:54.289Z
-updatedAt: 2026-10-06T13:33:17.654Z
+updatedAt: 2026-10-10T16:37:40.704Z
+completedAt: 2026-10-10T16:37:40.704Z
 origin: zekoder-coding-agent
 filedFromTask: 002-zekoder-rebrand-03-brand-surfaces
 branch: followup-001-restore-auto-updater-service-tests
@@ -16,7 +17,10 @@ relatedFeatures:
 relatedBugs: []
 relatedFollowups: []
 resolvedBy: 003-desktop-gcs-release-pipeline
-statusHistory: []
+statusHistory:
+  - from: planned
+    to: merged
+    at: 2026-10-10T16:37:40.704Z
 ---
 
 ## Context

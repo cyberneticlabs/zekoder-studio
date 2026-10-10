@@ -21,6 +21,8 @@ env:
 
 jobs:
   ensure-release:
+    # Upstream-only: Zekoder fork releases ship desktop builds through desktop-release.yml.
+    if: ${{ github.repository == 'getpaseo/paseo' }}
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -63,6 +65,8 @@ jobs:
           fi
 
   publish-android-apk:
+    # Upstream-only: Zekoder fork releases ship desktop builds through desktop-release.yml.
+    if: ${{ github.repository == 'getpaseo/paseo' }}
     needs: [ensure-release]
     permissions:
       contents: write

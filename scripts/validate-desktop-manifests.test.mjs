@@ -68,3 +68,29 @@ test("rejects invalid rollout metadata", () => {
     },
   );
 });
+
+test("checks the exact expected version and release notes when provided", () => {
+  withManifest(
+    `version: 0.1.0\nreleaseDate: '${releaseDate}'\nrolloutHours: 36\nminimumSystemVersion: 22.0.0\nreleaseNotes: |\n  New things.\n`,
+    (manifestPath) => {
+      validateDesktopManifests(
+        { releaseDate, rolloutHours: 36, version: "0.1.0", releaseNotes: "New things.\n" },
+        [manifestPath],
+      );
+      assert.throws(
+        () =>
+          validateDesktopManifests({ releaseDate, rolloutHours: 36, version: "0.1.1" }, [
+            manifestPath,
+          ]),
+        /version=0\.1\.0, expected 0\.1\.1/,
+      );
+      assert.throws(
+        () =>
+          validateDesktopManifests({ releaseDate, rolloutHours: 36, releaseNotes: "Other notes" }, [
+            manifestPath,
+          ]),
+        /releaseNotes differ/,
+      );
+    },
+  );
+});

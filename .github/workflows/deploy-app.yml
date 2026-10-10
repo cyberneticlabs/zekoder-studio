@@ -11,6 +11,8 @@ on:
 
 jobs:
   deploy:
+    # Upstream-only: Zekoder fork releases ship desktop builds through desktop-release.yml.
+    if: ${{ github.repository == 'getpaseo/paseo' }}
     runs-on: ubuntu-latest
 
     steps:

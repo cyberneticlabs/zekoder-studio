@@ -60,7 +60,7 @@ At the start of non-trivial work, list `docs/` and skim anything relevant to the
 | [docs/browser-capture-harness.md](docs/browser-capture-harness.md)   | Real-Electron browser screenshot harness and compositor-surface gotcha                                                         |
 | [docs/android.md](docs/android.md)                                   | App variants, local/cloud builds, EAS workflows, version codes, F-Droid source builds and store metadata                       |
 | [docs/docker.md](docs/docker.md)                                     | Running the daemon and bundled web UI in Docker, volumes, agent images, security                                               |
-| [docs/release.md](docs/release.md)                                   | Release playbook, draft releases, completion checklist                                                                         |
+| [docs/release.md](docs/release.md)                                   | Zekoder desktop release process and agent tagging rules, plus the inherited upstream release playbook                          |
 | [docs/terminal-activity.md](docs/terminal-activity.md)               | Terminal activity indicators — source-agnostic tracker, agent hook reporting, adding a new hook provider                       |
 | [SECURITY.md](SECURITY.md)                                           | Relay threat model, E2E encryption, DNS rebinding, agent auth                                                                  |
 | [public-docs/hub/security.md](public-docs/hub/security.md)           | Public Hub guide — trust boundaries, untrusted triggers, provider controls, and output authority                               |
@@ -113,6 +113,15 @@ When the user says "this goes to next", create or
 retarget the PR to `next` and preserve that destination through delivery. Follow
 [release branch discipline](docs/release.md#release-branch-discipline) for creating
 and updating `next`, integrating it after a release, and releasing a hotfix from a tag.
+
+## Zekoder desktop releases
+
+Only agents create and push release tags, and only after the user's explicit go-ahead. Follow
+[Zekoder desktop releases](docs/release.md#zekoder-desktop-releases): reviewed source and green CI,
+a draft GitHub Release with high-level notes (new features, feature updates, broad bug categories,
+never commit lists), then an annotated `vX.Y.Z` or `vX.Y.Z-beta.N` tag. Never run `npm run release:*`
+or `version:all:*`, force or move a tag, or dispatch a release workflow. A failed tag run reruns the
+same source.
 
 ## Critical rules
 

@@ -21,6 +21,9 @@ env:
 
 jobs:
   stamp:
+    # Upstream-only: Zekoder fork releases ship desktop builds through desktop-release.yml.
+    # Fork desktop snapshots are immutable and their rollout is fixed at publication.
+    if: ${{ github.repository == 'getpaseo/paseo' }}
     permissions:
       contents: write
     runs-on: ubuntu-latest
