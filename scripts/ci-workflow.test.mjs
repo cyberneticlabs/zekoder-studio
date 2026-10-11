@@ -384,6 +384,7 @@ test("inherited upstream publishing jobs only run in the upstream repository", (
   const expectations = [
     ["desktop-rollout.yml", ["stamp"]],
     ["deploy-app.yml", ["deploy"]],
+    ["deploy-website.yml", ["deploy"]],
     ["android-apk-release.yml", ["ensure-release", "publish-android-apk"]],
     ["release-notes-sync.yml", ["sync-release-notes"]],
     ["docker.yml", ["publish"]],
