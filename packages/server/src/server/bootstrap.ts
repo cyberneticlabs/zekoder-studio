@@ -233,7 +233,7 @@ import {
 } from "./hub/relationship-remote.js";
 import { DaemonExecutions } from "./hub/daemon-executions.js";
 import { PluginService } from "./plugins/index.js";
-import { BuiltinPluginLoader } from "./plugins/builtin/index.js";
+import { BuiltinPluginLoader, resolveEnabledBuiltinPlugins } from "./plugins/builtin/index.js";
 import { ManagedPluginSources } from "./plugins/managed-source.js";
 
 const MCP_DEBUG_BATCH_LIMIT = 10;
@@ -493,7 +493,10 @@ export interface PaseoDaemonDependencies {
 }
 
 function resolveBuiltinPluginLoader(dependencies: PaseoDaemonDependencies): BuiltinPluginLoader {
-  return dependencies.builtinPlugins ?? new BuiltinPluginLoader();
+  return (
+    dependencies.builtinPlugins ??
+    new BuiltinPluginLoader(undefined, resolveEnabledBuiltinPlugins())
+  );
 }
 
 function createBootstrapManagedProcessRegistry(

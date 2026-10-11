@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { BRAND } from "@getpaseo/protocol/branding";
 import { buildCreateAgentPreferences, buildSeededHost, TEST_HOST_LABEL } from "./daemon-registry";
 import { getServerId } from "./server-id";
 import { expectAppRoute } from "./route-assertions";
@@ -322,7 +323,7 @@ export async function expectHostConnectionsCard(page: Page, port: string): Promi
 export async function expectHostInjectMcpCard(page: Page): Promise<void> {
   const card = page.getByTestId("host-page-inject-mcp-card");
   await expect(card).toBeVisible();
-  await expect(card.getByRole("switch", { name: "Inject Paseo tools" })).toBeVisible();
+  await expect(card.getByRole("switch", { name: `Inject ${BRAND.name} tools` })).toBeVisible();
 }
 
 export async function openHostSection(
@@ -452,4 +453,17 @@ export async function removeHostFromHostPage(page: Page, serverId: string): Prom
 export async function expectHostOnlineWithoutError(page: Page): Promise<void> {
   await expect(page.getByTestId("host-page-identity")).toContainText("Online");
   await expect(page.getByTestId("host-connection-error")).toHaveCount(0);
+}
+
+// The brand website may not resolve from the test host; fulfil it so navigations to it commit
+// their destination URL instead of landing on a browser error page.
+export async function stubBrandWebsite(page: Page): Promise<void> {
+  const brandOrigin = new URL(BRAND.websiteUrl).origin;
+  await page.context().route(`${brandOrigin}/**`, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: "<!doctype html><title>stub</title>",
+    }),
+  );
 }

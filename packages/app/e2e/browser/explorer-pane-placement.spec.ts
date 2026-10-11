@@ -4,6 +4,7 @@
 //    never swallow entity tabs or lose the user's focus, and
 // 2) splitting a tab out of a pane leaves a New tab behind, and the app must stay
 //    interactive in the [agent | New | explorer] state.
+import { BRAND } from "@getpaseo/protocol/branding";
 import { expect, type Locator, type Page } from "@playwright/test";
 import { test } from "../support/fixtures";
 import { gotoWorkspace } from "../support/helpers/launcher";
@@ -252,7 +253,7 @@ async function expectNewLauncher(page: Page): Promise<void> {
   ).toBeVisible();
   await expect(draftTabChip(page)).toHaveCount(0);
   await expect(page.getByRole("textbox", { name: "Message agent..." })).toHaveCount(0);
-  await expect(page.getByText("Paseo ran into a problem.", { exact: true })).toHaveCount(0);
+  await expect(page.getByText(`${BRAND.name} ran into a problem.`, { exact: true })).toHaveCount(0);
 }
 
 async function openAgentDraftFromLauncher(page: Page): Promise<void> {

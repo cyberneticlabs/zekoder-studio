@@ -196,6 +196,9 @@ export async function startE2EWorker(
         NODE_ENV: "development",
         PATH: `${fakeEditorBin}${path.delimiter}${process.env.PATH ?? ""}`,
         PASEO_E2E_EDITOR_RECORD_PATH: editorRecordPath,
+        // The built-in zekoder plugin installs into workspaces and adds UI; specs opt back in
+        // with e2eDaemonEnvironment: { PASEO_DISABLE_BUILTIN_PLUGINS: "" }.
+        PASEO_DISABLE_BUILTIN_PLUGINS: "zekoder",
         ...options.environment,
       },
     });

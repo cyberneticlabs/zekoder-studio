@@ -2,14 +2,24 @@
 id: 002-builtin-plugin-pollutes-e2e-fixtures
 type: bug
 title: Built-in Zekoder plugin runs in e2e daemons and mutates test fixtures
-status: planned
+status: merged
 createdAt: 2026-10-10
 openedAt: 2026-10-10T17:00:16.033Z
-updatedAt: 2026-10-10T17:02:00.821Z
+updatedAt: 2026-10-11T20:38:44.824Z
+completedAt: 2026-10-11T20:38:44.824Z
 severity: high
 branch: bug-002-builtin-plugin-pollutes-e2e-fixtures
 promoted: false
 packages: []
+mergeMode: local
+commit: 04d125117cfe4027b311d3c20efbaa36d11679eb
+filesTouched:
+  - .zekoder/bugs/002-builtin-plugin-pollutes-e2e-fixtures.md
+  - packages/app/e2e/support/helpers/e2e-worker.ts
+  - packages/server/src/server/bootstrap.ts
+  - packages/server/src/server/plugins/builtin/index.test.ts
+  - packages/server/src/server/plugins/builtin/index.ts
+verifiedBaseSha: 08e19dccbdcf81ebe2409e87adee53592b833b68
 relatedFeatures:
   - 001-builtin-zekoder-plugin
   - 005-dev-zekoder-plugin-path-override
@@ -18,7 +28,16 @@ relatedBugs:
   - 003-agent-timeline-e2e-deterministic-failures
 relatedFollowups: []
 resolvedBy: null
-statusHistory: []
+statusHistory:
+  - from: planned
+    to: in-progress
+    at: 2026-10-11T20:24:39.343Z
+  - from: in-progress
+    to: ready
+    at: 2026-10-11T20:37:41.555Z
+  - from: ready
+    to: merged
+    at: 2026-10-11T20:38:44.824Z
 ---
 # Bug 002-builtin-plugin-pollutes-e2e-fixtures: Built-in Zekoder plugin runs in e2e daemons and mutates test fixtures
 
@@ -62,11 +81,11 @@ Add a small server env switch that removes ids from the default built-in list, a
 
 ## Tasks
 
-- [ ] Add `PASEO_DISABLE_BUILTIN_PLUGINS` parsing and filtered default list in `packages/server/src/server/plugins/builtin/index.ts` and use it in `packages/server/src/server/bootstrap.ts` (`resolveBuiltinPluginLoader`), with unit tests in `packages/server/src/server/plugins/builtin/index.test.ts` (unset keeps full list; `zekoder` removes only it; whitespace/empty tolerated; unknown ids ignored).
-- [ ] Set `PASEO_DISABLE_BUILTIN_PLUGINS: "zekoder"` as the default daemon environment in `packages/app/e2e/support/helpers/e2e-worker.ts`, overridable via `e2eDaemonEnvironment`.
-- [ ] Confirm `packages/app/e2e/browser/directory-bootstrap.spec.ts:5` (agents 1/workspaces 1) passes once the plugin is off; if not, note the separate cause in this doc and file a followup.
-- [ ] Run only the changed/affected specs locally, never the full suite: `npx vitest run packages/server/src/server/plugins/builtin/index.test.ts --bail=1`, plus the failing Playwright specs named above one file at a time.
-- [ ] `npm run typecheck`, `npm run lint -- <changed files>`, `npm run format:files -- <changed files>`.
+- [x] Add `PASEO_DISABLE_BUILTIN_PLUGINS` parsing and filtered default list in `packages/server/src/server/plugins/builtin/index.ts` and use it in `packages/server/src/server/bootstrap.ts` (`resolveBuiltinPluginLoader`), with unit tests in `packages/server/src/server/plugins/builtin/index.test.ts` (unset keeps full list; `zekoder` removes only it; whitespace/empty tolerated; unknown ids ignored).
+- [x] Set `PASEO_DISABLE_BUILTIN_PLUGINS: "zekoder"` as the default daemon environment in `packages/app/e2e/support/helpers/e2e-worker.ts`, overridable via `e2eDaemonEnvironment`.
+- [x] Confirm `packages/app/e2e/browser/directory-bootstrap.spec.ts:5` (agents 1/workspaces 1) passes once the plugin is off; if not, note the separate cause in this doc and file a followup.
+- [x] Run only the changed/affected specs locally, never the full suite: `npx vitest run packages/server/src/server/plugins/builtin/index.test.ts --bail=1`, plus the failing Playwright specs named above one file at a time.
+- [x] `npm run typecheck`, `npm run lint -- <changed files>`, `npm run format:files -- <changed files>`.
 
 ## Verification
 

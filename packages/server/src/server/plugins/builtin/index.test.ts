@@ -8,7 +8,12 @@ import { compilePlugin } from "../compiler.js";
 import { readPluginManifest } from "../manifest.js";
 import { DaemonClient } from "../../test-utils/daemon-client.js";
 import { createTestPaseoDaemon } from "../../test-utils/paseo-daemon.js";
-import { BuiltinPluginLoader, builtinPlugins, resolveBuiltinPluginsRoot } from "./index.js";
+import {
+  BuiltinPluginLoader,
+  builtinPlugins,
+  resolveBuiltinPluginsRoot,
+  resolveEnabledBuiltinPlugins,
+} from "./index.js";
 
 const roots: string[] = [];
 afterEach(async () => {
@@ -34,6 +39,21 @@ async function fixture(root: string, id: string, client = false): Promise<string
   }
   return directory;
 }
+
+test("PASEO_DISABLE_BUILTIN_PLUGINS removes only the listed built-in ids", () => {
+  expect(resolveEnabledBuiltinPlugins({})).toEqual(builtinPlugins);
+  expect(resolveEnabledBuiltinPlugins({ PASEO_DISABLE_BUILTIN_PLUGINS: "" })).toEqual(
+    builtinPlugins,
+  );
+  expect(resolveEnabledBuiltinPlugins({ PASEO_DISABLE_BUILTIN_PLUGINS: "zekoder" })).toEqual(
+    builtinPlugins.filter((id) => id !== "zekoder"),
+  );
+  expect(
+    resolveEnabledBuiltinPlugins({
+      PASEO_DISABLE_BUILTIN_PLUGINS: " zekoder , ,not-a-plugin,,muse-provider ",
+    }),
+  ).toEqual(builtinPlugins.filter((id) => id !== "zekoder" && id !== "muse-provider"));
+});
 
 test("listed built-ins resolve to matching manifests and compile", async () => {
   const root = resolveBuiltinPluginsRoot();

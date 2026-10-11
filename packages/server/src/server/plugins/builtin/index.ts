@@ -17,6 +17,25 @@ export const builtinPlugins = [
   "zekoder",
 ] as const;
 
+export const DISABLE_BUILTIN_PLUGINS_ENV = "PASEO_DISABLE_BUILTIN_PLUGINS";
+
+/**
+ * Comma-separated built-in plugin ids to leave out of the default list. Test and
+ * diagnostic use only (e.g. e2e daemons disable `zekoder` so it does not modify fixtures).
+ * Unknown ids are ignored; an unlisted id is also not reserved.
+ */
+export function resolveEnabledBuiltinPlugins(
+  env: Record<string, string | undefined> = process.env,
+): readonly string[] {
+  const disabled = new Set(
+    (env[DISABLE_BUILTIN_PLUGINS_ENV] ?? "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter((id) => id.length > 0),
+  );
+  return builtinPlugins.filter((id) => !disabled.has(id));
+}
+
 export function resolveBuiltinPluginsRoot(moduleUrl: string | URL = import.meta.url): string {
   const moduleDir = path.dirname(fileURLToPath(moduleUrl));
   const archiveSegment = `${path.sep}app.asar${path.sep}`;

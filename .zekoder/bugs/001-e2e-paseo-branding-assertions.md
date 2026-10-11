@@ -2,21 +2,43 @@
 id: 001-e2e-paseo-branding-assertions
 type: bug
 title: E2E tests still assert Paseo branding after Zekoder rebrand
-status: planned
+status: merged
 createdAt: 2026-10-10
 openedAt: 2026-10-10T17:00:14.650Z
-updatedAt: 2026-10-10T17:02:12.177Z
+updatedAt: 2026-10-11T20:40:41.871Z
+completedAt: 2026-10-11T20:40:41.871Z
 severity: medium
 branch: bug-001-e2e-paseo-branding-assertions
 promoted: false
 packages: []
+mergeMode: local
+commit: 86f4b19b4b093684ee54a45415fd00f46a1f9046
+filesTouched:
+  - .zekoder/bugs/001-e2e-paseo-branding-assertions.md
+  - packages/app/e2e/browser/explorer-pane-placement.spec.ts
+  - packages/app/e2e/browser/plugin-management.spec.ts
+  - packages/app/e2e/browser/root-error-recovery.spec.ts
+  - packages/app/e2e/browser/sidebar-help.spec.ts
+  - packages/app/e2e/browser/sidebar-project-name-whitespace.spec.ts
+  - packages/app/e2e/support/helpers/pair-device.ts
+  - packages/app/e2e/support/helpers/settings.ts
+verifiedBaseSha: 04d125117cfe4027b311d3c20efbaa36d11679eb
 relatedFeatures:
   - 002-zekoder-rebrand
 relatedBugs:
   - 002-builtin-plugin-pollutes-e2e-fixtures
 relatedFollowups: []
 resolvedBy: null
-statusHistory: []
+statusHistory:
+  - from: planned
+    to: in-progress
+    at: 2026-10-11T20:24:37.781Z
+  - from: in-progress
+    to: ready
+    at: 2026-10-11T20:37:38.806Z
+  - from: ready
+    to: merged
+    at: 2026-10-11T20:40:41.871Z
 ---
 # Bug 001-e2e-paseo-branding-assertions: E2E tests still assert Paseo branding after Zekoder rebrand
 
@@ -66,12 +88,12 @@ Assert against `BRAND` / `brandUrl()` from `@getpaseo/protocol/branding` (the e2
 
 ## Tasks
 
-- [ ] `packages/app/e2e/support/helpers/pair-device.ts`: brand relay link label (lines 93, 210), "Paseo Desktop" text (178), docs URL at 213 via `brandUrl("/docs/security")`.
-- [ ] `packages/app/e2e/support/helpers/settings.ts:325`: brand the "Inject ... tools" switch name.
-- [ ] `packages/app/e2e/browser/sidebar-help.spec.ts`: brand `APP_VERSION` and `CHANGELOG_DESTINATION`; make the changelog check independent of live-site reachability if needed.
-- [ ] `packages/app/e2e/browser/root-error-recovery.spec.ts`, `sidebar-project-name-whitespace.spec.ts`, `explorer-pane-placement.spec.ts`: brand "ran into a problem." text.
-- [ ] `packages/app/e2e/browser/plugin-management.spec.ts` (`expectPluginSourceDocsOpen`, ~lines 248-262): brand URL origin/prefix.
-- [ ] Confirm `packages/desktop/e2e/pair-device-relay.spec.ts:128` port literal; change to `BRAND.defaultDaemonPort` only if it targets the daemon default.
+- [x] `packages/app/e2e/support/helpers/pair-device.ts`: brand relay link label (lines 93, 210), "Paseo Desktop" text (178), docs URL at 213 via `brandUrl("/docs/security")`.
+- [x] `packages/app/e2e/support/helpers/settings.ts:325`: brand the "Inject ... tools" switch name.
+- [x] `packages/app/e2e/browser/sidebar-help.spec.ts`: brand `APP_VERSION` and `CHANGELOG_DESTINATION`; make the changelog check independent of live-site reachability if needed.
+- [x] `packages/app/e2e/browser/root-error-recovery.spec.ts`, `sidebar-project-name-whitespace.spec.ts`, `explorer-pane-placement.spec.ts`: brand "ran into a problem." text.
+- [x] `packages/app/e2e/browser/plugin-management.spec.ts` (`expectPluginSourceDocsOpen`, ~lines 248-262): brand URL origin/prefix.
+- [x] Confirm `packages/desktop/e2e/pair-device-relay.spec.ts:128` port literal; change to `BRAND.defaultDaemonPort` only if it targets the daemon default.
 
 ## Verification
 

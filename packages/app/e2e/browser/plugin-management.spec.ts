@@ -1,3 +1,4 @@
+import { BRAND, brandUrl } from "@getpaseo/protocol/branding";
 import overviewCorpus from "../../../protocol/tests/fixtures/plugin-overview.json";
 import { pluginRequirements } from "../support/helpers/plugin-fixture";
 import { execFileSync } from "node:child_process";
@@ -18,6 +19,7 @@ import {
   openCompactSettings,
   openHostSection,
   openSettingsHost,
+  stubBrandWebsite,
 } from "../support/helpers/settings";
 
 import {
@@ -243,21 +245,24 @@ async function installPlugin(page: Page, source: string): Promise<void> {
 }
 
 async function expectPluginSourceDocsOpen(page: Page): Promise<void> {
+  const brandOrigin = new URL(BRAND.websiteUrl).origin;
+  await stubBrandWebsite(page);
   const requestedPage = page
     .context()
     .waitForEvent(
       "request",
-      (request) => request.isNavigationRequest() && request.url().startsWith("https://paseo.sh/"),
+      (request) => request.isNavigationRequest() && request.url().startsWith(`${brandOrigin}/`),
     );
   const docsPagePromise = page.context().waitForEvent("page");
   await page.getByRole("link", { name: "Docs", exact: true }).click();
   const request = await requestedPage;
   const docsPage = await docsPagePromise;
   try {
-    expect(new URL(request.url()).pathname).toBe("/docs/plugins/reference");
-    // The deployed site can redirect while the matching website change is still in this PR.
+    expect(new URL(request.url()).pathname).toBe(
+      new URL(brandUrl("/docs/plugins/reference")).pathname,
+    );
     await docsPage.waitForURL(
-      (url) => url.origin === "https://paseo.sh" && url.hash === "#plugin-sources",
+      (url) => url.origin === brandOrigin && url.hash === "#plugin-sources",
       { waitUntil: "commit" },
     );
   } finally {

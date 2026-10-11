@@ -2,21 +2,36 @@
 id: 003-agent-timeline-e2e-deterministic-failures
 type: bug
 title: Agent timeline e2e tests fail deterministically in the fork
-status: planned
+status: merged
 createdAt: 2026-10-10
 openedAt: 2026-10-10T17:00:17.221Z
-updatedAt: 2026-10-10T17:01:26.405Z
+updatedAt: 2026-10-11T20:46:32.563Z
+completedAt: 2026-10-11T20:46:32.563Z
 severity: medium
 branch: bug-003-agent-timeline-e2e-deterministic-failures
 promoted: false
 packages: []
+mergeMode: local
+commit: 273a2b647d5e1f172f6f25607e1000ada6fe0c15
+filesTouched:
+  - .zekoder/bugs/003-agent-timeline-e2e-deterministic-failures.md
+verifiedBaseSha: 8365ddc980c9379b44fa25d86c4600deaf611ab7
 relatedFeatures: []
 relatedBugs:
   - 002-builtin-plugin-pollutes-e2e-fixtures
   - 001-e2e-paseo-branding-assertions
 relatedFollowups: []
 resolvedBy: null
-statusHistory: []
+statusHistory:
+  - from: planned
+    to: in-progress
+    at: 2026-10-11T20:40:50.703Z
+  - from: in-progress
+    to: ready
+    at: 2026-10-11T20:46:04.251Z
+  - from: ready
+    to: merged
+    at: 2026-10-11T20:46:32.563Z
 ---
 # Bug 003-agent-timeline-e2e-deterministic-failures: Agent timeline e2e tests fail deterministically in the fork
 
@@ -56,9 +71,18 @@ Triage first, then fix once the cause is known:
 
 ## Tasks
 
-- [ ] After bug 002 lands, re-run `packages/app/e2e/browser/agent-consecutive-turns.spec.ts` (test "keeps follow-up activity continuous when turn starts before response") and `packages/app/e2e/browser/agent-timeline-resume.spec.ts` (test "an unchanged resume leaves a scrolled-up timeline untouched"); record the result here.
-- [ ] If still failing, bisect fork commits since a7f7405c0 to the introducing commit; note it in this doc.
-- [ ] Fix the identified cause (file path(s) determined by the bisect; likely `packages/app/src/plugins/` or brand/layout code, or e2e fixtures under `packages/app/e2e/support/`) <!-- TODO: exact paths after triage -->.
+- [x] After bug 002 lands, re-run `packages/app/e2e/browser/agent-consecutive-turns.spec.ts` (test "keeps follow-up activity continuous when turn starts before response") and `packages/app/e2e/browser/agent-timeline-resume.spec.ts` (test "an unchanged resume leaves a scrolled-up timeline untouched"); record the result here.
+- [x] If still failing, bisect fork commits since a7f7405c0 to the introducing commit; note it in this doc. (N/A: both specs pass, nothing to bisect.)
+- [x] Fix the identified cause (N/A: resolved by bug 002, no code change) (file path(s) determined by the bisect; likely `packages/app/src/plugins/` or brand/layout code, or e2e fixtures under `packages/app/e2e/support/`) <!-- TODO: exact paths after triage -->.
+
+## Triage result
+
+Resolved by bug 002 (`PASEO_DISABLE_BUILTIN_PLUGINS=zekoder` in the e2e worker daemon env). On the batch-3 staging branch (86f4b19b4, which includes the bug 002 harness fix and bug 001 branding fixes), run locally from `packages/app` with `npx playwright test --project=browser <spec> --grep "<title>"`:
+
+- `agent-consecutive-turns.spec.ts` "keeps follow-up activity continuous when turn starts before response": passed 4 of 4 runs (1 single run, then `--repeat-each=3`).
+- `agent-timeline-resume.spec.ts` "an unchanged resume leaves a scrolled-up timeline untouched": passed 3 of 3 runs (`--repeat-each=3`).
+
+The built-in Zekoder plugin was the most likely cause (inferred from the fix, not separately proven): it plausibly altered agent-start timing and timeline height (the 30px scrollHeight delta). No bisect or code change needed. CI shard 1/4 on the batch PR is the remaining confirmation.
 
 ## Verification
 
