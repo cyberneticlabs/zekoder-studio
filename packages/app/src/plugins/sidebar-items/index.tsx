@@ -39,6 +39,8 @@ import type { PluginSidebarSection } from "../types";
 import { SidebarItemFrameContext, type SidebarItemFrame } from "./frame";
 import { LegacyPluginSidebarRow } from "./legacy";
 import { resolvePluginPlatform } from "../platform";
+import { ZEKODER_PLUGIN_ID } from "@/zekoder/host-provisioning";
+import { ZekoderSidebarRow } from "@/zekoder/zekoder-sidebar-row";
 
 export { SidebarRow, SidebarSeparator } from "./kit";
 
@@ -71,6 +73,10 @@ type PluginSidebarItemHostProps = Omit<PluginSidebarItemEntryProps, "group"> & {
  */
 export function PluginSidebarItem({ group, ...props }: PluginSidebarItemEntryProps) {
   if (group.kind === "legacy") {
+    // Fork hook: Zekoder rows follow the active host.
+    if (group.pluginId === ZEKODER_PLUGIN_ID) {
+      return <ZekoderSidebarRow group={group} onBeforeNavigate={props.onBeforeNavigate} />;
+    }
     return <LegacyPluginSidebarRow group={group} onBeforeNavigate={props.onBeforeNavigate} />;
   }
   return <ThemedPluginSidebarItem {...props} group={group} uniProps={pluginThemeMapping} />;

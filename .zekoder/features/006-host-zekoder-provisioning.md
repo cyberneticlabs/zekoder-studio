@@ -2,22 +2,52 @@
 id: 006-host-zekoder-provisioning
 type: feature
 title: Detect hosts missing Zekoder and one-click provision
-status: planned
+status: merged
 createdAt: 2026-10-12
 openedAt: 2026-10-12T12:19:56.885Z
-updatedAt: 2026-10-12T12:27:35.295Z
+updatedAt: 2026-10-12T14:08:17.110Z
+completedAt: 2026-10-12T14:08:17.110Z
 branch: feature-006-host-zekoder-provisioning
 promoted: false
 dependsOn: []
 packages: []
 contracts: []
+mergeMode: local
+commit: 8f1c9aceceadb470bbd3690a34d8712411e0853e
+filesTouched:
+  - .zekoder/features/006-host-zekoder-provisioning.md
+  - docs/plugins.md
+  - packages/app/src/app/_layout.tsx
+  - packages/app/src/components/sidebar/sidebar-nav-rows.tsx
+  - packages/app/src/i18n/resources/ar.ts
+  - packages/app/src/i18n/resources/en.ts
+  - packages/app/src/i18n/resources/es.ts
+  - packages/app/src/i18n/resources/fr.ts
+  - packages/app/src/i18n/resources/ja.ts
+  - packages/app/src/i18n/resources/ko.ts
+  - packages/app/src/i18n/resources/pt-BR.ts
+  - packages/app/src/i18n/resources/ru.ts
+  - packages/app/src/i18n/resources/zh-CN.ts
+  - packages/app/src/plugins/sidebar-items/index.tsx
+  - packages/app/src/plugins/surface-screen.tsx
+  - packages/app/src/zekoder/host-provisioning.test.ts
+  - packages/app/src/zekoder/host-provisioning.ts
+  - packages/app/src/zekoder/use-host-zekoder.test.tsx
+  - packages/app/src/zekoder/use-host-zekoder.ts
+  - packages/app/src/zekoder/zekoder-host-source.tsx
+  - packages/app/src/zekoder/zekoder-missing-state.tsx
+  - packages/app/src/zekoder/zekoder-sidebar-row.tsx
+verifiedBaseSha: 32bd9c2764fd33c8a0db0ab7422af8e22edf0772
 relatedFeatures:
   - 001-builtin-zekoder-plugin
   - 004-plugin-auto-update
   - 005-dev-zekoder-plugin-path-override
 relatedBugs: []
 relatedFollowups: []
-statusHistory: []
+statusHistory:
+  - from: planned
+    to: merged
+    at: 2026-10-12T14:08:17.110Z
 ---
 # Feature 006-host-zekoder-provisioning: Detect hosts missing Zekoder and one-click provision
 
@@ -60,13 +90,13 @@ Fork code lives in the new owned module `packages/app/src/zekoder/`. Upstream ge
 
 ## Tasks
 
-- [ ] 1. `packages/app/src/zekoder/host-provisioning.ts`: `ZEKODER_PLUGIN_ID`, `ZEKODER_NPM_PACKAGE = "@cyberneticlabs/paseo-zekoder"` (the one place to change the name), `ZEKODER_PLUGIN_VERSION = "0.11.1"`, `ZEKODER_PLUGIN_SOURCE`, `ZEKODER_PLACEHOLDER_ITEMS`. Also pure functions `resolveHostZekoderStatus(input)`, `resolveZekoderActiveHost(routeHostId, workspaceHostId)` and `shouldShowZekoderPlaceholders(hasZekoderGroup, status)`. Add `host-provisioning.test.ts` covering every status (including failed-without-error → `unknown`), host precedence and placeholder gating. It also asserts that `ZEKODER_PLUGIN_VERSION` equals `version` in the repo-root `plugins/zekoder.lock.json` (read via `node:fs`) and is exact semver.
-- [ ] 2. `packages/app/src/zekoder/use-host-zekoder.ts`: `useZekoderActiveHost()` and `useHostZekoder(serverId)` → `{status, provision, isProvisioning}`, implemented per Approach. Tag the `pluginSourceInstallation` gate `// COMPAT(pluginSourceInstallation)` as `plugins-page.tsx:273` does. `provision` awaits the consent `confirmDialog` (`utils/confirm-dialog.ts`). The copy varies by status and mentions turning on plugins only when `pluginsEnabled !== true`. Errors go to `useToast()` (`contexts/toast-api-context.tsx`). Add `use-host-zekoder.test.tsx`, mocking like `screens/settings/plugins-page.test.tsx`: declined → no client calls; confirmed with plugins off → `installPluginSource` then `patchConfig`; install rejects → no `patchConfig`, error toast.
-- [ ] 3. `packages/app/src/zekoder/zekoder-host-source.tsx`: mounted once next to `<WorktreeSetupCalloutSource />` in `app/_layout.tsx` (~L601). It owns the catalog-change subscription and invalidation for the active host. It shows the callout via `useSidebarCallouts().show` (pattern: `components/worktree-setup-callout-source.tsx`) for `install`/`enable-*` statuses, with `dismissalKey` `zekoder-host-missing:<serverId>`, and unregisters when the status changes.
-- [ ] 4. `packages/app/src/zekoder/zekoder-sidebar-row.tsx`: `ZekoderSidebarRow` (override and placeholder, testIDs unchanged for real rows, `zekoder-placeholder-<id>` for placeholders) and `ZekoderPlaceholderRows`. Hooks: the `PluginSidebarItem` branch from Approach, and `<ZekoderPlaceholderRows onBeforeNavigate={onBeforeNavigate} />` after the mapped items in `SidebarNavRows`.
-- [ ] 5. `packages/app/src/zekoder/zekoder-missing-state.tsx` + `plugins/surface-screen.tsx` fallback (~L235): when `pluginId === ZEKODER_PLUGIN_ID && !plugin`, render `<ZekoderMissingState serverId={serverId} />`. It shows "this host lacks Zekoder" with the provision button for `install`/`enable-*`, update-host copy for `unsupported`, the host's `error` plus a button to `buildSettingsHostSectionRoute(serverId, "plugins")` for `failed`, and the existing fallback text for `present`/`unknown`. Follow docs/design.md, docs/unistyles.md (no `useUnistyles()`) and docs/hover.md.
-- [ ] 6. i18n: `zekoder.hostProvisioning.*` keys (callout, consent variants, actions, empty states, errors) in `packages/app/src/i18n/resources/en.ts` and every locale file, so the `resources.test.ts` parity check passes.
-- [ ] 7. `docs/plugins.md` "Built-in plugins": 3-4 lines saying remote upstream daemons lack the `zekoder` built-in; the app offers a pinned npm install; Zekoder sidebar rows follow the active host; the pin lives in `packages/app/src/zekoder/host-provisioning.ts` and is test-locked to `plugins/zekoder.lock.json`. Bump order: publish `@cyberneticlabs/paseo-zekoder@<new>` to npm first, then bump the lock (sync script) and the constant together.
+- [x] 1. `packages/app/src/zekoder/host-provisioning.ts`: `ZEKODER_PLUGIN_ID`, `ZEKODER_NPM_PACKAGE = "@cyberneticlabs/paseo-zekoder"` (the one place to change the name), `ZEKODER_PLUGIN_VERSION = "0.11.1"`, `ZEKODER_PLUGIN_SOURCE`, `ZEKODER_PLACEHOLDER_ITEMS`. Also pure functions `resolveHostZekoderStatus(input)`, `resolveZekoderActiveHost(routeHostId, workspaceHostId)` and `shouldShowZekoderPlaceholders(hasZekoderGroup, status)`. Add `host-provisioning.test.ts` covering every status (including failed-without-error → `unknown`), host precedence and placeholder gating. It also asserts that `ZEKODER_PLUGIN_VERSION` equals `version` in the repo-root `plugins/zekoder.lock.json` (read via `node:fs`) and is exact semver.
+- [x] 2. `packages/app/src/zekoder/use-host-zekoder.ts`: `useZekoderActiveHost()` and `useHostZekoder(serverId)` → `{status, provision, isProvisioning}`, implemented per Approach. Tag the `pluginSourceInstallation` gate `// COMPAT(pluginSourceInstallation)` as `plugins-page.tsx:273` does. `provision` awaits the consent `confirmDialog` (`utils/confirm-dialog.ts`). The copy varies by status and mentions turning on plugins only when `pluginsEnabled !== true`. Errors go to `useToast()` (`contexts/toast-api-context.tsx`). Add `use-host-zekoder.test.tsx`, mocking like `screens/settings/plugins-page.test.tsx`: declined → no client calls; confirmed with plugins off → `installPluginSource` then `patchConfig`; install rejects → no `patchConfig`, error toast.
+- [x] 3. `packages/app/src/zekoder/zekoder-host-source.tsx`: mounted once next to `<WorktreeSetupCalloutSource />` in `app/_layout.tsx` (~L601). It owns the catalog-change subscription and invalidation for the active host. It shows the callout via `useSidebarCallouts().show` (pattern: `components/worktree-setup-callout-source.tsx`) for `install`/`enable-*` statuses, with `dismissalKey` `zekoder-host-missing:<serverId>`, and unregisters when the status changes.
+- [x] 4. `packages/app/src/zekoder/zekoder-sidebar-row.tsx`: `ZekoderSidebarRow` (override and placeholder, testIDs unchanged for real rows, `zekoder-placeholder-<id>` for placeholders) and `ZekoderPlaceholderRows`. Hooks: the `PluginSidebarItem` branch from Approach, and `<ZekoderPlaceholderRows onBeforeNavigate={onBeforeNavigate} />` after the mapped items in `SidebarNavRows`.
+- [x] 5. `packages/app/src/zekoder/zekoder-missing-state.tsx` + `plugins/surface-screen.tsx` fallback (~L235): when `pluginId === ZEKODER_PLUGIN_ID && !plugin`, render `<ZekoderMissingState serverId={serverId} />`. It shows "this host lacks Zekoder" with the provision button for `install`/`enable-*`, update-host copy for `unsupported`, the host's `error` plus a button to `buildSettingsHostSectionRoute(serverId, "plugins")` for `failed`, and the existing fallback text for `present`/`unknown`. Follow docs/design.md, docs/unistyles.md (no `useUnistyles()`) and docs/hover.md.
+- [x] 6. i18n: `zekoder.hostProvisioning.*` keys (callout, consent variants, actions, empty states, errors) in `packages/app/src/i18n/resources/en.ts` and every locale file, so the `resources.test.ts` parity check passes.
+- [x] 7. `docs/plugins.md` "Built-in plugins": 3-4 lines saying remote upstream daemons lack the `zekoder` built-in; the app offers a pinned npm install; Zekoder sidebar rows follow the active host; the pin lives in `packages/app/src/zekoder/host-provisioning.ts` and is test-locked to `plugins/zekoder.lock.json`. Bump order: publish `@cyberneticlabs/paseo-zekoder@<new>` to npm first, then bump the lock (sync script) and the constant together.
 
 ## Verification
 

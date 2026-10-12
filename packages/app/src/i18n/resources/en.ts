@@ -2949,6 +2949,42 @@ export const en = {
       },
     },
   },
+  zekoder: {
+    hostProvisioning: {
+      callout: {
+        installTitle: "This host lacks Zekoder",
+        enableTitle: "Zekoder is off on this host",
+        description: "Install the Zekoder plugin to get Issues, Reports and the Zekoder panel.",
+      },
+      consent: {
+        installTitle: "Install Zekoder on this host?",
+        enableTitle: "Turn on Zekoder on this host?",
+        installMessage:
+          "Zekoder ({{source}}) is trusted, unsandboxed code. It runs with the daemon user's access on this host, and its client contributions run in this app.",
+        enableMessage:
+          "Zekoder is trusted, unsandboxed code. It runs with the daemon user's access on this host, and its client contributions run in this app.",
+        pluginsNotice: "Plugins are off on this host. Confirming also turns them on.",
+      },
+      actions: {
+        install: "Install",
+        enable: "Turn on",
+        openPlugins: "Open plugin settings",
+      },
+      states: {
+        missingTitle: "This host lacks Zekoder",
+        installDescription:
+          "Install the Zekoder plugin on this host to use Issues, Reports and the Zekoder panel.",
+        enableDescription: "Zekoder is installed on this host but not turned on.",
+        updateTitle: "This host lacks Zekoder",
+        updateDescription: "Update this host to install Zekoder from the app.",
+        failedTitle: "Zekoder failed to start on this host",
+        unavailable: "This plugin surface is unavailable.",
+      },
+      errors: {
+        failed: "Could not set up Zekoder {{version}}: {{message}}",
+      },
+    },
+  },
 } as const;
 
 type WidenStringLeaves<T> = {

@@ -33,6 +33,8 @@ import {
   type PluginSurfaceContributionIdentity,
 } from "./surface-contribution";
 import { resolvePluginPlatform } from "./platform";
+import { ZEKODER_PLUGIN_ID } from "@/zekoder/host-provisioning";
+import { ZekoderMissingState } from "@/zekoder/zekoder-missing-state";
 
 const EMPTY_SHORTCUT_KEYS: ShortcutKey[] = [];
 const mutedColorMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
@@ -214,6 +216,15 @@ export function PluginSurfaceScreen() {
     [close, contributionServerIds, identity, params, pluginId, serverId],
   );
 
+  const fallback =
+    pluginId === ZEKODER_PLUGIN_ID && !plugin ? (
+      <ZekoderMissingState serverId={serverId} />
+    ) : (
+      <Text style={styles.errorText}>
+        {plugin && surface ? "Plugin host is offline." : "This plugin surface is unavailable."}
+      </Text>
+    );
+
   return (
     <View style={styles.screen}>
       <ScreenHeader left={headerLeft} right={headerRight} />
@@ -234,9 +245,7 @@ export function PluginSurfaceScreen() {
             />
           </SurfaceErrorBoundary>
         ) : (
-          <Text style={styles.errorText}>
-            {plugin && surface ? "Plugin host is offline." : "This plugin surface is unavailable."}
-          </Text>
+          fallback
         )}
       </View>
     </View>

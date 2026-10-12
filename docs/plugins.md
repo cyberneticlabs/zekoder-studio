@@ -103,6 +103,13 @@ resolves through the repository's `node_modules`.
 The packaged-app smoke check requires every listed built-in to start without relying on
 account credentials.
 
+Remote upstream daemons lack the `zekoder` built-in. The app detects that on the active host and
+offers a one-click install of a pinned npm package. Zekoder sidebar rows follow the active host, so
+they open the install empty state when it lacks Zekoder. The pin (`ZEKODER_PLUGIN_VERSION`) lives in
+`packages/app/src/zekoder/host-provisioning.ts` and is test-locked to `plugins/zekoder.lock.json`.
+Bump order: publish `@cyberneticlabs/paseo-zekoder@<new>` to npm, then bump the lock (sync script)
+and the constant together.
+
 Built-ins run in process and remain active independently of `pluginsEnabled`. They are
 absent from the installed plugin list and source configuration; their client bundles
 appear in the plugin catalog. Editing one in development requires a daemon restart.

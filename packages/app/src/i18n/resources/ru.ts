@@ -2874,4 +2874,6 @@ export const ru: TranslationResources = {
       },
     },
   },
+  // Falls back to English until translated.
+  zekoder: en.zekoder,
 };

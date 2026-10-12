@@ -2820,4 +2820,6 @@ export const ar: TranslationResources = {
       },
     },
   },
+  // Falls back to English until translated.
+  zekoder: en.zekoder,
 };

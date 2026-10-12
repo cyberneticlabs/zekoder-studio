@@ -2863,4 +2863,6 @@ export const ptBR: TranslationResources = {
       },
     },
   },
+  // Falls back to English until translated.
+  zekoder: en.zekoder,
 };

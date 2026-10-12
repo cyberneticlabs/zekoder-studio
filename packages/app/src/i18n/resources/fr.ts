@@ -2889,4 +2889,6 @@ export const fr: TranslationResources = {
       },
     },
   },
+  // Falls back to English until translated.
+  zekoder: en.zekoder,
 };

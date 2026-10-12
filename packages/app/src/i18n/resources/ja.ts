@@ -2850,4 +2850,6 @@ export const ja: TranslationResources = {
       },
     },
   },
+  // Falls back to English until translated.
+  zekoder: en.zekoder,
 } as const;

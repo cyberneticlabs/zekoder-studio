@@ -2786,4 +2786,6 @@ export const zhCN: TranslationResources = {
       },
     },
   },
+  // Falls back to English until translated.
+  zekoder: en.zekoder,
 };

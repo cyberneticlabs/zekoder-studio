@@ -28,6 +28,7 @@ import { CommandCenterWorkspaceActions } from "@/command-center/workspace-regist
 import { PluginCommandCenterActions } from "@/plugins/command-center/registration";
 import { AddProjectFlowHost } from "@/components/add-project-flow-host";
 import { WorktreeSetupCalloutSource } from "@/components/worktree-setup-callout-source";
+import { ZekoderHostSource } from "@/zekoder/zekoder-host-source";
 import { DownloadToast } from "@/components/download-toast";
 import { QuittingOverlay } from "@/components/quitting-overlay";
 import { KeyboardShortcutsDialog } from "@/components/keyboard-shortcuts-dialog";
@@ -600,6 +601,7 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
         <UpdateCalloutSource />
         <LegacyAgentSkillsMigration />
         <WorktreeSetupCalloutSource />
+        <ZekoderHostSource />
         <CommandCenterRootActions />
         <CommandCenterWorkspaceActions />
         <PluginCommandCenterActions />

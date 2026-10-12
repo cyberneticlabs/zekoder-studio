@@ -16,6 +16,7 @@ import {
 import { useSidebarNavItems } from "@/sidebar-nav/use-sidebar-nav-items";
 import { useKeyboardShortcutsStore } from "@/stores/keyboard-shortcuts-store";
 import { useActiveWorkspaceSelection } from "@/stores/navigation-active-workspace-store";
+import { ZekoderPlaceholderRows } from "@/zekoder/zekoder-sidebar-row";
 import { useWorkspace } from "@/stores/session-store-hooks";
 import {
   buildNewWorkspaceRoute,
@@ -61,6 +62,7 @@ export function SidebarNavRows({ style, onBeforeNavigate }: SidebarNavRowsProps)
         const Row = BUILTIN_ROWS[item.id];
         return <Row key={item.key} onBeforeNavigate={onBeforeNavigate} />;
       })}
+      <ZekoderPlaceholderRows onBeforeNavigate={onBeforeNavigate} />
     </View>
   );
 }
