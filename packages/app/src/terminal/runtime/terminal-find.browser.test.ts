@@ -1,5 +1,5 @@
 import "@xterm/xterm/css/xterm.css";
-import { afterEach, expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import {
   TerminalEmulatorRuntime,
   encodeTerminalOutput,
@@ -155,7 +155,15 @@ test("preserves inspection through multiple real parser turns of queued output",
     runtime.write({ data: encodeTerminalOutput("\rprogress".repeat(1000)) });
   }
   await write("\r\nnew output".repeat(100));
-  await new Promise((resolve) => setTimeout(resolve, 350));
+  // Wait for the parser turns to be observed rather than sleeping a fixed window; a slow host
+  // can take longer than any fixed interval to drain the queued output.
+  await vi.waitFor(
+    () => {
+      expect(samples.length).toBeGreaterThan(1);
+      expect(samples.at(-1)!.base).toBeGreaterThan(inspected);
+    },
+    { timeout: 5_000 },
+  );
   subscription.dispose();
   expect(samples.length).toBeGreaterThan(1);
   expect(samples[0].base).toBe(inspected);

@@ -10,6 +10,9 @@ import { createFileObserver } from "./file-observer/index.js";
 import { WorkspaceGitServiceImpl } from "./workspace-git-service.js";
 import type { FileChange, FileObserver, SubscribeToFileChanges } from "./file-observer/index.js";
 
+// FSEvents-backed recursive watchers can take several seconds to (re)start on a loaded macOS host.
+const WATCHER_SETTLE_TIMEOUT_MS = 15_000;
+
 function createLogger(): pino.Logger {
   const logger = {
     child: () => logger,
@@ -215,7 +218,7 @@ test("recursive observation updates tracked state and prunes ignored storms", as
         workspaceRefreshQueuedCount: 0,
       });
     },
-    { timeout: 5_000 },
+    { timeout: WATCHER_SETTLE_TIMEOUT_MS },
   );
 
   writeFileSync(trackedPath, "base\n");
@@ -351,7 +354,7 @@ test("recursive observation updates tracked state and prunes ignored storms", as
         workspaceRefreshQueuedCount: 0,
       });
     },
-    { timeout: 8_000 },
+    { timeout: WATCHER_SETTLE_TIMEOUT_MS },
   );
 
   getCheckoutSnapshotFacts.mockClear();

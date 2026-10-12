@@ -217,6 +217,10 @@ export function isElectronRuntimeMac(): boolean {
   if (hostPlatform === "darwin" || hostPlatform === "mac" || hostPlatform === "macos") {
     return true;
   }
+  // A reported bridge platform is authoritative; the user agent only decides when it is absent.
+  if (hostPlatform) {
+    return false;
+  }
   const ua = navigator.userAgent;
   return ua.includes("Mac OS") || ua.includes("Macintosh");
 }

@@ -2,20 +2,38 @@
 id: 005-macos-local-test-portability-and-flakes
 type: bug
 title: Several unit and e2e tests fail or flake when run on a macOS dev machine
-status: planned
+status: merged
 createdAt: 2026-10-11
 openedAt: 2026-10-11T22:07:47.582Z
-updatedAt: 2026-10-11T22:07:47.582Z
+updatedAt: 2026-10-12T20:42:53.041Z
+completedAt: 2026-10-12T20:42:53.041Z
 severity: low
 branch: bug-005-macos-local-test-portability-and-flakes
 promoted: false
 packages: []
+mergeMode: local
+commit: 0f2c16ef1e5e28d5e4dc4d0c91935a215950540b
+filesTouched:
+  - .zekoder/bugs/005-macos-local-test-portability-and-flakes.md
+  - .zekoder/bugs/006-macos-undiagnosed-e2e-failures.md
+  - packages/app/e2e/support/fixtures.ts
+  - packages/app/src/desktop/host.ts
+  - packages/app/src/terminal/runtime/terminal-find.browser.test.ts
+  - packages/app/src/utils/shortcut-platform.ts
+  - packages/cli/tests/15-provider.test.ts
+  - packages/desktop/e2e/browser-tabs.e2e.mjs
+  - packages/server/src/server/workspace-git-service.observation.integration.test.ts
+  - packages/server/src/server/workspace-service-port-allocator.test.ts
+verifiedBaseSha: 3890f4b3ad262b0f84f79ae9072590a6aa65464c
 relatedFeatures: []
 relatedBugs: []
 relatedFollowups:
   - 004-full-local-test-run-before-push
 resolvedBy: null
-statusHistory: []
+statusHistory:
+  - from: planned
+    to: merged
+    at: 2026-10-12T20:42:53.041Z
 ---
 # Bug 005-macos-local-test-portability-and-flakes: Several unit and e2e tests fail or flake when run on a macOS dev machine
 
@@ -55,7 +73,7 @@ Triage per test: realpath the temp dir in item 1; resolve the displayed shortcut
 
 ## Tasks
 
-- [ ] Triage each numbered item above and fix, gate, or accept it; split items into their own bugs as they turn out to have different causes.
+- [x] Triage each numbered item above and fix, gate, or accept it; split items into their own bugs as they turn out to have different causes.
 
 ## Verification
 
