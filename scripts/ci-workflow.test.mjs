@@ -388,6 +388,8 @@ test("inherited upstream publishing jobs only run in the upstream repository", (
     ["android-apk-release.yml", ["ensure-release", "publish-android-apk"]],
     ["release-notes-sync.yml", ["sync-release-notes"]],
     ["docker.yml", ["publish"]],
+    ["nix.yml", ["build", "build-desktop-darwin"]],
+    ["nix-update-hash.yml", ["update-hash"]],
   ];
   for (const [file, guardedJobs] of expectations) {
     const jobs = jobsOf(readFileSync(new URL(`.github/workflows/${file}`, repoRoot), "utf8"));
