@@ -130,6 +130,37 @@ test("focused contracts stay inside existing required checks", () => {
   assert.ok(!jobs.has("playwright-desktop"));
 });
 
+test("documentation-only changes skip every check and packaging build", () => {
+  const docsPatterns = ["docs/**", ".zekoder/**", "*.md", "LICENSE"];
+  const changes = jobBlocks(readFileSync(ciWorkflowPath, "utf8")).get("changes")?.join("\n") ?? "";
+
+  assert.match(
+    changes,
+    /id: docs\s*\n\s+if: \$\{\{ github\.event_name == 'push' \|\| github\.event_name == 'pull_request' \}\}/,
+  );
+  assert.match(changes, /predicate-quantifier: every/);
+  for (const pattern of docsPatterns) assert.ok(changes.includes(`- "!${pattern}"`), pattern);
+  assert.match(changes, /full: \$\{\{ steps\.docs\.outputs\.code != 'false' && \(/);
+  for (const contract of new Set(
+    [...gatedCiJobs.values()].flatMap((job) => job.contracts ?? [job.contract]),
+  )) {
+    assert.match(
+      changes,
+      new RegExp(
+        `${contract}: \\$\\{\\{ steps\\.docs\\.outputs\\.code == 'false' && 'false' \\|\\| steps\\.filter\\.outputs\\.${contract} \\}\\}`,
+      ),
+    );
+  }
+
+  for (const workflow of ["docker.yml", "desktop-packages.yml"]) {
+    const trigger = readFileSync(new URL(`.github/workflows/${workflow}`, repoRoot), "utf8")
+      .split("pull_request:", 1)[0]
+      .split("jobs:", 1)[0];
+    for (const pattern of docsPatterns)
+      assert.ok(trigger.includes(`- "${pattern}"`), `${workflow} ${pattern}`);
+  }
+});
+
 test("server builds exclude test utilities at every domain depth", () => {
   const tsconfig = JSON.parse(readFileSync(serverTsconfigPath, "utf8"));
   assert.ok(tsconfig.exclude.includes("src/server/**/test-utils/**"));

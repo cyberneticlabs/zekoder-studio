@@ -3,6 +3,13 @@ name: Docker
 on:
   push:
     branches: [main]
+    # Documentation-only pushes build nothing. Same list as the docs step in ci.yml.
+    # Path filters never apply to tag pushes.
+    paths-ignore:
+      - "docs/**"
+      - ".zekoder/**"
+      - "*.md"
+      - "LICENSE"
     tags:
       - "v*"
   workflow_dispatch:

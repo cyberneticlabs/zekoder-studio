@@ -25,17 +25,19 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      full: ${{ github.event_name != 'pull_request' || steps.filter.outputs.routing != 'false' || steps.filter.outputs.workspace != 'false' || steps.filter.outputs.ci != 'false' }}
-      format: ${{ steps.filter.outputs.format }}
-      quality: ${{ steps.filter.outputs.quality }}
-      hub: ${{ steps.filter.outputs.hub }}
-      server: ${{ steps.filter.outputs.server }}
-      desktop: ${{ steps.filter.outputs.desktop }}
-      app: ${{ steps.filter.outputs.app }}
-      sdk: ${{ steps.filter.outputs.sdk }}
-      browser: ${{ steps.filter.outputs.browser }}
-      relay: ${{ steps.filter.outputs.relay }}
-      cli: ${{ steps.filter.outputs.cli }}
+      # A push or PR that only touches documentation (the docs step below) turns every
+      # contract off, so each required check reports as skipped instead of running.
+      full: ${{ steps.docs.outputs.code != 'false' && (github.event_name != 'pull_request' || steps.filter.outputs.routing != 'false' || steps.filter.outputs.workspace != 'false' || steps.filter.outputs.ci != 'false') }}
+      format: ${{ steps.docs.outputs.code == 'false' && 'false' || steps.filter.outputs.format }}
+      quality: ${{ steps.docs.outputs.code == 'false' && 'false' || steps.filter.outputs.quality }}
+      hub: ${{ steps.docs.outputs.code == 'false' && 'false' || steps.filter.outputs.hub }}
+      server: ${{ steps.docs.outputs.code == 'false' && 'false' || steps.filter.outputs.server }}
+      desktop: ${{ steps.docs.outputs.code == 'false' && 'false' || steps.filter.outputs.desktop }}
+      app: ${{ steps.docs.outputs.code == 'false' && 'false' || steps.filter.outputs.app }}
+      sdk: ${{ steps.docs.outputs.code == 'false' && 'false' || steps.filter.outputs.sdk }}
+      browser: ${{ steps.docs.outputs.code == 'false' && 'false' || steps.filter.outputs.browser }}
+      relay: ${{ steps.docs.outputs.code == 'false' && 'false' || steps.filter.outputs.relay }}
+      cli: ${{ steps.docs.outputs.code == 'false' && 'false' || steps.filter.outputs.cli }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -51,11 +53,28 @@ jobs:
         with:
           filters: .github/ci-paths.yml
 
+      # Manual and merge-queue runs always check everything. Keep this list in sync with the
+      # paths-ignore lists in docker.yml and desktop-packages.yml.
+      - name: Detect documentation-only changes
+        id: docs
+        if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+        uses: dorny/paths-filter@d1c1ffe0248fe513906c8e24db8ea791d46f8590 # v3.0.3
+        with:
+          predicate-quantifier: every
+          filters: |
+            code:
+              - "!docs/**"
+              - "!.zekoder/**"
+              - "!*.md"
+              - "!LICENSE"
+
       # The desktop release tests import js-yaml; nothing else here needs a workspace install.
       - name: Install release tooling test dependencies
+        if: ${{ steps.docs.outputs.code != 'false' }}
         run: node scripts/npm-retry.mjs ci --ignore-scripts --include-workspace-root --workspace=@getpaseo/protocol
 
       - name: Validate CI contracts
+        if: ${{ steps.docs.outputs.code != 'false' }}
         run: node --test scripts/ci-workflow.test.mjs scripts/daemon-launch-contract.test.mjs scripts/sync-fdroid-changelogs.test.mjs scripts/sync-zekoder-plugin.test.mjs scripts/upload-release-assets.test.mjs scripts/release-version-utils.test.mjs scripts/sync-release-notes-from-changelog.test.mjs scripts/desktop-release/release-data.test.mjs scripts/desktop-release/release-ci.test.mjs branding/generate-assets.test.mjs
 
   format:
