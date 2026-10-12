@@ -61,6 +61,7 @@ Run after every change (npm scripts only, never raw npx eslint/oxlint/oxfmt):
 
 - `kb/architecture.md` — Architecture and file map
 - `kb/conventions.md` — Naming conventions and norms
+- `kb/discovery/app-host-plugins.md` — App-side per-host plugin UI: catalog presence, sidebar rows and cross-host targeting, surface route fallback, sidebar callouts, install/enable client calls
 - `kb/discovery/branding.md` — Zekoder branding: BRAND module, asset generator, ids, i18n rewrite
 - `kb/discovery/desktop-releases.md` — Desktop release pipeline (tag-only, GCS catalog), updater boundaries, inherited publisher guards
 - `kb/discovery/plugins.md` — Plugin system: built-in registry, packaging, vendored zekoder plugin, start seams, dev env/signal, app plugin UI, RPC/feature-flag templates, plugin PaseoApi, CI checks
