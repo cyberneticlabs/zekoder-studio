@@ -23,7 +23,11 @@ export function signalProcess(options: SignalOptions): void | Promise<void> {
   try {
     process.kill(plan.pid, plan.signal);
   } catch (error) {
-    if (!(error instanceof Error && "code" in error && error.code === "ESRCH")) throw error;
+    const code = error instanceof Error && "code" in error ? error.code : undefined;
+    if (code === "ESRCH") return;
+    // macOS returns EPERM, not ESRCH, when signalling the group of an exited-but-unreaped child.
+    if (code === "EPERM" && options.platform === "darwin") return;
+    throw error;
   }
 }
 

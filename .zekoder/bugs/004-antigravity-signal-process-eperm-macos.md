@@ -2,20 +2,30 @@
 id: 004-antigravity-signal-process-eperm-macos
 type: bug
 title: Antigravity signalProcess throws EPERM on macOS after the child already exited
-status: planned
+status: merged
 createdAt: 2026-10-11
 openedAt: 2026-10-11T22:07:44.963Z
-updatedAt: 2026-10-11T22:07:44.963Z
+updatedAt: 2026-10-13T21:57:01.503Z
+completedAt: 2026-10-13T21:57:01.503Z
 severity: low
 branch: bug-004-antigravity-signal-process-eperm-macos
 promoted: false
 packages: []
+mergeMode: local
+commit: 1b15fd4f6d93ebc0326476def77564d29f3ceec3
+filesTouched:
+  - .zekoder/bugs/004-antigravity-signal-process-eperm-macos.md
+  - plugins/antigravity-provider/server/internal/signals.ts
+verifiedBaseSha: 240fd94733eb81438aed34f0e9812a0bc39e8de5
 relatedFeatures: []
 relatedBugs: []
 relatedFollowups:
   - 004-full-local-test-run-before-push
 resolvedBy: null
-statusHistory: []
+statusHistory:
+  - from: planned
+    to: merged
+    at: 2026-10-13T21:57:01.503Z
 ---
 # Bug 004-antigravity-signal-process-eperm-macos: Antigravity signalProcess throws EPERM on macOS after the child already exited
 
@@ -43,7 +53,7 @@ Treat `EPERM` the same as `ESRCH` for an already-exited group in `signalProcess`
 
 ## Tasks
 
-- [ ] Handle `EPERM` for exited process groups in `plugins/antigravity-provider/server/internal/signals.ts` and run `antigravity-provider/server/provider.test.ts` on macOS.
+- [x] Handle `EPERM` for exited process groups in `plugins/antigravity-provider/server/internal/signals.ts` and run `antigravity-provider/server/provider.test.ts` on macOS.
 
 ## Verification
 
