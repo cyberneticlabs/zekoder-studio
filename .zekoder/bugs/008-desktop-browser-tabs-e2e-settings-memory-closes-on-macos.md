@@ -2,21 +2,32 @@
 id: 008-desktop-browser-tabs-e2e-settings-memory-closes-on-macos
 type: bug
 title: "Desktop browser-tabs e2e fails on macOS: page closes during settings memory regression, hidden-frame skip never reached"
-status: planned
+status: merged
 createdAt: 2026-10-13
 openedAt: 2026-10-13T11:13:12.407Z
-updatedAt: 2026-10-13T11:13:12.407Z
+updatedAt: 2026-10-13T22:47:10.489Z
+completedAt: 2026-10-13T22:47:10.489Z
 severity: low
 branch: bug-008-desktop-browser-tabs-e2e-settings-memory-closes-on-macos
 promoted: false
 packages: []
+mergeMode: local
 relatedFeatures: []
 relatedBugs:
   - 005-macos-local-test-portability-and-flakes
 relatedFollowups:
   - 006-validate-bug-005-fixes-on-macos
 resolvedBy: null
-statusHistory: []
+statusHistory:
+  - from: planned
+    to: in-progress
+    at: 2026-10-13T21:52:12.246Z
+  - from: in-progress
+    to: planned
+    at: 2026-10-13T22:13:38.637Z
+  - from: planned
+    to: merged
+    at: 2026-10-13T22:47:10.489Z
 ---
 # Bug 008: Desktop browser-tabs e2e fails on macOS before reaching the hidden-frame case
 
@@ -57,3 +68,14 @@ Expected: the settings memory step completes, the hidden-frame case prints `skip
 ## Verification
 
 `npm run test:e2e:browser-tabs` in `packages/desktop` exits 0 on macOS and prints the hidden-frame skip reason.
+
+
+## Resolution: closed, cannot reproduce (2026-10-13)
+
+The supervisor pass for this bug could not reproduce the failure on macOS, so no code changed. `npm run test:e2e:browser-tabs` exited 0 on every run: the settings-memory step alone 3 times, the full script 4 times (two of them concurrently), and once more in the supervisor's gate re-run. The hidden-frame skip line printed and the script ended with "Browser desktop browser E2E passed".
+
+The original `desktop.log` ends abruptly mid-Settings rotation with no crash or renderer-gone line. The likely cause is an outside process killing Electron, such as another agent's cleanup or a `pkill` from a parallel batch. That is unproven.
+
+No darwin skip was added: it would hide real coverage of the detached-pane leak check in `packages/desktop/e2e/settings-memory.electron.mjs`.
+
+If it recurs, capture `desktop.log` and a `ps` snapshot at failure time before filing a new bug.
