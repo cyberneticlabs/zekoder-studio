@@ -2,21 +2,33 @@
 id: 010-observation-integration-watcher-count-flake-persists-on-macos
 type: bug
 title: workspace-git-service observation integration test still flakes (activeWatcherCount 1 vs 2) on macOS, 1 of 15 runs
-status: planned
+status: merged
 createdAt: 2026-10-13
 openedAt: 2026-10-13T11:13:16.066Z
-updatedAt: 2026-10-13T11:13:16.066Z
+updatedAt: 2026-10-13T22:36:01.040Z
+completedAt: 2026-10-13T22:36:01.040Z
 severity: low
 branch: bug-010-observation-integration-watcher-count-flake-persists-on-macos
 promoted: false
 packages: []
+mergeMode: local
+commit: 6b59e845bc4ad6ae580a3675ba6637b55ac4d4a7
+filesTouched:
+  - .zekoder/bugs/010-observation-integration-watcher-count-flake-persists-on-macos.md
+  - docs/file-observation.md
+  - packages/server/src/server/watcher-liveness-canary.test.ts
+  - packages/server/src/server/watcher-liveness-canary.ts
+verifiedBaseSha: e869f2f2e220060eedc74a022ed7e8d0d62772d4
 relatedFeatures: []
 relatedBugs:
   - 005-macos-local-test-portability-and-flakes
 relatedFollowups:
   - 006-validate-bug-005-fixes-on-macos
 resolvedBy: null
-statusHistory: []
+statusHistory:
+  - from: planned
+    to: merged
+    at: 2026-10-13T22:36:01.040Z
 ---
 # Bug 010: observation integration test still flakes on macOS (activeWatcherCount)
 
@@ -50,7 +62,7 @@ Expected: passes every run. Actual: about 1 in 15 runs fails (about 7 percent).
 
 ## Tasks
 
-- [ ] Find why the second recursive watcher is sometimes never registered on macOS (FSEvents setup race vs. test expectation) and fix the test or the product code.
+- [x] Find why the second recursive watcher is sometimes never registered on macOS (FSEvents setup race vs. test expectation) and fix the test or the product code.
 
 ## Verification
 
