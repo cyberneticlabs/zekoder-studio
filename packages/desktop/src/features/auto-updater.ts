@@ -1,3 +1,4 @@
+import { execFile } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -132,6 +133,42 @@ export function shouldInstallAppUpdateOnQuit(input: {
   return !(input.platform === "linux" && input.isAppImage);
 }
 
+/** Pure classification of `codesign -dv` output (stderr, merged with the error text on failure). */
+export function isUnsignedCodesignOutput(output: string): boolean {
+  if (/code object is not signed at all/i.test(output)) return true;
+  if (/^Signature=adhoc$/m.test(output)) return true;
+  // Only trust a missing Team ID when codesign described the bundle; empty or foreign output
+  // (codesign missing, bundle unreadable) says nothing about signing.
+  if (!/^Identifier=/m.test(output)) return false;
+  const teamId = /^TeamIdentifier=(.*)$/m.exec(output)?.[1]?.trim();
+  return !teamId || teamId === "not set";
+}
+
+/** `/X/Zekoder.app/Contents/MacOS/Zekoder` -> `/X/Zekoder.app`, or null outside an app bundle. */
+export function resolveAppBundlePath(execPath: string): string | null {
+  return /^(.*?\.app)(?:\/|$)/.exec(execPath)?.[1] ?? null;
+}
+
+export async function detectUnsignedMacApp(deps: {
+  platform: string;
+  execPath: string;
+  runCodesign(bundlePath: string): Promise<string>;
+}): Promise<boolean> {
+  if (deps.platform !== "darwin") return false;
+  const bundlePath = resolveAppBundlePath(deps.execPath);
+  if (bundlePath === null) return false;
+  return isUnsignedCodesignOutput(await deps.runCodesign(bundlePath));
+}
+
+// codesign reports on stderr and exits non-zero for an unsigned bundle, so both outcomes are output.
+function runCodesignDescribe(bundlePath: string): Promise<string> {
+  return new Promise((resolve) => {
+    execFile("codesign", ["-dv", bundlePath], { timeout: 10_000 }, (error, stdout, stderr) => {
+      resolve(`${stdout}\n${stderr}\n${error ? String(error) : ""}`);
+    });
+  });
+}
+
 export interface BrandedAppUpdateServiceDeps {
   /** Resolved on first use; unpackaged apps never instantiate electron-updater. */
   updater: () => ElectronUpdaterPort;
@@ -141,6 +178,8 @@ export interface BrandedAppUpdateServiceDeps {
   isPackaged(): boolean;
   now(): number;
   bucket(): Promise<number>;
+  /** Resolves true for an unsigned or ad-hoc running app; see AppUpdateServiceDeps. */
+  isUnsignedInstall?(): Promise<boolean>;
   reportCheckError?(error: unknown): void;
   reportRuntimeError?(error: unknown): void;
   reportInstallError?(message: string): void;
@@ -166,6 +205,7 @@ export function createBrandedAppUpdateService(deps: BrandedAppUpdateServiceDeps)
     isPackaged: deps.isPackaged,
     now: deps.now,
     bucket: deps.bucket,
+    isUnsignedInstall: deps.isUnsignedInstall,
     reportCheckError: deps.reportCheckError,
     reportRuntimeError: deps.reportRuntimeError,
     reportInstallError: deps.reportInstallError,
@@ -183,6 +223,12 @@ function getAppUpdateService(): AppUpdateService {
     isPackaged: () => app.isPackaged,
     now: () => Date.now(),
     bucket: async () => bucketFromStagingUserId(await getStagingUserId()),
+    isUnsignedInstall: () =>
+      detectUnsignedMacApp({
+        platform: process.platform,
+        execPath: process.execPath,
+        runCodesign: runCodesignDescribe,
+      }),
     reportCheckError: (error) => {
       console.error("[auto-updater] Failed to check for updates:", error);
     },

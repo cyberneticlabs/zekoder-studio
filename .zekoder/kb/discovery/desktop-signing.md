@@ -19,6 +19,7 @@ Verified against electron-builder 26.8.1 and electron-updater 6.8.3. Process own
 
 ## Updater on unsigned macOS
 
-- Catalog check is signature-agnostic: unsigned builds are offered updates.
-- electron-updater MacUpdater feeds the zip to Squirrel.Mac (`nativeUpdater.checkForUpdates`), which validates signatures and errors for unsigned or ad-hoc apps.
-- packages/desktop/src/features/app-update-service.ts catches it: install returns `Update failed: <msg>` and logs via reportInstallError. No app-side signing awareness yet (followup 007-unsigned-macos-update-offer).
+- Catalog check is signature-agnostic; Squirrel.Mac (via electron-updater MacUpdater) rejects unsigned or ad-hoc apps. Exact Squirrel error text still unconfirmed on hardware.
+- packages/desktop/src/features/auto-updater.ts `detectUnsignedMacApp` — darwin only, runs `codesign -dv` on the running .app once per launch; "not signed at all", `Signature=adhoc`, or no/`not set` TeamIdentifier = unsigned. Probe failure or foreign output = assume signed.
+- packages/desktop/src/features/app-update-service.ts optional `isUnsignedInstall` dep (memoized): unsigned build gets `hasUpdate: true`, `readyToInstall: false`, manual-download `errorMessage`; runtime configured with `autoDownload: false` (catalog-app-update-runtime.ts); install returns `installed: false`. Probe is awaited only when the dep is supplied (an existing test depends on microtask timing).
+- `codesign -dv` output shapes (macOS 26 arm64) recorded in .zekoder/followups/007-unsigned-macos-update-offer.md.

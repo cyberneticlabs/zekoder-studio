@@ -78,7 +78,7 @@ export class CatalogAppUpdateRuntime implements AppUpdateRuntime {
     const { log } = this.deps;
     const updater = this.deps.updater();
     this.releaseChannel = input.releaseChannel;
-    updater.autoDownload = true;
+    updater.autoDownload = input.autoDownload ?? true;
     updater.autoRunAppAfterInstall = true;
     // Paseo revalidates the current catalog before explicitly installing on quit.
     // Electron's built-in handler would install an older download without checking

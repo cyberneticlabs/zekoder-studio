@@ -31,6 +31,7 @@ export function createHarness(input: {
   bucket?: number;
   now?: string;
   publishFeeds?: boolean;
+  isUnsignedInstall?: () => Promise<boolean>;
 }) {
   const platform = input.platform ?? ARM_MAC.platform;
   const arch = input.arch ?? ARM_MAC.arch;
@@ -61,6 +62,7 @@ export function createHarness(input: {
     isPackaged: () => input.packaged ?? true,
     now: () => Date.parse(input.now ?? "2026-10-20T00:00:00.000Z"),
     bucket: async () => input.bucket ?? 0.5,
+    isUnsignedInstall: input.isUnsignedInstall,
     reportCheckError: (error) => checkErrors.push(error),
     reportRuntimeError: (error) => runtimeErrors.push(error),
   });

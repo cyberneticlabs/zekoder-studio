@@ -147,10 +147,13 @@ update itself. The beta pointer later moves to the first signed stable.
 - **First launch.** Gatekeeper blocks the app. On macOS 15 and later, open System Settings > Privacy &
   Security and choose Open Anyway. On earlier versions, Control-click the app and choose Open. On
   either, `xattr -dr com.apple.quarantine /Applications/Zekoder.app` clears the quarantine flag.
-- **Updates do not install.** The catalog check ignores signatures, so an unsigned build is offered
-  updates. `electron-updater` hands the downloaded zip to Squirrel.Mac, which validates signatures and
-  rejects an unsigned or ad-hoc app. The app reports `Update failed: <message>` and nothing crashes,
-  but it advertises an update it cannot install (followup `007-unsigned-macos-update-offer`).
+- **Updates do not install, so the app does not try.** The catalog check ignores signatures, but
+  Squirrel.Mac rejects an unsigned or ad-hoc app. On darwin the desktop app runs `codesign -dv` on its
+  own bundle once per launch (`detectUnsignedMacApp` in `packages/desktop/src/features/auto-updater.ts`).
+  A bundle that is not signed at all, has `Signature=adhoc`, or has no Team ID is treated as unsigned:
+  the check still reports the new version, with an `errorMessage` telling the user to download and
+  reinstall manually, and it neither downloads nor installs. The updater UI shows that message as an
+  error. A failed probe counts as signed, so a normal build never loses its updates to a probe fault.
 - **Reaching a signed build is a manual reinstall.** Squirrel compares the new signature with the
   running app's, so unsigned to signed fails the same way. Give users the signed installer from the
   tag's snapshot.

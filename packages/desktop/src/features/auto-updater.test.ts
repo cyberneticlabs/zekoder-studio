@@ -7,6 +7,9 @@ import { describe, expect, it, vi } from "vitest";
 import {
   bucketFromStagingUserId,
   createAppUpdateLifecycleLogger,
+  detectUnsignedMacApp,
+  isUnsignedCodesignOutput,
+  resolveAppBundlePath,
   resolveStagingUserId,
   rolloutManifestSchema,
   shouldAdmitToRollout,
@@ -522,6 +525,162 @@ describe("branded update service", () => {
       isSilent: false,
       isForceRunAfter: true,
     });
+  });
+});
+
+// Shapes captured from `codesign -dv` on macOS 26 (arm64): an unsigned bundle exits 1 with the
+// first line only; an ad-hoc bundle reports `Signature=adhoc`; a Developer ID bundle has a Team ID.
+const CODESIGN_UNSIGNED = "/Applications/Zekoder.app: code object is not signed at all";
+const CODESIGN_ADHOC = [
+  "Executable=/Applications/Zekoder.app/Contents/MacOS/Zekoder",
+  "Identifier=ai.zekoder.desktop",
+  "Format=app bundle with Mach-O universal (x86_64 arm64e)",
+  "CodeDirectory v=20400 size=296 flags=0x2(adhoc) hashes=3+3 location=embedded",
+  "Signature=adhoc",
+  "Info.plist entries=3",
+  "TeamIdentifier=not set",
+].join("\n");
+const CODESIGN_DEVELOPER_ID = [
+  "Executable=/Applications/Zekoder.app/Contents/MacOS/Zekoder",
+  "Identifier=ai.zekoder.desktop",
+  "CodeDirectory v=20500 size=765 flags=0x12a00(kill,restrict,library-validation,runtime) hashes=13+7 location=embedded",
+  "Signature size=8991",
+  "TeamIdentifier=ABCDE12345",
+].join("\n");
+
+describe("unsigned macOS update offer", () => {
+  const MANUAL_MESSAGE =
+    "Version 0.1.0 is available, but this build is not code-signed and can't update itself. Download the new version and reinstall it manually.";
+
+  it("reports the update with a manual-download message and never downloads it", async () => {
+    const harness = createHarness({ currentVersion: "0.0.9", isUnsignedInstall: async () => true });
+
+    const result = await check(harness, { intent: "automatic" });
+
+    expect(result).toMatchObject({
+      hasUpdate: true,
+      readyToInstall: false,
+      latestVersion: "0.1.0",
+      errorMessage: MANUAL_MESSAGE,
+    });
+    expect(harness.updater.autoDownload).toBe(false);
+    expect(harness.updater.downloads).toEqual([]);
+    expect(harness.updater.allowDowngrade).toBe(false);
+  });
+
+  it("refuses to install and leaves the updater untouched", async () => {
+    const harness = createHarness({ currentVersion: "0.0.9", isUnsignedInstall: async () => true });
+    const onBeforeQuit = vi.fn(async () => undefined);
+
+    const result = await harness.service.downloadAndInstallUpdate(
+      { currentVersion: "0.0.9", releaseChannel: "stable" },
+      onBeforeQuit,
+    );
+
+    expect(result).toEqual({ installed: false, version: "0.0.9", message: MANUAL_MESSAGE });
+    expect(harness.updater.downloads).toEqual([]);
+    expect(harness.updater.installs).toEqual([]);
+    expect(onBeforeQuit).not.toHaveBeenCalled();
+  });
+
+  it("does not install on quit", async () => {
+    const harness = createHarness({ currentVersion: "0.0.9", isUnsignedInstall: async () => true });
+    await check(harness, { intent: "automatic" });
+
+    const installed = await harness.service.installUpdateOnQuit({
+      currentVersion: "0.0.9",
+      releaseChannel: "stable",
+      signal: new AbortController().signal,
+    });
+
+    expect(installed).toBe(false);
+    expect(harness.updater.installs).toEqual([]);
+  });
+
+  it("reports nothing extra when no update exists", async () => {
+    const harness = createHarness({ currentVersion: "0.1.0", isUnsignedInstall: async () => true });
+
+    expect(await check(harness, { currentVersion: "0.1.0" })).toMatchObject({
+      hasUpdate: false,
+      errorMessage: null,
+    });
+  });
+
+  it("keeps the normal flow for a signed build and asks the probe once", async () => {
+    const isUnsignedInstall = vi.fn(async () => false);
+    const harness = createHarness({ currentVersion: "0.0.9", isUnsignedInstall });
+
+    const first = await check(harness, { intent: "automatic" });
+    await check(harness, { intent: "automatic" });
+
+    expect(first).toMatchObject({ hasUpdate: true, errorMessage: null });
+    expect(harness.updater.autoDownload).toBe(true);
+    expect(isUnsignedInstall).toHaveBeenCalledTimes(1);
+  });
+
+  it("treats a failed probe as a signed build", async () => {
+    const harness = createHarness({
+      currentVersion: "0.0.9",
+      isUnsignedInstall: async () => {
+        throw new Error("codesign missing");
+      },
+    });
+
+    expect(await check(harness)).toMatchObject({ hasUpdate: true, errorMessage: null });
+    expect(harness.updater.autoDownload).toBe(true);
+  });
+});
+
+describe("detectUnsignedMacApp", () => {
+  const execPath = "/Applications/Zekoder.app/Contents/MacOS/Zekoder";
+
+  it.each([
+    { name: "unsigned", output: CODESIGN_UNSIGNED, expected: true },
+    { name: "ad-hoc", output: CODESIGN_ADHOC, expected: true },
+    {
+      name: "described bundle without a Team ID line",
+      output: "Identifier=ai.zekoder.desktop\nSignature size=8991",
+      expected: true,
+    },
+    { name: "Developer ID", output: CODESIGN_DEVELOPER_ID, expected: false },
+    { name: "empty output", output: "", expected: false },
+    { name: "codesign failure", output: "Error: spawn codesign ENOENT", expected: false },
+  ])("classifies $name output", async ({ output, expected }) => {
+    const runCodesign = vi.fn(async () => output);
+
+    expect(isUnsignedCodesignOutput(output)).toBe(expected);
+    expect(await detectUnsignedMacApp({ platform: "darwin", execPath, runCodesign })).toBe(
+      expected,
+    );
+    expect(runCodesign).toHaveBeenCalledWith("/Applications/Zekoder.app");
+  });
+
+  it.each(["win32", "linux"])("skips the probe on %s", async (platform) => {
+    const runCodesign = vi.fn(async () => CODESIGN_UNSIGNED);
+
+    expect(await detectUnsignedMacApp({ platform, execPath, runCodesign })).toBe(false);
+    expect(runCodesign).not.toHaveBeenCalled();
+  });
+
+  it("skips the probe outside an app bundle", async () => {
+    const runCodesign = vi.fn(async () => CODESIGN_UNSIGNED);
+
+    expect(
+      await detectUnsignedMacApp({
+        platform: "darwin",
+        execPath: "/usr/local/bin/electron",
+        runCodesign,
+      }),
+    ).toBe(false);
+    expect(runCodesign).not.toHaveBeenCalled();
+  });
+
+  it("finds the outermost bundle from the executable path", () => {
+    expect(resolveAppBundlePath(execPath)).toBe("/Applications/Zekoder.app");
+    expect(resolveAppBundlePath("/Users/me/My Apps/Zekoder.app")).toBe(
+      "/Users/me/My Apps/Zekoder.app",
+    );
+    expect(resolveAppBundlePath("/usr/bin/node")).toBeNull();
   });
 });
 

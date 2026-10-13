@@ -35,6 +35,8 @@ export interface RuntimeUpdateCheckResult {
 
 export interface AppUpdateRuntimeConfiguration {
   releaseChannel: AppReleaseChannel;
+  /** Defaults to true. False keeps the check read-only, with no background download. */
+  autoDownload?: boolean;
   shouldAdmitUpdate(info: RuntimeUpdateInfo): boolean | Promise<boolean>;
   onUpdateAvailable(info: RuntimeUpdateInfo): void;
   onUpdateDownloaded(info: RuntimeUpdateInfo): void;
@@ -79,6 +81,11 @@ export interface AppUpdateServiceDeps {
   isPackaged(): boolean;
   now(): number;
   bucket(): Promise<number>;
+  /**
+   * True when the running app carries no Developer ID signature, so its updater cannot install a
+   * download. Such a build is told about the update and pointed at a manual download instead.
+   */
+  isUnsignedInstall?(): Promise<boolean>;
   reportCheckError?(error: unknown): void;
   reportRuntimeError?(error: unknown): void;
   reportInstallError?(message: string): void;
@@ -131,6 +138,10 @@ function getErrorMessage(error: unknown): string {
   return String(error);
 }
 
+function buildManualInstallMessage(version: string): string {
+  return `Version ${version} is available, but this build is not code-signed and can't update itself. Download the new version and reinstall it manually.`;
+}
+
 function buildDeferredInstallResult(currentVersion: string): AppUpdateInstallResult {
   return {
     installed: false,
@@ -146,6 +157,14 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
   let preparationError: { version: string; message: string } | null = null;
   let preparingUpdateVersion: string | null = null;
   let checkQueue: Promise<void> = Promise.resolve();
+  let unsignedInstall: Promise<boolean> | null = null;
+
+  // Signing cannot change while the app runs, so ask once. A failed probe means "assume signed":
+  // the normal install path then reports its own failure instead of hiding updates.
+  function isManualInstallOnly(): Promise<boolean> {
+    unsignedInstall ??= (deps.isUnsignedInstall?.() ?? Promise.resolve(false)).catch(() => false);
+    return unsignedInstall;
+  }
 
   function isReadyToInstallVersion(version: string): boolean {
     return downloadedUpdateVersion === version;
@@ -176,7 +195,11 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
     });
   }
 
-  function configureRuntime(releaseChannel: AppReleaseChannel, intent: AppUpdateCheckIntent): void {
+  function configureRuntime(
+    releaseChannel: AppReleaseChannel,
+    intent: AppUpdateCheckIntent,
+    autoDownload: boolean,
+  ): void {
     if (configuredReleaseChannel !== releaseChannel) {
       clearUpdateState();
       configuredReleaseChannel = releaseChannel;
@@ -184,6 +207,7 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
 
     deps.runtime.configure({
       releaseChannel,
+      autoDownload,
       shouldAdmitUpdate: async (info) => {
         const parsed = rolloutManifestSchema.parse(info);
         return shouldAdmitAppUpdate({
@@ -254,8 +278,8 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
       });
     }
 
-    return runCheckExclusively(async () => {
-      configureRuntime(releaseChannel, intent);
+    async function checkCatalog(manualInstallOnly: boolean): Promise<AppUpdateCheckResult> {
+      configureRuntime(releaseChannel, intent, !manualInstallOnly);
 
       try {
         const result = await deps.runtime.checkForUpdates();
@@ -320,6 +344,18 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
           errorMessage: getErrorMessage(error),
         });
       }
+    }
+
+    return runCheckExclusively(async () => {
+      // Without a probe, skip the await so checks keep their original microtask timing.
+      const manualInstallOnly = deps.isUnsignedInstall ? await isManualInstallOnly() : false;
+      const result = await checkCatalog(manualInstallOnly);
+      if (!manualInstallOnly || !result.hasUpdate) return result;
+      return {
+        ...result,
+        readyToInstall: false,
+        errorMessage: buildManualInstallMessage(result.latestVersion),
+      };
     });
   }
 
@@ -351,6 +387,15 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
         installed: false,
         version: currentVersion,
         message: check.errorMessage ?? "No update available.",
+      };
+    }
+
+    // The check never downloads for an unsigned build, so there is nothing to install.
+    if (await isManualInstallOnly()) {
+      return {
+        installed: false,
+        version: currentVersion,
+        message: buildManualInstallMessage(check.latestVersion),
       };
     }
 
