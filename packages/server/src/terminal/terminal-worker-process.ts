@@ -260,6 +260,12 @@ async function handleRequest(message: TerminalWorkerRequest): Promise<void> {
       return;
     }
 
+    case "setTitle": {
+      manager.setTerminalTitle(message.terminalId, message.title);
+      sendToParent({ type: "response", requestId: message.requestId, ok: true });
+      return;
+    }
+
     case "clearAttention": {
       await manager.clearTerminalAttention(message.terminalId);
       sendToParent({ type: "response", requestId: message.requestId, ok: true });

@@ -369,6 +369,9 @@ export function createWorkerTerminalManager(
           return;
         }
         record.info = { ...record.info, title: manualTitle };
+        // The worker owns the shell's title stream. Without this it keeps
+        // following shell title escapes and overwrites the manual name.
+        sendBestEffortRequest({ type: "setTitle", terminalId: record.info.id, title: manualTitle });
         for (const listener of Array.from(record.titleChangeListeners)) {
           listener(manualTitle);
         }

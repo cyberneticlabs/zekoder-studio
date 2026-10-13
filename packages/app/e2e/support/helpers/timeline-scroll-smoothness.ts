@@ -324,17 +324,28 @@ export function findScrollJumps(frames: ScrollFrame[]) {
       intendedRow &&
       currentRows.has(intendedRow.id) &&
       Math.abs(currentRows.get(intendedRow.id)!.top - intendedRow.top - availableScroll) <= 32;
-    const enteredRowGrowth = readerFollowsInput
-      ? previous.rows.reduce((growth, row) => {
-          if (row.top < intendedRow.top || row.top >= before.top) return growth;
-          const height = currentRows.get(row.id)?.height ?? row.height;
-          return growth + Math.max(0, height - row.height);
-        }, 0)
-      : 0;
+    const enteredRowResize = (direction: 1 | -1) =>
+      readerFollowsInput
+        ? previous.rows.reduce((total, row) => {
+            if (row.top < intendedRow.top || row.top >= before.top) return total;
+            const height = currentRows.get(row.id)?.height ?? row.height;
+            return total + Math.max(0, direction * (height - row.height));
+          }, 0)
+        : 0;
+    const enteredRowGrowth = enteredRowResize(1);
+    // A placeholder wider than its image shrinks once the bytes arrive. When the
+    // reading line has just entered that row, the text below it rises by the same
+    // amount, exactly as growth pushes it down.
+    const enteredRowShrink = enteredRowResize(-1);
     const excessForward = movement > wheelBudget + enteredRowGrowth + 32;
     // Upward wheel input moves the same text DOWN the viewport. A negative move
     // is a reversal, independent of legitimate scrollTop compensation on prepend.
-    if (movement >= -8 && (!idle || Math.abs(movement) <= 8) && !excessForward) return [];
+    if (
+      movement >= -8 - enteredRowShrink &&
+      (!idle || Math.abs(movement) <= 8 + enteredRowShrink) &&
+      !excessForward
+    )
+      return [];
     return [
       {
         frame: index,

@@ -58,7 +58,10 @@ test("scroll detector distinguishes entered image growth from a simultaneous vie
   expect(
     findScrollJumps([
       before,
-      { ...after, rows: after.rows.map((row) => ({ ...row, top: row.top - 500 })) },
+      {
+        ...after,
+        rows: after.rows.map((row) => ({ id: row.id, height: row.height, top: row.top - 500 })),
+      },
     ]),
   ).toHaveLength(1);
   expect(
@@ -128,6 +131,55 @@ test("scroll detector accounts for delayed wheel input and growth below the new 
       {
         ...after,
         rows: after.rows.map((row) => ({ id: row.id, height: row.height, top: row.top + 100 })),
+      },
+    ]),
+  ).toHaveLength(1);
+});
+
+test("scroll detector accepts a placeholder shrinking under the reading line it just entered", () => {
+  const before: ScrollFrame = {
+    at: 1000,
+    scrollTop: 3436,
+    scrollHeight: 31709,
+    viewportHeight: 800,
+    virtualized: true,
+    loading: false,
+    rows: [
+      { id: "image", top: -674, height: 560 },
+      { id: "reading", top: -114, height: 130 },
+      { id: "below", top: 16, height: 81 },
+    ],
+    anchor: "reading",
+    wheelTotal: 0,
+    lastWheelAt: 0,
+    inputFinishedAt: null,
+    imageLoads: 0,
+    mounted: 0,
+    unmounted: 0,
+  };
+  // One wheel step brings the image under the reading line while its bytes
+  // arrive and the 3:2 placeholder collapses to the real 4:1 image.
+  const after: ScrollFrame = {
+    ...before,
+    at: 1017,
+    scrollTop: 3264,
+    scrollHeight: 31362,
+    wheelTotal: 160,
+    lastWheelAt: 1010,
+    rows: [
+      { id: "image", top: -514, height: 225 },
+      { id: "reading", top: -289, height: 130 },
+      { id: "below", top: -159, height: 81 },
+    ],
+  };
+  expect(findScrollJumps([before, after])).toEqual([]);
+  // Text that moves further than the collapse explains is still a reversal.
+  expect(
+    findScrollJumps([
+      before,
+      {
+        ...after,
+        rows: after.rows.map((row) => ({ id: row.id, height: row.height, top: row.top - 500 })),
       },
     ]),
   ).toHaveLength(1);

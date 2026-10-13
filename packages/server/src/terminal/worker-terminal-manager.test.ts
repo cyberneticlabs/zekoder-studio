@@ -731,6 +731,34 @@ it("sets terminal activity through a worker request", async () => {
   await expect(result).resolves.toBe(true);
 });
 
+it("forwards a manual terminal title to the worker so shell titles stop overwriting it", () => {
+  const worker = new FakeTerminalWorker();
+  manager = createWorkerTerminalManager({
+    requestTimeoutMs: 50,
+    forkWorker: () => worker,
+  });
+  worker.emitWorkerMessage({
+    type: "terminalCreated",
+    terminal: {
+      id: "terminal-a",
+      name: "Shell",
+      cwd: "/workspace",
+      workspaceId: "ws-test",
+      activity: null,
+    },
+    state: createTerminalState(),
+  });
+
+  expect(manager.setTerminalTitle("terminal-a", "  My named terminal ")).toBe(true);
+
+  expect(worker.sentMessages.find((message) => message.type === "setTitle")).toMatchObject({
+    type: "setTitle",
+    terminalId: "terminal-a",
+    title: "My named terminal",
+  });
+  expect(manager.getTerminal("terminal-a")?.getTitle()).toBe("My named terminal");
+});
+
 it("clears terminal attention through a worker request", async () => {
   const worker = new FakeTerminalWorker();
   manager = createWorkerTerminalManager({
