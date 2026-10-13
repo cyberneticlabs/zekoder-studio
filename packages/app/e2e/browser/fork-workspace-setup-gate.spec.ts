@@ -71,7 +71,9 @@ test("fork workspace setup stays blocked until the user runs it", async ({ page 
 
     await test.step("the blocked setup tab opens with the fork warning", async () => {
       await expect(page.getByTestId("workspace-setup-panel")).toBeVisible({ timeout: 30_000 });
-      await expect(page.getByRole("alert")).toContainText("fork-owner/local-fixture");
+      await expect(page.getByTestId("workspace-setup-blocked")).toContainText(
+        "fork-owner/local-fixture",
+      );
       await expect(page.getByRole("button", { name: "Run setup" })).toBeVisible();
       await page.screenshot({
         path: path.join(evidenceDir, "blocked-fork-setup.png"),
