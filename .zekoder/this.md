@@ -64,6 +64,7 @@ Run after every change (npm scripts only, never raw npx eslint/oxlint/oxfmt):
 - `kb/discovery/app-host-plugins.md` — App-side per-host plugin UI: catalog presence, sidebar rows and cross-host targeting, surface route fallback, sidebar callouts, install/enable client calls
 - `kb/discovery/branding.md` — Zekoder branding: BRAND module, asset generator, ids, i18n rewrite
 - `kb/discovery/desktop-releases.md` — Desktop release pipeline (tag-only, GCS catalog), updater boundaries, inherited publisher guards
+- `kb/discovery/desktop-signing.md` — Desktop code signing: electron-builder fallbacks, signing policy wiring, updater behavior on unsigned macOS
 - `kb/discovery/plugins.md` — Plugin system: built-in registry, packaging, vendored zekoder plugin, start seams, dev env/signal, app plugin UI, RPC/feature-flag templates, plugin PaseoApi, CI checks
 - `kb/goals.md` — Repo purpose, users, goals with dated success signals, and explicit non-goals
 - `kb/guardrails.md` — Hard boundaries: each rule, why it exists, and how to check compliance
