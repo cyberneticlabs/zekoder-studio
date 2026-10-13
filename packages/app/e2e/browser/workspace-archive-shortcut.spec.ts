@@ -17,7 +17,7 @@ test.describe("Workspace archive shortcut", () => {
       await waitForSidebarHydration(page);
       await selectWorkspaceInSidebar(page, workspace.workspaceId);
 
-      const modifier = process.platform === "darwin" ? "Meta" : "Control";
+      const modifier = "Control";
       await page.keyboard.press(`${modifier}+Shift+Backspace`);
 
       await expectWorkspaceAbsentFromSidebar(page, workspace.workspaceId);

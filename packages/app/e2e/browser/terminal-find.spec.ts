@@ -19,7 +19,7 @@ function input(page: Page) {
     .locator(".xterm-helper-textarea");
 }
 async function openFind(page: Page, text?: string) {
-  await input(page).press("ControlOrMeta+f");
+  await input(page).press("Control+f");
   await expect(query(page)).toBeFocused();
   if (text !== undefined) await query(page).fill(text);
 }
@@ -383,7 +383,7 @@ test("searches retained output without sending Find input to the shell", async (
   await expectUncoveredMatch(page);
   await query(page).press("Enter");
   await expect(status(page)).toHaveText("1 of 2");
-  await query(page).press("ControlOrMeta+f");
+  await query(page).press("Control+f");
   await expectSelectedQuery(page, "a.b");
   await query(page).fill("A.B");
   await expect(status(page)).toHaveText("1 of 2");
@@ -431,7 +431,7 @@ test("keeps terminal Find owned by retained tabs and the focused split pane", as
   await expect(status(page).filter({ visible: true })).toHaveText("2 of 2");
   await query(page).filter({ visible: true }).press("Escape");
   await page.getByTestId(`workspace-tab-terminal_${first.id}`).first().click();
-  await input(page).press("ControlOrMeta+f");
+  await input(page).press("Control+f");
   await expectSelectedQuery(page, "needle");
   await expect(status(page).filter({ visible: true })).toHaveText("1 of 1");
   await query(page).filter({ visible: true }).press("Escape");
@@ -447,14 +447,14 @@ test("keeps terminal Find owned by retained tabs and the focused split pane", as
   await expect(left.locator(".xterm-helper-textarea")).toHaveCount(1);
   await expect(right.locator(".xterm-helper-textarea")).toHaveCount(1);
   await right.getByTestId("terminal-surface").click();
-  await right.locator(".xterm-helper-textarea").press("ControlOrMeta+f");
+  await right.locator(".xterm-helper-textarea").press("Control+f");
   await expect(right.getByRole("textbox", { name: "Find in pane", exact: true })).toBeFocused();
   await right.getByRole("textbox", { name: "Find in pane", exact: true }).fill("needle");
   await expect(right.getByRole("status", { name: "Find matches" })).toHaveText(/of 2/);
   await expect(left.getByRole("textbox", { name: "Find in pane", exact: true })).toHaveCount(0);
   await right.getByRole("textbox", { name: "Find in pane", exact: true }).press("Escape");
   await left.getByTestId("terminal-surface").click();
-  await left.locator(".xterm-helper-textarea").press("ControlOrMeta+f");
+  await left.locator(".xterm-helper-textarea").press("Control+f");
   await expect(left.getByRole("textbox", { name: "Find in pane", exact: true })).toBeFocused();
   await left.getByRole("textbox", { name: "Find in pane", exact: true }).fill("needle");
   await expect(left.getByRole("status", { name: "Find matches" })).toHaveText("1 of 1");

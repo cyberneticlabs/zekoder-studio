@@ -12,7 +12,7 @@ import { selectSidebarStatusGrouping } from "../support/helpers/sidebar";
 // The pin shortcut used to be registered by the sidebar row itself, so it silently did nothing
 // whenever the row was unmounted — a collapsed project section being the common case. It now
 // lives in a single always-mounted handler keyed on the active route selection.
-const PIN_SHORTCUT = "ControlOrMeta+Shift+P";
+const PIN_SHORTCUT = "Control+Shift+P";
 
 function workspaceRow(page: Page, workspaceId: string) {
   return page.getByTestId(`sidebar-workspace-row-${getServerId()}:${workspaceId}`);

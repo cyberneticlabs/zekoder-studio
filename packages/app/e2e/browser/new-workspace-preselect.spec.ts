@@ -27,7 +27,7 @@ const OFFLINE_SERVER_IDS = [
 // when there is exactly one online saved host.
 
 async function pressNewWorkspaceShortcut(page: import("@playwright/test").Page): Promise<void> {
-  const modifier = process.platform === "darwin" ? "Meta" : "Control";
+  const modifier = "Control";
   await page.keyboard.press(`${modifier}+n`);
   await expect(page).toHaveURL(/\/new(?:\?.*)?$/, { timeout: 30_000 });
 }

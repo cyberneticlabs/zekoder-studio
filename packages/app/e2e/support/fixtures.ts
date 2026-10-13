@@ -156,6 +156,9 @@ const test = daemonTest.extend<{
       // The project's Desktop Chrome user agent is Windows, but navigator.platform keeps the real
       // host value ("MacIntel" on a Mac), which flips shortcut hints to macOS glyphs. Align it with
       // the user agent; specs that fake macOS redefine it in their own init script, which runs later.
+      // The app is therefore non-mac on every host, so app-handled shortcuts must be pressed with
+      // `Control`, never `ControlOrMeta` (Playwright resolves that to Meta on a Mac host). Native
+      // browser editing (copy, paste) still follows the host, so those keep `ControlOrMeta`.
       await page.addInitScript(() => {
         Object.defineProperty(navigator, "platform", { get: () => "Win32", configurable: true });
       });

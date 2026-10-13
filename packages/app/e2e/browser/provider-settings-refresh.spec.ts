@@ -166,7 +166,7 @@ test.describe("provider settings overlay stack", () => {
       await expect(shortcuts).not.toBeVisible({ timeout: 10_000 });
       await expect(selector).toBeVisible();
 
-      await page.keyboard.press("ControlOrMeta+K");
+      await page.keyboard.press("Control+K");
       const commandCenter = page.getByTestId("command-center-panel");
       await expect(commandCenter).toBeVisible({ timeout: 10_000 });
       await expect(commandCenter.getByTestId("command-center-input")).toBeFocused();
@@ -174,7 +174,7 @@ test.describe("provider settings overlay stack", () => {
       await expect(commandCenter).not.toBeVisible({ timeout: 10_000 });
       await expect(selector).toBeVisible();
 
-      await page.keyboard.press("ControlOrMeta+K");
+      await page.keyboard.press("Control+K");
       await expect(commandCenter).toBeVisible({ timeout: 10_000 });
       await commandCenter.getByTestId("command-center-input").fill("add project");
       await commandCenter.getByText("Add project", { exact: true }).click();

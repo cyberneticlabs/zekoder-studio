@@ -109,7 +109,7 @@ test.describe("Tab creation", () => {
   test("retained inactive workspaces cannot own New tab shortcuts", async ({ page }) => {
     await gotoWorkspace(page, workspace.workspaceId);
     const workspaceUrl = page.url();
-    const modifier = process.platform === "darwin" ? "Meta" : "Control";
+    const modifier = "Control";
     const newTabCountBefore = await countTabsOfKind(page, "new_tab");
 
     await page.keyboard.press(`${modifier}+Comma`);
@@ -168,7 +168,7 @@ test.describe("Tab creation", () => {
     const agent = panel.getByRole("button", { name: /^Agent/ });
     const terminal = panel.getByRole("button", { name: /^Terminal/ });
     const diff = panel.getByRole("button", { name: /Diff/ });
-    const shortcutPrefix = process.platform === "darwin" ? /⇧⌘/ : /Ctrl.*Shift/;
+    const shortcutPrefix = /Ctrl.*Shift/;
     await expect(agent).toContainText(new RegExp(`${shortcutPrefix.source}.*A`));
     await expect(terminal).toContainText(new RegExp(`${shortcutPrefix.source}.*T`));
     await expect(diff).toContainText(new RegExp(`${shortcutPrefix.source}.*G`));

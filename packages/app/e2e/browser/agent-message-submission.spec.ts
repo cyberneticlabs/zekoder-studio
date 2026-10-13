@@ -310,7 +310,7 @@ async function expectRejectedPromptBeforeError(page: Page, prompt: string, error
 }
 
 async function configureSteerInSettings(page: Page): Promise<void> {
-  const modifier = process.platform === "darwin" ? "Meta" : "Control";
+  const modifier = "Control";
   await page.keyboard.press(`${modifier}+Comma`);
   await expect(page).toHaveURL(/\/settings\/general$/);
   await selectSteerInSettings(page);
@@ -322,7 +322,7 @@ async function selectSteerInSettings(page: Page): Promise<void> {
 
 /** Steer is the default, so the interrupt path only gets exercised by opting back into it. */
 async function configureInterruptInSettings(page: Page): Promise<void> {
-  const modifier = process.platform === "darwin" ? "Meta" : "Control";
+  const modifier = "Control";
   await page.keyboard.press(`${modifier}+Comma`);
   await expect(page).toHaveURL(/\/settings\/general$/);
   await selectSendBehaviorInSettings(page, "Interrupt", "interrupt");

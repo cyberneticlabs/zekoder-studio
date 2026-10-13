@@ -40,7 +40,7 @@ async function collapseProjectSection(page: Page, project: SeededWorkspace): Pro
 // header — absent on /settings and once every workspace has moved to Pinned. Cmd-K is the
 // surface under test anyway, and it works from every route.
 async function openCommandCenter(page: Page): Promise<Locator> {
-  await page.keyboard.press("ControlOrMeta+K");
+  await page.keyboard.press("Control+K");
   const panel = page.getByTestId("command-center-panel");
   await expect(panel).toBeVisible({ timeout: 30_000 });
   return panel;

@@ -2,21 +2,56 @@
 id: 007-pane-find-e2e-fails-on-macos-after-platform-pin
 type: bug
 title: "pane-find.spec.ts fails 12 of 12 on macOS: fixture pins navigator.platform to Win32 but specs press ControlOrMeta"
-status: planned
+status: merged
 createdAt: 2026-10-13
 openedAt: 2026-10-13T11:13:10.626Z
-updatedAt: 2026-10-13T11:13:10.626Z
+updatedAt: 2026-10-13T12:31:51.712Z
+completedAt: 2026-10-13T12:31:51.712Z
 severity: medium
 branch: bug-007-pane-find-e2e-fails-on-macos-after-platform-pin
 promoted: false
 packages: []
+mergeMode: local
+commit: a24ea851c83ba5492ed652b61790cde4a607b293
+filesTouched:
+  - .zekoder/bugs/007-pane-find-e2e-fails-on-macos-after-platform-pin.md
+  - packages/app/e2e/browser/agent-message-submission.spec.ts
+  - packages/app/e2e/browser/changes-shortcut-placement.spec.ts
+  - packages/app/e2e/browser/chat-find.spec.ts
+  - packages/app/e2e/browser/command-center-workspace-management.spec.ts
+  - packages/app/e2e/browser/context-window-meter.spec.ts
+  - packages/app/e2e/browser/empty-pane-keyboard.spec.ts
+  - packages/app/e2e/browser/explorer-surface-upgrade.spec.ts
+  - packages/app/e2e/browser/file-editing.spec.ts
+  - packages/app/e2e/browser/keyboard-shortcut-sequence.spec.ts
+  - packages/app/e2e/browser/launcher-tab.spec.ts
+  - packages/app/e2e/browser/new-workspace-preselect.spec.ts
+  - packages/app/e2e/browser/pane-find.spec.ts
+  - packages/app/e2e/browser/provider-settings-refresh.spec.ts
+  - packages/app/e2e/browser/settings-toggle-tab-regression.spec.ts
+  - packages/app/e2e/browser/sidebar-workspace-pin-shortcut.spec.ts
+  - packages/app/e2e/browser/terminal-find.spec.ts
+  - packages/app/e2e/browser/workspace-archive-shortcut.spec.ts
+  - packages/app/e2e/browser/workspace-focus-mode.spec.ts
+  - packages/app/e2e/support/fixtures.ts
+  - packages/app/e2e/support/helpers/launcher.ts
+verifiedBaseSha: c76b63d31da9e2430caacbc808e511dc6cc6ce09
 relatedFeatures: []
 relatedBugs:
   - 005-macos-local-test-portability-and-flakes
 relatedFollowups:
   - 006-validate-bug-005-fixes-on-macos
 resolvedBy: null
-statusHistory: []
+statusHistory:
+  - from: planned
+    to: in-progress
+    at: 2026-10-13T11:50:25.332Z
+  - from: in-progress
+    to: ready
+    at: 2026-10-13T12:31:15.816Z
+  - from: ready
+    to: merged
+    at: 2026-10-13T12:31:51.712Z
 ---
 # Bug 007: pane-find.spec.ts fails 12 of 12 on macOS after the navigator.platform pin
 
@@ -51,7 +86,7 @@ The pin must follow the host (or the specs must press the key that matches the p
 
 ## Tasks
 
-- [ ] Reproduce on macOS, pick the fixture or spec fix, and re-run pane-find plus the other `ControlOrMeta` specs on macOS and Linux.
+- [x] Reproduce on macOS, pick the fixture or spec fix, and re-run pane-find plus the other `ControlOrMeta` specs on macOS and Linux.
 
 ## Verification
 

@@ -7,7 +7,7 @@ const COMMAND_CENTER_SEQUENCE = {
   "command-center-toggle-ctrl-k-non-mac": "Ctrl+K J",
 };
 
-const SEQUENCE_PREFIX = process.platform === "darwin" ? "Meta+K" : "Control+K";
+const SEQUENCE_PREFIX = "Control+K";
 const SEQUENCE_FINAL_KEY = "j";
 
 /** Record the sequence in Settings → Keyboard shortcuts, through its storage. */

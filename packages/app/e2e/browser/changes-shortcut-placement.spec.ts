@@ -3,7 +3,7 @@ import { clickNewChat, gotoWorkspace } from "../support/helpers/launcher";
 import { seedWorkspace } from "../support/helpers/seed-client";
 import { waitForWorkspaceTabsVisible } from "../support/helpers/workspace-tabs";
 
-const CHANGES_SHORTCUT = `${process.platform === "darwin" ? "Meta" : "Control"}+Shift+G`;
+const CHANGES_SHORTCUT = "Control+Shift+G";
 
 test("Changes shortcut reveals the Changes tree in Explorer", async ({ page }) => {
   const workspace = await seedWorkspace({ repoPrefix: "changes-shortcut-explorer-" });

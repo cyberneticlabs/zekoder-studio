@@ -6,7 +6,7 @@ import { seedWorkspace } from "../support/helpers/seed-client";
 import { getServerId } from "../support/helpers/server-id";
 
 async function pressSettingsToggleShortcut(page: import("@playwright/test").Page) {
-  const modifier = process.platform === "darwin" ? "Meta" : "Control";
+  const modifier = "Control";
   await page.keyboard.press(`${modifier}+Comma`);
 }
 

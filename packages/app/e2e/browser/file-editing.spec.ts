@@ -268,7 +268,7 @@ test.describe("CodeMirror workspace file editing", () => {
 
       const sourceEditor = editor(page);
       await sourceEditor.click();
-      await sourceEditor.press("ControlOrMeta+Home");
+      await sourceEditor.press("Control+Home");
       await expect(page.getByLabel(/^Line 1, column \d+$/)).toBeVisible();
 
       await page
@@ -403,13 +403,13 @@ test.describe("CodeMirror workspace file editing", () => {
     const initialModeBox = await modeControl.boundingBox();
     expect(initialModeBox).not.toBeNull();
     const initialModeX = initialModeBox!.x;
-    await content.press("ControlOrMeta+End");
+    await content.press("Control+End");
     await expect(page.getByLabel(/Line 12, column \d+/)).toBeVisible();
     const movedModeBox = await modeControl.boundingBox();
     expect(movedModeBox).not.toBeNull();
     expect(movedModeBox!.x).toBe(initialModeX);
 
-    await content.press("ControlOrMeta+a");
+    await content.press("Control+a");
     const selection = editorHost.locator(".cm-selectionBackground").first();
     await expect(selection).toBeVisible();
     await expect(selection).toHaveCSS("background-color", "rgba(255, 255, 255, 0.2)");

@@ -50,7 +50,7 @@ function status(page: Page) {
 }
 async function openChatFind(page: Page) {
   await page.getByTestId("assistant-message").filter({ visible: true }).last().click();
-  await page.keyboard.press("ControlOrMeta+f");
+  await page.keyboard.press("Control+f");
   await expect(query(page)).toBeFocused();
 }
 async function searchChat(page: Page, text: string) {

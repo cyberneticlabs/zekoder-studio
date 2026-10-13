@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "../support/fixtures";
 
-const modifier = process.platform === "darwin" ? "Meta" : "Control";
+const modifier = "Control";
 
 async function pressFocusModeShortcut(page: Page) {
   await page.keyboard.press(`${modifier}+Shift+F`);

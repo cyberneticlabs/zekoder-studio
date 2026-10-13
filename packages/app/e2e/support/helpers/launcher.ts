@@ -62,9 +62,9 @@ export async function getActiveTabTestId(page: Page): Promise<string | null> {
 
 // ─── Tab actions ───────────────────────────────────────────────────────────
 
-/** Press Cmd+T (macOS) or Ctrl+T (Linux/Windows) to create a New tab in the focused pane. */
+/** Press Ctrl+T (the fixture pins a non-macOS platform) to create a New tab in the focused pane. */
 export async function pressNewTabShortcut(page: Page): Promise<void> {
-  const modifier = process.platform === "darwin" ? "Meta" : "Control";
+  const modifier = "Control";
   await page.keyboard.press(`${modifier}+t`);
 }
 
@@ -74,7 +74,7 @@ export async function openNewTabMenuWithShortcut(page: Page): Promise<void> {
 }
 
 export async function pressDirectNewTabShortcut(page: Page, key: string): Promise<void> {
-  const modifier = process.platform === "darwin" ? "Meta" : "Control";
+  const modifier = "Control";
   await page.keyboard.press(`${modifier}+Shift+${key}`);
 }
 

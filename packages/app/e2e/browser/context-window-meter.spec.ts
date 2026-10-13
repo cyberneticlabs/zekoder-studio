@@ -450,6 +450,6 @@ test("Find remains available after dismissing context details", async ({ page, a
   await page.keyboard.press("Escape");
   await expect(contextWindowDetails(page)).toHaveCount(0);
   await expect(trigger).toBeFocused();
-  await page.keyboard.press("ControlOrMeta+f");
+  await page.keyboard.press("Control+f");
   await expect(page.getByRole("textbox", { name: "Find in pane", exact: true })).toBeFocused();
 });
