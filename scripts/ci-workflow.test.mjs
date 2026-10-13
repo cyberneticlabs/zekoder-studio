@@ -410,6 +410,27 @@ test("desktop release publishes only after every target and finalizes after publ
   assert.match(jobs.get("publish").join("\n"), /verify-tag/);
 });
 
+test("desktop release ships macOS unsigned only when no Apple secrets exist", () => {
+  const source = readFileSync(desktopReleasePath, "utf8");
+  const build = jobsOf(source).get("build").join("\n");
+  // Scoped to the darwin case so the Windows branch's own unsigned policy cannot satisfy these.
+  const darwin = /^ {12}darwin\)\n([\s\S]*?)^ {14};;$/m.exec(build)?.[1];
+  assert.ok(darwin, "darwin case of the signing policy step");
+
+  assert.match(darwin, /SIGNING_POLICY=notarized/);
+  assert.match(darwin, /SIGNING_POLICY=unsigned/);
+  assert.match(darwin, /-c\.mac\.notarize=false/);
+  assert.match(darwin, /-c\.mac\.hardenedRuntime=false/);
+  assert.match(darwin, /::error::[^\n]*missing/);
+  assert.doesNotMatch(darwin, /mac\.identity/);
+
+  assert.match(build, /npm run build:desktop[\s\S]*\$\{BUILDER_SIGNING_FLAGS:-\}/);
+  assert.match(
+    build,
+    /Verify macOS signature and notarization\n\s+if: matrix\.platform == 'darwin' && env\.SIGNING_POLICY == 'notarized'/,
+  );
+});
+
 test("inherited upstream publishing jobs only run in the upstream repository", () => {
   const guard = "github.repository == 'getpaseo/paseo'";
   const expectations = [

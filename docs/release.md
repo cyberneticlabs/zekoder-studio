@@ -7,7 +7,7 @@ upstream syncs merge cleanly and does not apply to Zekoder desktop.
 
 ## Zekoder desktop releases
 
-Pushing an annotated version tag builds, signs, smokes and publishes the Zekoder desktop apps to
+Pushing an annotated version tag builds, smokes and publishes the Zekoder desktop apps to
 `gs://zekoder-releases/desktop/releases/`. The tag is the version: `v0.1.0` packages Zekoder `0.1.0`,
 independent of the upstream workspace version in `package.json`.
 
@@ -86,8 +86,8 @@ conventional-commit bullets; the pipeline rejects those and GitHub's generated "
    finalization when the catalog already lists the tag.
 2. `release-notes` copies the draft into an artifact. It is the only job that reads the private draft.
 3. `build` runs the five targets in parallel with `--publish never` and uploads each target's files and
-   a provenance record as Actions artifacts. It verifies the packaged app version, and on macOS the
-   signature, team identifier, notarization ticket and Gatekeeper assessment.
+   a provenance record as Actions artifacts. It verifies the packaged app version, and on a notarized
+   macOS build the signature, team identifier, notarization ticket and Gatekeeper assessment.
 4. `publish` is the only job with cloud identity (GitHub OIDC, no keys). It re-checks that the tag still
    resolves to the built commit, prepares the immutable snapshot with `scripts/desktop-release/prepare-release.mjs`
    and uploads it with `scripts/desktop-release/publish-release.mjs`: missing objects with
@@ -119,8 +119,17 @@ conventional-commit bullets; the pipeline rejects those and GitHub's generated "
 | `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`           | secret   | Notarization (app-specific password)                                   |
 | `WINDOWS_CSC_LINK`, `WINDOWS_CSC_KEY_PASSWORD`          | secret   | Optional fork-owned Windows code-signing certificate                   |
 
-- macOS builds fail before building when an Apple secret is missing, and fail after building unless the
-  app is signed by `APPLE_TEAM_ID`, stapled and accepted by Gatekeeper.
+- **macOS signing is all or nothing.** With all five `APPLE_*` secrets the build is signed and
+  notarized (provenance `notarized`) and fails after building unless the app is signed by
+  `APPLE_TEAM_ID`, stapled and accepted by Gatekeeper. With none it ships unsigned (provenance
+  `unsigned`, meaning no Developer ID signature and not notarized) and skips those checks. With some
+  but not all, the build fails before building and names the missing secrets, so a half-configured
+  Apple account cannot silently ship unsigned. The rule applies to every channel, stable included.
+  Shipping betas first is process, not something the workflow enforces.
+  Unsigned builds differ by architecture: electron-builder ad-hoc signs arm64 (the app will not launch
+  otherwise) and leaves x64 unsigned. The workflow also turns off hardened runtime for unsigned
+  builds, because library validation rejects the Electron Framework under an ad-hoc signature. Never
+  set `-c.mac.identity=null`: it skips the arm64 ad-hoc signature and the app will not launch.
 - **Windows installers are unsigned** unless `WINDOWS_CSC_LINK` is set, matching the previous release
   behavior. Users see a Microsoft SmartScreen warning on first run of an unsigned installer. With the
   certificate configured, the build fails unless the installer's Authenticode status is `Valid`. The
@@ -128,6 +137,23 @@ conventional-commit bullets; the pipeline rejects those and GitHub's generated "
 - The Windows arm64 installer is cross-built on an x64 runner, so its packaged smoke is skipped by
   `after-pack.js`; the packaged version check still runs.
 - Never commit certificates, passwords or tokens, and never create service account key files.
+
+### Unsigned macOS builds
+
+Ship these before the Apple Developer account is approved, as `-beta.N` first. A beta admits
+immediately and leaves the stable pointer alone, so stable users are not offered a build that cannot
+update itself. The beta pointer later moves to the first signed stable.
+
+- **First launch.** Gatekeeper blocks the app. On macOS 15 and later, open System Settings > Privacy &
+  Security and choose Open Anyway. On earlier versions, Control-click the app and choose Open. On
+  either, `xattr -dr com.apple.quarantine /Applications/Zekoder.app` clears the quarantine flag.
+- **Updates do not install.** The catalog check ignores signatures, so an unsigned build is offered
+  updates. `electron-updater` hands the downloaded zip to Squirrel.Mac, which validates signatures and
+  rejects an unsigned or ad-hoc app. The app reports `Update failed: <message>` and nothing crashes,
+  but it advertises an update it cannot install (followup `007-unsigned-macos-update-offer`).
+- **Reaching a signed build is a manual reinstall.** Squirrel compares the new signature with the
+  running app's, so unsigned to signed fails the same way. Give users the signed installer from the
+  tag's snapshot.
 
 ### Completion checklist
 
@@ -138,8 +164,10 @@ conventional-commit bullets; the pipeline rejects those and GitHub's generated "
       newest; the other pointer is unchanged when it is already newer.
 - [ ] `releaseNotesUrl` resolves and matches the draft's body.
 - [ ] The GitHub Release is visible, with `prerelease` matching the channel.
-- [ ] macOS evidence in the run log: `codesign`, `TeamIdentifier`, `stapler validate`, `spctl`. Windows
-      policy line (`unsigned` or `signed`) in each Windows provenance record.
+- [ ] macOS evidence matches the policy. Notarized: `codesign`, `TeamIdentifier`, `stapler validate`,
+      `spctl` in the run log. Unsigned: no such step ran and the `::notice::` line is present. Either
+      way each macOS provenance record names `notarized` or `unsigned`. Windows policy line (`unsigned`
+      or `signed`) in each Windows provenance record.
 - [ ] Each packaged version equals the tag version without the `v`.
 
 ### Failures and recovery
@@ -155,10 +183,10 @@ conventional-commit bullets; the pipeline rejects those and GitHub's generated "
 
 ### Retained binaries and rollback
 
-Every published snapshot is retained unchanged in the bucket, including the signed and notarized
-installers. To roll a user back by hand, give them the older installer from the tag's snapshot (the
-catalog lists every URL). Do not change the updater's no-downgrade policy: a user on a bad release
-moves forward when a higher version ships, so the fix for a bad release is a new patch version.
+Every published snapshot is retained unchanged in the bucket, including every installer. To roll a
+user back by hand, give them the older installer from the tag's snapshot (the catalog lists every
+URL). Do not change the updater's no-downgrade policy: a user on a bad release moves forward when a
+higher version ships, so the fix for a bad release is a new patch version.
 
 ### macOS system floor
 

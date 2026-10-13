@@ -187,18 +187,31 @@ jobs:
           set -euo pipefail
           case "$PLATFORM" in
             darwin)
-              # Zekoder macOS builds are always signed and notarized with fork-owned identities.
+              # All five secrets: signed and notarized with fork-owned identities. None: unsigned by
+              # documented policy (docs/release.md). A partial set fails so a half-configured
+              # Apple account cannot silently ship an unsigned build.
+              present=0
               missing=()
-              [[ "$HAS_APPLE_CERTIFICATE" == "true" ]] || missing+=(APPLE_CERTIFICATE)
-              [[ "$HAS_APPLE_CERTIFICATE_PASSWORD" == "true" ]] || missing+=(APPLE_CERTIFICATE_PASSWORD)
-              [[ "$HAS_APPLE_ID" == "true" ]] || missing+=(APPLE_ID)
-              [[ "$HAS_APPLE_PASSWORD" == "true" ]] || missing+=(APPLE_PASSWORD)
-              [[ "$HAS_APPLE_TEAM_ID" == "true" ]] || missing+=(APPLE_TEAM_ID)
-              if (( ${#missing[@]} > 0 )); then
-                echo "::error::macOS signing and notarization need the repository secrets: ${missing[*]}"
+              for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+                has="HAS_${name}"
+                if [[ "${!has}" == "true" ]]; then
+                  present=$((present + 1))
+                else
+                  missing+=("$name")
+                fi
+              done
+              if (( present == 5 )); then
+                echo "SIGNING_POLICY=notarized" >> "$GITHUB_ENV"
+              elif (( present == 0 )); then
+                echo "SIGNING_POLICY=unsigned" >> "$GITHUB_ENV"
+                # Keep the arm64 ad-hoc signature (identity unset, never null) and drop what only
+                # notarization needs: hardened runtime rejects ad-hoc libraries at launch.
+                echo "BUILDER_SIGNING_FLAGS=-c.mac.notarize=false -c.mac.hardenedRuntime=false" >> "$GITHUB_ENV"
+                echo "::notice::macOS build is unsigned by documented policy (no APPLE_* secrets)."
+              else
+                echo "::error::macOS signing and notarization need all of the repository secrets or none; missing: ${missing[*]}"
                 exit 1
               fi
-              echo "SIGNING_POLICY=notarized" >> "$GITHUB_ENV"
               ;;
             win32)
               # Windows installers stay unsigned (documented in docs/release.md) unless an owned
@@ -241,9 +254,12 @@ jobs:
           set -euo pipefail
           # Publishing is never done by the builder. Each target writes its own output directory
           # so Windows x64 and arm64 cannot overwrite each other's latest.yml.
+          # BUILDER_SIGNING_FLAGS is set by the signing policy step and left unquoted on purpose so
+          # it splits into separate flags. It is empty for every policy except macOS unsigned.
           npm run build:desktop -- --publish never ${{ matrix.builder_flags }} \
             "-c.directories.output=release/${{ matrix.target }}" \
-            "-c.publish.channel=${{ needs.preflight.outputs.builder_channel }}"
+            "-c.publish.channel=${{ needs.preflight.outputs.builder_channel }}" \
+            ${BUILDER_SIGNING_FLAGS:-}
 
       - name: Upload packaged smoke diagnostics
         if: ${{ !cancelled() }}
@@ -260,7 +276,7 @@ jobs:
         run: node scripts/desktop-release/release-ci.mjs verify-packaged --tag "$RELEASE_TAG" --dir "packages/desktop/release/${{ matrix.target }}"
 
       - name: Verify macOS signature and notarization
-        if: matrix.platform == 'darwin'
+        if: matrix.platform == 'darwin' && env.SIGNING_POLICY == 'notarized'
         shell: bash
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}

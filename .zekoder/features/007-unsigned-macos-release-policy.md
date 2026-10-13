@@ -2,21 +2,33 @@
 id: 007-unsigned-macos-release-policy
 type: feature
 title: Unsigned macOS release policy
-status: planned
+status: merged
 createdAt: 2026-10-13
 openedAt: 2026-10-13T10:48:41.159Z
-updatedAt: 2026-10-13T11:41:54.899Z
+updatedAt: 2026-10-13T12:09:51.284Z
+completedAt: 2026-10-13T12:09:51.284Z
 branch: feature-007-unsigned-macos-release-policy
 promoted: false
 dependsOn: []
 packages: []
 contracts: []
+mergeMode: local
+commit: 4491b94a38b14a899fd6a0ec49dd14f637764e0b
+filesTouched:
+  - .github/workflows/desktop-release.yml
+  - .zekoder/features/007-unsigned-macos-release-policy.md
+  - docs/release.md
+  - scripts/ci-workflow.test.mjs
+verifiedBaseSha: d3b5b071cf87d3de6ff6982587aa8ed8804eb3d2
 relatedFeatures:
   - 003-desktop-gcs-release-pipeline
 relatedBugs: []
 relatedFollowups:
   - 007-unsigned-macos-update-offer
-statusHistory: []
+statusHistory:
+  - from: planned
+    to: merged
+    at: 2026-10-13T12:09:51.284Z
 ---
 # Feature 007-unsigned-macos-release-policy: Unsigned macOS release policy
 
@@ -51,12 +63,12 @@ Reuse the Windows unsigned pattern in the same `Declare signing policy` step; pa
 
 ## Tasks
 
-- [ ] `.github/workflows/desktop-release.yml`, `Declare signing policy and require owned identities` `darwin` case: count present `HAS_APPLE_*`; 5 -> `SIGNING_POLICY=notarized`; 0 -> `SIGNING_POLICY=unsigned`, `echo "BUILDER_SIGNING_FLAGS=-c.mac.notarize=false -c.mac.hardenedRuntime=false" >> "$GITHUB_ENV"` and a `::notice::` like Windows'; otherwise `::error::` listing the missing secrets and `exit 1`. Replace the "always signed and notarized" comment.
-- [ ] Same file, `Build and smoke desktop release` run block: `-c.publish.channel=...` is currently the last line of the command with no trailing `\`: add the backslash to that line, then append `${BUILDER_SIGNING_FLAGS:-}` on a new line (deliberately unquoted so it splits into flags; comment why). Leave the `env:` block alone.
-- [ ] Same file, `Verify macOS signature and notarization`: change the condition to `matrix.platform == 'darwin' && env.SIGNING_POLICY == 'notarized'`.
-- [ ] `scripts/ci-workflow.test.mjs`: one test next to the existing desktop-release tests. Scope the policy assertions to the `darwin)` case (regex from `darwin)` to `;;`) so the Windows branch's own `SIGNING_POLICY=unsigned` cannot satisfy them: it must contain `SIGNING_POLICY=unsigned`, `-c.mac.notarize=false` and `-c.mac.hardenedRuntime=false`. Also assert the build command appends `BUILDER_SIGNING_FLAGS` and the macOS verify step is gated on `SIGNING_POLICY == 'notarized'`.
-- [ ] `docs/release.md`, rewriting in place (integrate, do not append): the opening sentence's "signs"; the `build` bullet in "What the workflow does" (macOS signature checks apply when notarized); the macOS bullet under the credentials table (replace "fail before building when a secret is missing" with the all/none/partial rule and the arm64 ad-hoc / x64 unsigned result); the completion checklist macOS line (evidence depends on policy; provenance names `unsigned` or `notarized`); the "signed and notarized installers" phrase in rollback. Define provenance `unsigned` as "no Developer ID signature and not notarized", so it does not contradict the arm64 ad-hoc signature builder adds. State that the all/none/partial rule applies to every channel, stable included, and that beta-first is process, not enforced by the workflow. Add an "Unsigned macOS builds" subsection after the credentials list: first launch (macOS 15+: Open Anyway in System Settings > Privacy & Security; earlier: Control-click > Open; either: `xattr -dr com.apple.quarantine /Applications/Zekoder.app`), the updater behavior above, manual reinstall to reach a signed build, and the beta-first recommendation. Doc voice per CLAUDE.md.
-- [ ] Run the Verification commands; fix anything they report.
+- [x] `.github/workflows/desktop-release.yml`, `Declare signing policy and require owned identities` `darwin` case: count present `HAS_APPLE_*`; 5 -> `SIGNING_POLICY=notarized`; 0 -> `SIGNING_POLICY=unsigned`, `echo "BUILDER_SIGNING_FLAGS=-c.mac.notarize=false -c.mac.hardenedRuntime=false" >> "$GITHUB_ENV"` and a `::notice::` like Windows'; otherwise `::error::` listing the missing secrets and `exit 1`. Replace the "always signed and notarized" comment.
+- [x] Same file, `Build and smoke desktop release` run block: `-c.publish.channel=...` is currently the last line of the command with no trailing `\`: add the backslash to that line, then append `${BUILDER_SIGNING_FLAGS:-}` on a new line (deliberately unquoted so it splits into flags; comment why). Leave the `env:` block alone.
+- [x] Same file, `Verify macOS signature and notarization`: change the condition to `matrix.platform == 'darwin' && env.SIGNING_POLICY == 'notarized'`.
+- [x] `scripts/ci-workflow.test.mjs`: one test next to the existing desktop-release tests. Scope the policy assertions to the `darwin)` case (regex from `darwin)` to `;;`) so the Windows branch's own `SIGNING_POLICY=unsigned` cannot satisfy them: it must contain `SIGNING_POLICY=unsigned`, `-c.mac.notarize=false` and `-c.mac.hardenedRuntime=false`. Also assert the build command appends `BUILDER_SIGNING_FLAGS` and the macOS verify step is gated on `SIGNING_POLICY == 'notarized'`.
+- [x] `docs/release.md`, rewriting in place (integrate, do not append): the opening sentence's "signs"; the `build` bullet in "What the workflow does" (macOS signature checks apply when notarized); the macOS bullet under the credentials table (replace "fail before building when a secret is missing" with the all/none/partial rule and the arm64 ad-hoc / x64 unsigned result); the completion checklist macOS line (evidence depends on policy; provenance names `unsigned` or `notarized`); the "signed and notarized installers" phrase in rollback. Define provenance `unsigned` as "no Developer ID signature and not notarized", so it does not contradict the arm64 ad-hoc signature builder adds. State that the all/none/partial rule applies to every channel, stable included, and that beta-first is process, not enforced by the workflow. Add an "Unsigned macOS builds" subsection after the credentials list: first launch (macOS 15+: Open Anyway in System Settings > Privacy & Security; earlier: Control-click > Open; either: `xattr -dr com.apple.quarantine /Applications/Zekoder.app`), the updater behavior above, manual reinstall to reach a signed build, and the beta-first recommendation. Doc voice per CLAUDE.md.
+- [x] Run the Verification commands; fix anything they report.
 
 ## Verification
 

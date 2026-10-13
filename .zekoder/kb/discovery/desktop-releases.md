@@ -26,5 +26,5 @@ Shipped by feature 003-desktop-gcs-release-pipeline. Process owner: docs/release
 ## External dependencies (not provisioned at ship time)
 
 - Dedicated WIF provider + desktop service account (vars ZEKODER_RELEASE_BUCKET, GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_SERVICE_ACCOUNT).
-- Apple signing/notarization secrets (macOS preflight fails without them); Windows unsigned unless WINDOWS_CSC_LINK set.
+- Apple secrets optional (feature 007): all five -> notarized; none -> unsigned macOS build (arm64 ad-hoc, x64 unsigned, no self-update); partial set fails. Windows unsigned unless WINDOWS_CSC_LINK set. Detail: discovery/desktop-signing.md.
 - Matching GitHub draft Release with high-level notes before tagging.
