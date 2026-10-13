@@ -1,5 +1,5 @@
 import "@xterm/xterm/css/xterm.css";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, expect, test } from "vitest";
 import {
   TerminalEmulatorRuntime,
   encodeTerminalOutput,
@@ -147,27 +147,38 @@ test("preserves inspection through multiple real parser turns of queued output",
   runtime.find.search("needle");
   const term = window.__paseoTerminal!;
   const inspected = term.buffer.active.viewportY;
+  // xterm yields to the event loop (ending a parser turn and firing onWriteParsed) only once
+  // a turn has used its 12ms slice, checked between queued writes. Parsing is too fast on a
+  // quick host for any fixed amount of output to cross that slice, so the number of turns
+  // would depend on machine speed. A parser handler that spends more than the slice makes
+  // every queued write end its own turn, independent of host speed.
+  const TURN_SLICE_MS = 13;
+  const QUEUED_WRITES = 8;
+  const slowHandler = term.parser.registerCsiHandler({ final: "z" }, () => {
+    const start = performance.now();
+    while (performance.now() - start < TURN_SLICE_MS) {
+      // Burn the parser's time slice synchronously.
+    }
+    return true;
+  });
   const samples: { viewport: number; base: number }[] = [];
   const subscription = term.onWriteParsed(() => {
     samples.push({ viewport: term.buffer.active.viewportY, base: term.buffer.active.baseY });
   });
-  for (let i = 0; i < 150; i++) {
-    runtime.write({ data: encodeTerminalOutput("\rprogress".repeat(1000)) });
+  for (let i = 0; i < QUEUED_WRITES; i++) {
+    runtime.write({ data: encodeTerminalOutput("\x1b[z\rprogress") });
   }
+  // The scrolling write is queued behind every slow write. Its commit callback runs inside
+  // the final parser turn, before that turn's onWriteParsed, and this continuation only
+  // resumes after that turn finishes, so every sample has been recorded.
   await write("\r\nnew output".repeat(100));
-  // Wait for the parser turns to be observed rather than sleeping a fixed window; a slow host
-  // can take longer than any fixed interval to drain the queued output.
-  await vi.waitFor(
-    () => {
-      expect(samples.length).toBeGreaterThan(1);
-      expect(samples.at(-1)!.base).toBeGreaterThan(inspected);
-    },
-    { timeout: 5_000 },
-  );
   subscription.dispose();
-  expect(samples.length).toBeGreaterThan(1);
+  slowHandler.dispose();
+  expect(samples.length).toBeGreaterThanOrEqual(QUEUED_WRITES);
+  // Output was still queued during the early turns; the anchor must hold the viewport there.
   expect(samples[0].base).toBe(inspected);
   expect(samples.at(-1)!.base).toBeGreaterThan(inspected);
+  expect(samples.map((sample) => sample.viewport)).toEqual(samples.map(() => inspected));
   expect(term.buffer.active.viewportY).toBe(inspected);
   expect(term.getSelection()).toBe("needle");
 });
