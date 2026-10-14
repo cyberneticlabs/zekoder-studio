@@ -159,7 +159,8 @@ signed `zekoder` releases and runs the newest valid one at its next start.
 - **Release format.** zekoder-plugins feature 023-plugin-auto-update-publishing owns the signed
   envelope, `sha256`, `size` and `treeChecksum`; the consumer side is
   `.zekoder/features/004-plugin-auto-update/contracts.md` (`plugin-release-channel`). The keyring in
-  `builtin/updates/trusted-keys.ts` ships empty, which keeps the updater idle without network
+  `builtin/updates/trusted-keys.ts` is copied verbatim from zekoder-plugins
+  `scripts/plugin-release-keys.json`; an empty keyring keeps the updater idle without network
   calls.
 
 This is the user-approved exception (2026-10-07) to exact plugin pinning. It holds because every

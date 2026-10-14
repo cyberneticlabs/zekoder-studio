@@ -11,10 +11,16 @@ export interface TrustedKey {
 
 /**
  * Entries are copied verbatim from zekoder-plugins `scripts/plugin-release-keys.json` (`keys`
- * list). Only public keys belong here. Empty until the release key is published, which keeps the
- * updater disabled (no network calls).
+ * list). Only public keys belong here. An empty list keeps the updater disabled (no network calls).
  */
-export const TRUSTED_KEYS: readonly TrustedKey[] = [];
+export const TRUSTED_KEYS: readonly TrustedKey[] = [
+  {
+    keyId: "zk-plugin-2026-10",
+    alg: "ed25519",
+    publicKey: "+YlDPvYLnFIJr1VOWeLAR7Ai5Z6zJ3hJBVchAa88SUo=",
+    addedAt: "2026-10-14",
+  },
+];
 
 export const MANIFEST_URL =
   "https://storage.googleapis.com/zekoder-releases/plugins/zekoder/manifest.json";
