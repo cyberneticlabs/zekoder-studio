@@ -190,7 +190,7 @@ test("matrix rows: every target is prepared with its installers, archives, block
       "Zekoder-0.1.0-x64.deb",
       "Zekoder-0.1.0-x64.rpm",
       "Zekoder-0.1.0-x64.tar.gz",
-      "Zekoder-x64.AppImage",
+      "Zekoder-x86_64.AppImage",
       "beta-linux.yml",
       "latest-linux.yml",
     ],

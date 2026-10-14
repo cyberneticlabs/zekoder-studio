@@ -121,17 +121,20 @@ jobs:
             # Metro's jest workers OOM on the generated ws-outbound.aot.js validator, the last
             # module in the web bundle. The Intel runner needs the larger heap.
             node_options: --max-old-space-size=8192
+          # Windows rows name their targets: electron-builder.yml lists both arches per target, and
+          # config arches beat a bare --x64/--arm64, so each row would otherwise build both arches
+          # plus a combined installer and write a latest.yml pointing at the wrong one.
           - target: win32-x64
             platform: win32
             runner: windows-latest
-            builder_flags: --win --x64
+            builder_flags: --win nsis zip --x64
             node_options: ""
           # Cross-built on the x64 runner: after-pack.js skips the packaged smoke when the
           # build arch differs from the host arch, so this row proves packaging and version only.
           - target: win32-arm64
             platform: win32
             runner: windows-latest
-            builder_flags: --win --arm64
+            builder_flags: --win nsis zip --arm64
             node_options: ""
           - target: linux-x64
             platform: linux
@@ -252,6 +255,12 @@ jobs:
           APPLE_TEAM_ID: ${{ matrix.platform == 'darwin' && secrets.APPLE_TEAM_ID || '' }}
         run: |
           set -euo pipefail
+          # An absent secret arrives as an empty string, and electron-builder resolves an empty
+          # CSC_LINK against the project directory ("packages/desktop not a file"). Unsigned
+          # policies must leave the signing variables unset.
+          for name in CSC_LINK CSC_KEY_PASSWORD CSC_IDENTITY_AUTO_DISCOVERY APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            if [[ -z "${!name:-}" ]]; then unset "$name"; fi
+          done
           # Publishing is never done by the builder. Each target writes its own output directory
           # so Windows x64 and arm64 cannot overwrite each other's latest.yml.
           # BUILDER_SIGNING_FLAGS is set by the signing policy step and left unquoted on purpose so

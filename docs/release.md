@@ -24,7 +24,7 @@ metadata). The workflow rejects anything else before building.
 - The workflow checks out the exact tagged commit. Nothing runs `npm version` or any `release:*`
   or `version:all:*` script, and nothing is published to npm, Docker, the stores or GitHub assets.
 - Targets: macOS arm64 and x64 (DMG + ZIP), Windows x64 and arm64 (NSIS + ZIP), Linux x64
-  (AppImage, deb, rpm, tar.gz). The Linux AppImage keeps the `Zekoder-x64.AppImage` name so updates
+  (AppImage, deb, rpm, tar.gz). The Linux AppImage keeps the `Zekoder-x86_64.AppImage` name so updates
   overwrite it in place.
 - All five targets must build and pass their packaged smoke before anything is published. A catalog
   pointer never moves if any target or the notes fail validation.

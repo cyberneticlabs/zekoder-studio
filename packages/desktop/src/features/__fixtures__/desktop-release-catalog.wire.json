@@ -196,9 +196,9 @@
               "size": 62
             },
             {
-              "name": "Zekoder-x64.AppImage",
+              "name": "Zekoder-x86_64.AppImage",
               "kind": "installer",
-              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/linux/x64/Zekoder-x64.AppImage",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.2.0-beta.1/linux/x64/Zekoder-x86_64.AppImage",
               "sha256": "0eb5fd7fc106d88e00fae665c738090ee74ab7457ab420fbf6fbf65495819915",
               "size": 51
             },
@@ -432,9 +432,9 @@
               "size": 48
             },
             {
-              "name": "Zekoder-x64.AppImage",
+              "name": "Zekoder-x86_64.AppImage",
               "kind": "installer",
-              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/linux/x64/Zekoder-x64.AppImage",
+              "url": "https://storage.googleapis.com/zekoder-releases/desktop/releases/v0.1.0/linux/x64/Zekoder-x86_64.AppImage",
               "sha256": "9bcf3ff3cd66d385bead8c942ad4cabf56a241bb2ae87043e54f3faa08311a12",
               "size": 44
             },
