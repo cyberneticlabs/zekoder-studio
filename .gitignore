@@ -108,3 +108,6 @@ app.json
 .zekoder/.preflight-cache
 .zekoder/.kb.lock
 .zekoder/.config.lock
+
+# Project-local Serena configuration and memories.
+.serena/
