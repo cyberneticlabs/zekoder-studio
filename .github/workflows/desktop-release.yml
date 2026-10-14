@@ -121,17 +121,20 @@ jobs:
             # Metro's jest workers OOM on the generated ws-outbound.aot.js validator, the last
             # module in the web bundle. The Intel runner needs the larger heap.
             node_options: --max-old-space-size=8192
+          # Windows rows name their targets: electron-builder.yml lists both arches per target, and
+          # config arches beat a bare --x64/--arm64, so each row would otherwise build both arches
+          # plus a combined installer and write a latest.yml pointing at the wrong one.
           - target: win32-x64
             platform: win32
             runner: windows-latest
-            builder_flags: --win --x64
+            builder_flags: --win nsis zip --x64
             node_options: ""
           # Cross-built on the x64 runner: after-pack.js skips the packaged smoke when the
           # build arch differs from the host arch, so this row proves packaging and version only.
           - target: win32-arm64
             platform: win32
             runner: windows-latest
-            builder_flags: --win --arm64
+            builder_flags: --win nsis zip --arm64
             node_options: ""
           - target: linux-x64
             platform: linux
