@@ -8,6 +8,7 @@ import {
   type PluginLogEntry,
   type PluginListItem,
   type PluginSource,
+  type BuiltinPluginUpdateStatus,
   type PluginSourceStatusItem,
   type PluginSourceUpdateItem,
   type PluginUpdateSelection,
@@ -25,6 +26,10 @@ import { expandTilde } from "../../utils/path.js";
 import { runPluginBuild } from "./preparation.js";
 import { PluginRuntime } from "./runtime.js";
 import { BuiltinPluginLoader, type BuiltinPlugin } from "./builtin/index.js";
+import type {
+  BuiltinPluginUpdateFallbackReason,
+  BuiltinPluginUpdater,
+} from "./builtin/updates/index.js";
 import type { PluginProviderMetadata } from "./plugin-process-protocol.js";
 import { readPluginProviderIcon } from "./provider-icon.js";
 import {
@@ -66,6 +71,17 @@ interface PluginServiceDependencies {
   runtime?: PluginRuntimePort;
   managedSources?: ManagedPluginSources;
   builtinPlugins?: BuiltinPluginLoader;
+  builtinUpdateStatus?: BuiltinPluginUpdateStatusProvider;
+  builtinUpdater?: BuiltinPluginUpdaterPort;
+}
+
+export type BuiltinPluginUpdaterPort = Pick<
+  BuiltinPluginUpdater,
+  "pluginId" | "bundledVersion" | "resolveActive" | "recordRunning" | "recordStartFailure"
+>;
+
+export interface BuiltinPluginUpdateStatusProvider {
+  list(pluginId?: string): BuiltinPluginUpdateStatus[];
 }
 
 function resolvePluginStatus(input: {
@@ -180,8 +196,8 @@ export class PluginService {
     this.globalStartsBlocked = config.pluginsEnabled !== true;
     await this.builtinPlugins.load(async (plugin) => {
       try {
-        await this.runtime.startBuiltinPlugin?.(plugin);
-        await this.publishProviderRegistrations(plugin.id, plugin.directory);
+        const startedDirectory = await this.startBuiltin(plugin);
+        await this.publishProviderRegistrations(plugin.id, startedDirectory);
         this.publishUsageSources(plugin.id);
       } catch (error) {
         this.logger.error({ err: error, pluginId: plugin.id }, "Failed to start built-in plugin");
@@ -204,6 +220,53 @@ export class PluginService {
     this.configStore.onFieldChange("pluginsEnabled", (value) => {
       this.handleGlobalSwitch(value === true);
     });
+  }
+
+  /**
+   * Starts a built-in plugin and returns the directory it runs from. A plugin with an updater
+   * prefers its downloaded copy and falls back to the bundled one in the same start, so a bad
+   * download never leaves the plugin down.
+   */
+  private async startBuiltin(plugin: BuiltinPlugin): Promise<string> {
+    const updater = this.dependencies.builtinUpdater;
+    if (updater?.pluginId !== plugin.id) {
+      await this.runtime.startBuiltinPlugin?.(plugin);
+      return plugin.directory;
+    }
+    let fallbackReason: BuiltinPluginUpdateFallbackReason | null = null;
+    const active = await updater.resolveActive().catch((error: unknown) => {
+      this.logger.warn({ err: error, pluginId: plugin.id }, "Failed to resolve downloaded plugin");
+      return null;
+    });
+    if (active && "directory" in active) {
+      try {
+        await this.runtime.startBuiltinPlugin?.({ id: plugin.id, directory: active.directory });
+        updater.recordRunning({
+          source: "downloaded",
+          version: active.version,
+          fallbackReason: null,
+        });
+        return active.directory;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.error(
+          { err: error, pluginId: plugin.id, version: active.version },
+          "Downloaded built-in plugin failed to start; falling back to the bundled copy",
+        );
+        await this.runtime.stopPluginById(plugin.id).catch(() => undefined);
+        await updater.recordStartFailure(active.version, message).catch(() => undefined);
+        fallbackReason = "start-failed";
+      }
+    } else if (active) {
+      fallbackReason = active.fallbackReason;
+    }
+    await this.runtime.startBuiltinPlugin?.(plugin);
+    updater.recordRunning({
+      source: "bundled",
+      version: updater.bundledVersion,
+      fallbackReason,
+    });
+    return plugin.directory;
   }
 
   async listPlugins(): Promise<PluginListItem[]> {
@@ -350,6 +413,10 @@ export class PluginService {
       this.notify(pluginId);
       return this.requireItem(pluginId);
     });
+  }
+
+  getBuiltinPluginUpdateStatus(pluginId?: string): BuiltinPluginUpdateStatus[] {
+    return this.dependencies.builtinUpdateStatus?.list(pluginId) ?? [];
   }
 
   async statusSources(pluginId?: string): Promise<PluginSourceStatusItem[]> {

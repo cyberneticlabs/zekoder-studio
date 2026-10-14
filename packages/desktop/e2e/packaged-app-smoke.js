@@ -159,6 +159,8 @@ function createIsolatedDesktopEnv({ home, listen, userData, cdpPort }) {
     ...createDefaultDaemonEnv({ HOME: home, USERPROFILE: home }),
     PASEO_HOME: home,
     PASEO_LISTEN: listen,
+    // The real desktop app opts its daemon into built-in plugin updates; smoke runs stay offline.
+    ZEKODER_PLUGIN_UPDATES: "off",
     PASEO_ELECTRON_USER_DATA_DIR: userData,
     PASEO_ELECTRON_FLAGS: `--remote-debugging-address=127.0.0.1 --remote-debugging-port=${cdpPort}`,
   };

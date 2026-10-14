@@ -118,6 +118,7 @@ import type {
   WorkspaceRecoveryState,
   PluginListItem,
   PluginLogEntry,
+  BuiltinPluginUpdateStatus,
   PluginSourceStatusItem,
   PluginSourceUpdateItem,
   PluginUpdateSelection,
@@ -5577,6 +5578,27 @@ export class DaemonClient {
         ...(pluginId ? { pluginId } : {}),
       },
       responseType: "plugin.source.status.response",
+    });
+    return payload.plugins;
+  }
+
+  private requireBuiltinPluginUpdates(): void {
+    // COMPAT(pluginUpdates): added in v0.11.2, remove after 2027-04-14.
+    if (this.getLastServerInfoMessage()?.features?.pluginUpdates !== true)
+      throw new Error("Update the host to view plugin update status.");
+  }
+
+  async getBuiltinPluginUpdateStatus(pluginId?: string): Promise<BuiltinPluginUpdateStatus[]> {
+    this.requireBuiltinPluginUpdates();
+    const requestId = this.createRequestId();
+    const payload = await this.sendCorrelatedSessionRequest({
+      requestId,
+      message: {
+        type: "plugin.updates.get_status.request",
+        requestId,
+        ...(pluginId ? { pluginId } : {}),
+      },
+      responseType: "plugin.updates.get_status.response",
     });
     return payload.plugins;
   }

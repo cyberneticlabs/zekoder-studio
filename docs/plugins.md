@@ -132,6 +132,39 @@ skip them so they stay byte-identical to the pin. To change them, re-run the scr
 `--ref` (a full SHA or an existing tag, never a branch). `node scripts/sync-zekoder-plugin.mjs
 --check` verifies the lock and checksum offline; the release manifest reads the lock file.
 
+The lock is the bundled floor, not a ceiling. A desktop-launched daemon also installs newer
+signed `zekoder` releases and runs the newest valid one at its next start.
+
+- **Desktop-launched daemons only.** The updater is built when `config.desktopManaged` is true
+  (`PASEO_DESKTOP_MANAGED=1`, set only when the desktop launches the daemon), the daemon runs from
+  a `builtin-plugins` root that holds `zekoder.lock.json`, and `ZEKODER_PLUGIN_UPDATES` is not
+  `off`. Headless npm and Docker daemons, dev checkouts, CI, and smoke runs keep the pinned
+  bundle. `paseo daemon restart` keeps the desktop launch mode, so Settings → Host → Restart
+  daemon stays opted in. `packages/server/src/server/plugins/builtin/updates/wiring.ts` owns the
+  decision.
+- **Where things live.** Downloaded copies and the updater state are under
+  `$PASEO_HOME/builtin-plugin-updates/zekoder/<version>/` and `state.json`. The desktop writes its
+  release channel to `$PASEO_HOME/builtin-plugin-updates/desktop-channel.json` on every
+  `start_desktop_daemon`, reused daemon included. The daemon rereads it at each check, so a
+  channel change applies at the next check after the next app launch.
+- **Next start, not live.** A downloaded version replaces the bundled one only when the plugin
+  starts. Restart through Settings → Host → Restart daemon to apply it.
+- **Failure handling.** A downloaded copy that fails to start falls back to the bundled copy in the
+  same start. The updater retries that version once on the next start, then blocks it. A version
+  the release channel revokes is never started. In every fallback the plugin keeps running from
+  the bundled copy.
+- **Status.** `paseo.pluginUpdates.status("zekoder")` reports the running version, source, staged
+  version, fallback reason and last error. Outside the opt-in it reports `enabled: false`.
+  Contract: `.zekoder/features/004-plugin-auto-update/contracts.md` (`builtin-plugin-update-status`).
+- **Release format.** zekoder-plugins feature 023-plugin-auto-update-publishing owns the signed
+  envelope, `sha256`, `size` and `treeChecksum`; the consumer side is
+  `.zekoder/features/004-plugin-auto-update/contracts.md` (`plugin-release-channel`). The keyring in
+  `builtin/updates/trusted-keys.ts` ships empty, which keeps the updater idle without network
+  calls.
+
+This is the user-approved exception (2026-10-07) to exact plugin pinning. It holds because every
+update is signed, immutable and version-pinned, and the bundled copy is always the fallback.
+
 Provider plugins use separate installation and provider IDs. `muse-provider` registers the
 selectable `muse` provider (Muse Code) and a usage source. Its `status({ launch })` reports
 availability and a diagnostic after the daemon resolves the executable. Configure command,
@@ -371,7 +404,9 @@ typed async function. Use the host-provided `@tanstack/react-query` for request 
 Paseo gives each plugin installation its own query client.
 
 `usePaseo()` and the handler's `{ paseo }` context expose the same `PaseoApi`: projects,
-workspaces, agents, terminals, providers, and daemon config. They do not expose connection lifecycle.
+workspaces, agents, terminals, providers, daemon config, and built-in plugin update status
+(`pluginUpdates.status(pluginId?)`, gated on `features.pluginUpdates`). They do not expose connection
+lifecycle.
 
 `usePaseo()` is the plugin's one client: `InstalledPlugin.paseo`, created with the installation in
 `packages/app/src/plugins/registry.ts` over the host's existing connection and passed to setup as

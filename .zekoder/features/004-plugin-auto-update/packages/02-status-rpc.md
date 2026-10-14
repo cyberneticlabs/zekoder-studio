@@ -24,10 +24,10 @@ Injection seam for that test: bootstrap dependencies (`packages/server/src/serve
 
 ## Tasks
 
-- [ ] Protocol: add `BuiltinPluginUpdateStatusSchema`, with fields per the contract. `fallbackReason` and `lastError.code` are `z.string()`, and the known values (contracts.md, including `size-mismatch` and `tree-checksum-mismatch`) are exported as `BuiltinPluginUpdateFallbackReason` / `BuiltinPluginUpdateErrorCode` literal unions. Also add `BuiltinPluginUpdatesGetStatusRequestSchema` (`plugin.updates.get_status.request`) and `BuiltinPluginUpdatesGetStatusResponseSchema`, and register both in the inbound/outbound unions. Add `pluginUpdates: z.boolean().optional()` to `server_info.features` with a `// COMPAT(pluginUpdates): added in vX, remove gate after DATE.` comment. vX is the `packages/server/package.json` version at merge; DATE is the merge date plus six months, the same shape as `pluginSourceUpdates`. Export the inferred types.
-- [ ] Server: in `packages/server/src/server/plugins/index.ts` add exported `BuiltinPluginUpdateStatusProvider`, optional constructor dependency `builtinUpdateStatus`, and `getBuiltinPluginUpdateStatus(pluginId?)` (empty list when absent). Add the optional `builtinUpdateStatus` dependency to bootstrap and `createTestPaseoDaemon` (Context). Handle the request in `session.ts` next to `plugin.source.status.request`. Advertise `pluginUpdates: true` in `websocket-server.ts` with the same COMPAT tag.
-- [ ] Client: add a new private gate `requireBuiltinPluginUpdates()` in `daemon-client.ts`. It throws "Update the host to view plugin update status." when `features.pluginUpdates !== true` and carries the COMPAT tag. Do **not** reuse the existing `requirePluginUpdates()` (`daemon-client.ts:5539`): it gates `pluginSourceUpdates`. Add `DaemonClient.getBuiltinPluginUpdateStatus(pluginId?)` behind that gate. Add `readonly pluginUpdates: { status(pluginId?: string): Promise<BuiltinPluginUpdateStatus[]> }` to `PaseoApi` (plain string argument; 023 calls `status("zekoder")`) and implement it in `createPaseoApi`.
-- [ ] Tests, extending existing suites:
+- [x] Protocol: add `BuiltinPluginUpdateStatusSchema`, with fields per the contract. `fallbackReason` and `lastError.code` are `z.string()`, and the known values (contracts.md, including `size-mismatch` and `tree-checksum-mismatch`) are exported as `BuiltinPluginUpdateFallbackReason` / `BuiltinPluginUpdateErrorCode` literal unions. Also add `BuiltinPluginUpdatesGetStatusRequestSchema` (`plugin.updates.get_status.request`) and `BuiltinPluginUpdatesGetStatusResponseSchema`, and register both in the inbound/outbound unions. Add `pluginUpdates: z.boolean().optional()` to `server_info.features` with a `// COMPAT(pluginUpdates): added in vX, remove gate after DATE.` comment. vX is the `packages/server/package.json` version at merge; DATE is the merge date plus six months, the same shape as `pluginSourceUpdates`. Export the inferred types.
+- [x] Server: in `packages/server/src/server/plugins/index.ts` add exported `BuiltinPluginUpdateStatusProvider`, optional constructor dependency `builtinUpdateStatus`, and `getBuiltinPluginUpdateStatus(pluginId?)` (empty list when absent). Add the optional `builtinUpdateStatus` dependency to bootstrap and `createTestPaseoDaemon` (Context). Handle the request in `session.ts` next to `plugin.source.status.request`. Advertise `pluginUpdates: true` in `websocket-server.ts` with the same COMPAT tag.
+- [x] Client: add a new private gate `requireBuiltinPluginUpdates()` in `daemon-client.ts`. It throws "Update the host to view plugin update status." when `features.pluginUpdates !== true` and carries the COMPAT tag. Do **not** reuse the existing `requirePluginUpdates()` (`daemon-client.ts:5539`): it gates `pluginSourceUpdates`. Add `DaemonClient.getBuiltinPluginUpdateStatus(pluginId?)` behind that gate. Add `readonly pluginUpdates: { status(pluginId?: string): Promise<BuiltinPluginUpdateStatus[]> }` to `PaseoApi` (plain string argument; 023 calls `status("zekoder")`) and implement it in `createPaseoApi`.
+- [x] Tests, extending existing suites:
   - `packages/protocol/src/messages.plugins.test.ts`: schema round-trip, old-client parse, and an unknown `lastError.code` / `fallbackReason` still parsing.
   - `packages/client/src/daemon-client.test.ts`: the gate (flag absent → error; `pluginSourceUpdates` alone does not pass it) and request/response.
   - `packages/server/src/server/plugins/index.posix.test.ts`: provider absent and present.
@@ -41,6 +41,6 @@ Injection seam for that test: bootstrap dependencies (`packages/server/src/serve
 
 ## Progress
 
-- Status: planned
-- Completed: none
+- Status: done
+- Completed: protocol, server, client, tests
 - Blockers: none

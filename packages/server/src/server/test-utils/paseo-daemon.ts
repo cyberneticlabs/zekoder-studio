@@ -1,4 +1,5 @@
 import { BuiltinPluginLoader } from "../plugins/builtin/index.js";
+import type { BuiltinPluginUpdateStatusProvider } from "../plugins/index.js";
 import os from "node:os";
 import path from "node:path";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
@@ -52,6 +53,7 @@ interface TestPaseoDaemonOptions {
   autoArchiveAfterMerge?: boolean;
   pluginsEnabled?: PaseoDaemonConfig["pluginsEnabled"];
   builtinPlugins?: BuiltinPluginLoader;
+  builtinUpdateStatus?: BuiltinPluginUpdateStatusProvider;
   plugins?: PaseoDaemonConfig["plugins"];
 }
 
@@ -105,6 +107,7 @@ export async function createTestPaseoDaemon(
     const logger = options.logger ?? pino({ level: "silent" });
     const daemon = await createPaseoDaemon(config, logger, {
       builtinPlugins: options.builtinPlugins ?? new BuiltinPluginLoader(undefined, []),
+      builtinUpdateStatus: options.builtinUpdateStatus,
       serverFeatureOverrides: {
         daemonStatusRpc: options.daemonStatusRpcCapability,
         relayConfig: options.relayConfigCapability,

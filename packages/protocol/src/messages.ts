@@ -1527,6 +1527,12 @@ export const PluginSourceStatusRequestSchema = z.object({
   pluginId: PluginIdSchema.optional(),
 });
 
+export const BuiltinPluginUpdatesGetStatusRequestSchema = z.object({
+  type: z.literal("plugin.updates.get_status.request"),
+  requestId: z.string(),
+  pluginId: PluginIdSchema.optional(),
+});
+
 export const PluginSourceUpdateRequestSchema = z.object({
   type: z.literal("plugin.source.update.request"),
   requestId: z.string(),
@@ -3246,6 +3252,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   PluginDirectoryInspectRequestSchema,
   PluginSourceInstallRequestSchema,
   PluginSourceStatusRequestSchema,
+  BuiltinPluginUpdatesGetStatusRequestSchema,
   PluginSourceUpdateRequestSchema,
   PluginUpdatePreviewRequestSchema,
   PluginUpdateApplyRequestSchema,
@@ -3636,6 +3643,8 @@ export const ServerInfoStatusPayloadSchema = z
         pluginSourceInstallation: z.boolean().optional(),
         // COMPAT(pluginSourceUpdates): added in v0.8.0; remove gate after 2027-03-16 once daemon floor supports reviewed updates.
         pluginSourceUpdates: z.boolean().optional(),
+        // COMPAT(pluginUpdates): added in v0.11.2, remove gate after 2027-04-14.
+        pluginUpdates: z.boolean().optional(),
         // COMPAT(pluginThemes): added in v0.5.0, remove gate after 2027-08-20.
         // A daemon that predates this flag keeps `addTheme` in the server bundle it compiles,
         // so a theme plugin cannot start there at all.
@@ -6740,6 +6749,62 @@ export const PluginSourceStatusResponseSchema = z.object({
   payload: z.object({ requestId: z.string(), plugins: z.array(PluginSourceStatusItemSchema) }),
 });
 
+/**
+ * Known `fallbackReason` values. The wire type is `z.string()` so an old client never rejects a
+ * reason added later (docs/protocol-compatibility.md: never narrow). Daemon code emits only these.
+ */
+export type BuiltinPluginUpdateFallbackReason =
+  | "start-failed"
+  | "revoked"
+  | "previously-failed"
+  | "incompatible";
+
+/** Known `lastError.code` values; `z.string()` on the wire for the same reason as above. */
+export type BuiltinPluginUpdateErrorCode =
+  | "manifest-fetch-failed"
+  | "manifest-invalid"
+  | "signature-invalid"
+  | "sequence-replay"
+  | "incompatible"
+  | "revoked"
+  | "download-failed"
+  | "sha256-mismatch"
+  | "size-mismatch"
+  | "unpack-failed"
+  | "tree-checksum-mismatch"
+  | "start-failed";
+
+export const BuiltinPluginUpdateErrorSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  at: z.string(),
+});
+export type BuiltinPluginUpdateError = z.infer<typeof BuiltinPluginUpdateErrorSchema>;
+
+export const BuiltinPluginUpdateStatusSchema = z.object({
+  pluginId: z.string(),
+  runningVersion: z.string(),
+  source: z.enum(["bundled", "downloaded"]),
+  stagedVersion: z.string().nullable().optional(),
+  restartRequired: z.boolean().optional(),
+  fallbackReason: z.string().nullable().optional(),
+  lastCheckAt: z.string().nullable().optional(),
+  lastError: BuiltinPluginUpdateErrorSchema.nullable().optional(),
+  bundledVersion: z.string().optional(),
+  latestAvailable: z.string().nullable().optional(),
+  channel: z.enum(["stable", "beta"]).optional(),
+  enabled: z.boolean().optional(),
+});
+export type BuiltinPluginUpdateStatus = z.infer<typeof BuiltinPluginUpdateStatusSchema>;
+
+export const BuiltinPluginUpdatesGetStatusResponseSchema = z.object({
+  type: z.literal("plugin.updates.get_status.response"),
+  payload: z.object({
+    requestId: z.string(),
+    plugins: z.array(BuiltinPluginUpdateStatusSchema),
+  }),
+});
+
 export const PluginSourceUpdateItemSchema = z.object({
   id: PluginIdSchema,
   previousCommit: z.string(),
@@ -6859,6 +6924,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   PluginDirectoryInspectResponseSchema,
   PluginSourceInstallResponseSchema,
   PluginSourceStatusResponseSchema,
+  BuiltinPluginUpdatesGetStatusResponseSchema,
   PluginSourceUpdateResponseSchema,
   PluginUpdatePreviewResponseSchema,
   PluginUpdateApplyResponseSchema,

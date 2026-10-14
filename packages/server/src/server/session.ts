@@ -493,6 +493,9 @@ export interface SessionOptions {
       id?: string;
       ref?: string;
     }): Promise<import("@getpaseo/protocol/messages").PluginListItem>;
+    getBuiltinPluginUpdateStatus(
+      pluginId?: string,
+    ): import("@getpaseo/protocol/messages").BuiltinPluginUpdateStatus[];
     statusSources(
       pluginId?: string,
     ): Promise<import("@getpaseo/protocol/messages").PluginSourceStatusItem[]>;
@@ -2512,6 +2515,17 @@ export class Session {
           });
           return undefined;
         });
+    }
+    if (msg.type === "plugin.updates.get_status.request") {
+      if (!this.pluginRuntime) throw new Error("Plugin service is unavailable");
+      this.emit({
+        type: "plugin.updates.get_status.response",
+        payload: {
+          requestId: msg.requestId,
+          plugins: this.pluginRuntime.getBuiltinPluginUpdateStatus(msg.pluginId),
+        },
+      });
+      return undefined;
     }
     if (msg.type === "plugin.source.status.request") {
       if (!this.pluginRuntime) throw new Error("Plugin service is unavailable");

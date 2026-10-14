@@ -60,7 +60,7 @@ export class BuiltinPluginLoader {
   readonly ids: ReadonlySet<string>;
 
   constructor(
-    private readonly root = resolveBuiltinPluginsRoot(),
+    readonly root = resolveBuiltinPluginsRoot(),
     private readonly list: readonly string[] = builtinPlugins,
   ) {
     this.ids = new Set(list);

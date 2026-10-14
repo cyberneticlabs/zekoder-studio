@@ -6,11 +6,13 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import pino from "pino";
 import {
+  BuiltinPluginLoader,
   builtinPlugins,
   resolveBuiltinPluginsRoot,
 } from "../packages/server/dist/server/server/plugins/builtin/index.js";
 import { compilePlugin } from "../packages/server/dist/server/server/plugins/compiler.js";
 import { readPluginManifest } from "../packages/server/dist/server/server/plugins/manifest.js";
+import { createBuiltinUpdateWiring } from "../packages/server/dist/server/server/plugins/builtin/updates/wiring.js";
 import { PluginRuntime } from "../packages/server/dist/server/server/plugins/runtime.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -80,4 +82,18 @@ test("built output compiles and starts every listed built-in", async () => {
     await runtime.stopAll();
     await rm(settingsDirectory, { recursive: true, force: true });
   }
+});
+
+test("built output reports plugin updates disabled without desktop management", () => {
+  const wiring = createBuiltinUpdateWiring({
+    loader: new BuiltinPluginLoader(),
+    desktopManaged: false,
+    env: {},
+    paseoHome: os.tmpdir(),
+    daemonVersion: "0.0.0",
+    logger: pino({ level: "silent" }),
+  });
+  assert.equal(wiring.updater, null);
+  const statuses = wiring.status.list("zekoder");
+  assert.ok(statuses.every((status) => status.enabled === false));
 });

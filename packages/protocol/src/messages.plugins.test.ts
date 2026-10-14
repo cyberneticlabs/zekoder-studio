@@ -193,6 +193,81 @@ describe("plugin protocol compatibility", () => {
     expect(older.payload.features?.pluginGitManagement).toBeUndefined();
   });
 
+  it("round-trips built-in plugin update status and tolerates new reasons and codes", () => {
+    expect(
+      SessionInboundMessageSchema.parse({
+        type: "plugin.updates.get_status.request",
+        requestId: "request-updates",
+        pluginId: "zekoder",
+      }),
+    ).toEqual({
+      type: "plugin.updates.get_status.request",
+      requestId: "request-updates",
+      pluginId: "zekoder",
+    });
+    expect(
+      SessionInboundMessageSchema.parse({
+        type: "plugin.updates.get_status.request",
+        requestId: "request-updates-all",
+      }).type,
+    ).toBe("plugin.updates.get_status.request");
+
+    const full = {
+      pluginId: "zekoder",
+      runningVersion: "1.0.0",
+      source: "downloaded",
+      stagedVersion: "1.1.0",
+      restartRequired: true,
+      fallbackReason: null,
+      lastCheckAt: "2026-10-14T10:00:00.000Z",
+      lastError: { code: "sha256-mismatch", message: "bad hash", at: "2026-10-14T10:00:00.000Z" },
+      bundledVersion: "1.0.0",
+      latestAvailable: "1.1.0",
+      channel: "beta",
+      enabled: true,
+    };
+    const message = {
+      type: "plugin.updates.get_status.response",
+      payload: { requestId: "request-updates", plugins: [full] },
+    };
+    expect(SessionOutboundMessageSchema.parse(message)).toEqual(message);
+
+    const minimal = { pluginId: "zekoder", runningVersion: "1.0.0", source: "bundled" };
+    expect(
+      SessionOutboundMessageSchema.parse({
+        type: "plugin.updates.get_status.response",
+        payload: { requestId: "request-updates", plugins: [minimal] },
+      }),
+    ).toEqual({
+      type: "plugin.updates.get_status.response",
+      payload: { requestId: "request-updates", plugins: [minimal] },
+    });
+
+    const future = {
+      ...minimal,
+      fallbackReason: "reason-from-a-newer-daemon",
+      lastError: { code: "code-from-a-newer-daemon", message: "x", at: "2026-10-14T10:00:00Z" },
+    };
+    expect(
+      SessionOutboundMessageSchema.parse({
+        type: "plugin.updates.get_status.response",
+        payload: { requestId: "request-updates", plugins: [future] },
+      }).type,
+    ).toBe("plugin.updates.get_status.response");
+  });
+
+  it("parses server info from older hosts without the pluginUpdates feature", () => {
+    const older = StatusMessageSchema.parse({
+      type: "status",
+      payload: {
+        status: "server_info",
+        serverId: "older-host",
+        features: { pluginSourceUpdates: true },
+      },
+    });
+    expect(older.payload.features?.pluginUpdates).toBeUndefined();
+  });
+
   it("uses a namespaced snapshot RPC for structured plugin logs", () => {
     expect(
       SessionInboundMessageSchema.parse({

@@ -4,6 +4,7 @@ import type { DaemonClientConfig } from "./daemon-client.js";
 import type { AgentPermissionResponse } from "@getpaseo/protocol/agent-types";
 import type {
   AgentSnapshotPayload,
+  BuiltinPluginUpdateStatus,
   CreationSnapshot,
   CreateAgentRequestMessage,
   FetchWorkspacesRequestMessage,
@@ -483,6 +484,11 @@ export interface PaseoConfigActions {
   ): Promise<{ requestId: string; config: MutableDaemonConfig }>;
 }
 
+export interface PaseoPluginUpdateActions {
+  /** Status of built-in plugin auto-updates, optionally for one plugin id. */
+  status(pluginId?: string): Promise<BuiltinPluginUpdateStatus[]>;
+}
+
 export interface PaseoApi {
   dispose(): Promise<void>;
   observeEvents: DaemonClient["observeEvents"];
@@ -492,6 +498,7 @@ export interface PaseoApi {
   readonly agents: PaseoAgentActions;
   readonly providers: PaseoProviderActions;
   readonly config: PaseoConfigActions;
+  readonly pluginUpdates: PaseoPluginUpdateActions;
 }
 
 export interface PaseoClient extends PaseoApi {
@@ -758,6 +765,9 @@ export function createPaseoApi(
     config: {
       get: (requestId) => daemonClient.getDaemonConfig(requestId),
       patch: (patch, requestId) => daemonClient.patchDaemonConfig(patch, requestId),
+    },
+    pluginUpdates: {
+      status: (pluginId) => daemonClient.getBuiltinPluginUpdateStatus(pluginId),
     },
   };
 }

@@ -232,7 +232,8 @@ import {
   type HubRelationshipRemote,
 } from "./hub/relationship-remote.js";
 import { DaemonExecutions } from "./hub/daemon-executions.js";
-import { PluginService } from "./plugins/index.js";
+import { PluginService, type BuiltinPluginUpdateStatusProvider } from "./plugins/index.js";
+import { createBuiltinUpdateWiring } from "./plugins/builtin/updates/wiring.js";
 import { BuiltinPluginLoader, resolveEnabledBuiltinPlugins } from "./plugins/builtin/index.js";
 import { ManagedPluginSources } from "./plugins/managed-source.js";
 
@@ -482,6 +483,7 @@ export interface PaseoDaemon {
 
 export interface PaseoDaemonDependencies {
   builtinPlugins?: BuiltinPluginLoader;
+  builtinUpdateStatus?: BuiltinPluginUpdateStatusProvider;
   hubRelationshipRemote?: HubRelationshipRemote;
   hubRelationshipClock?: HubRelationshipClock;
   hubRelationshipRetryPolicy?: HubRelationshipRetryPolicy;
@@ -622,6 +624,16 @@ export async function createPaseoDaemon(
   });
   const browserToolsPolicy = new DaemonConfigBrowserToolsPolicy(daemonConfigStore);
   const browserToolsBroker = new BrowserToolsBroker({});
+  const builtinPluginLoader = resolveBuiltinPluginLoader(dependencies);
+  const builtinUpdates = createBuiltinUpdateWiring({
+    loader: builtinPluginLoader,
+    desktopManaged: config.desktopManaged === true,
+    env: process.env,
+    paseoHome: config.paseoHome,
+    daemonVersion,
+    logger,
+    injectedStatus: dependencies.builtinUpdateStatus,
+  });
   const pluginRuntime: PluginService = new PluginService(logger, daemonConfigStore, daemonVersion, {
     usageAgents: {
       hasAgent: (id) => agentManager.getAgent(id) !== null,
@@ -631,7 +643,9 @@ export async function createPaseoDaemon(
       registries: config.pluginRegistries,
       defaultUrl: config.pluginRegistryUrl,
     }),
-    builtinPlugins: resolveBuiltinPluginLoader(dependencies),
+    builtinPlugins: builtinPluginLoader,
+    builtinUpdateStatus: builtinUpdates.status,
+    builtinUpdater: builtinUpdates.updater ?? undefined,
     settingsDirectory: path.join(config.paseoHome, "plugin-settings"),
   });
 
@@ -1750,6 +1764,7 @@ export async function createPaseoDaemon(
             );
             pluginRuntime.bindPaseoSessionHost(wsServer);
             await pluginRuntime.start();
+            builtinUpdates.updater?.start();
             providerSnapshotManager.settlePluginProviders();
             wsServer.beginAcceptingConnections();
             relayRuntime = createRelayRuntime({
@@ -1797,6 +1812,7 @@ export async function createPaseoDaemon(
       localCredential = null;
       await deleteLocalCredential(config.paseoHome);
       unsubscribePluginProviders();
+      builtinUpdates.updater?.stop();
       await pluginRuntime.stopAllPlugins().catch(() => undefined);
       await serviceProxy.stopStandalone().catch(() => undefined);
       await agentProviderRuntime.shutdown().catch(() => undefined);
@@ -1832,6 +1848,7 @@ export async function createPaseoDaemon(
     detachAgentStoragePersistence();
     await agentStorage.flush().catch(() => undefined);
     await agentProviderRuntime.shutdown();
+    builtinUpdates.updater?.stop();
     await pluginRuntime.stopAllPlugins();
     terminalManager.killAll();
     await speechService.stop();

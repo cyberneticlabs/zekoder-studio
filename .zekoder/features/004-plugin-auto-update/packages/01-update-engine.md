@@ -34,12 +34,12 @@ A successful check clears `lastError`; nothing throws out of `checkNow`. The cha
 
 ## Tasks
 
-- [ ] `updates/trusted-keys.ts`: `TrustedKey = { keyId; alg: "ed25519"; publicKey; addedAt }` (zekoder-plugins keyring entry shape), `export const TRUSTED_KEYS: readonly TrustedKey[] = []`, `export const MANIFEST_URL = "https://storage.googleapis.com/zekoder-releases/plugins/zekoder/manifest.json"`. Comment: entries are copied verbatim from zekoder-plugins `scripts/plugin-release-keys.json` (external dependency 2).
-- [ ] `updates/tree-checksum.ts`: port of `computeTreeChecksum` (see Context).
-- [ ] `updates/manifest.ts`: zod envelope and payload schemas (contracts.md › plugin-release-channel), `verifyEnvelope(envelope, trustedKeys): Uint8Array | null` (returns verified payload bytes), and pure `selectCandidate({ payload, channel, bundledVersion, installed, failed, daemonVersion })`.
-- [ ] `updates/index.ts`: `BuiltinPluginUpdater` per contract, `checkNow()` in the order above. `start()` schedules with `setTimeout` + `.unref()`; no overlapping checks. Disabled (no keys) → `getStatus().enabled === false`, no fetch.
-- [ ] `resolveActive()` (excluded-copy `fallbackReason`, one-retry rule, revoked never returned), `recordStartFailure()`, `recordRunning()`, `getStatus()` per contract. Use a local structurally identical status type plus local code/reason unions; 03 swaps them for the `@getpaseo/protocol/messages` exports.
-- [ ] `updates/index.test.ts` (new, beside the module): local `node:http` fixture, Ed25519 keypair from `generateKeyPairSync("ed25519")` exported to the raw-base64 keyring shape, tar fixture built from a temp `zekoder/` dir. Assert the exact `lastError.code` in every failure case:
+- [x] `updates/trusted-keys.ts`: `TrustedKey = { keyId; alg: "ed25519"; publicKey; addedAt }` (zekoder-plugins keyring entry shape), `export const TRUSTED_KEYS: readonly TrustedKey[] = []`, `export const MANIFEST_URL = "https://storage.googleapis.com/zekoder-releases/plugins/zekoder/manifest.json"`. Comment: entries are copied verbatim from zekoder-plugins `scripts/plugin-release-keys.json` (external dependency 2).
+- [x] `updates/tree-checksum.ts`: port of `computeTreeChecksum` (see Context).
+- [x] `updates/manifest.ts`: zod envelope and payload schemas (contracts.md › plugin-release-channel), `verifyEnvelope(envelope, trustedKeys): Uint8Array | null` (returns verified payload bytes), and pure `selectCandidate({ payload, channel, bundledVersion, installed, failed, daemonVersion })`.
+- [x] `updates/index.ts`: `BuiltinPluginUpdater` per contract, `checkNow()` in the order above. `start()` schedules with `setTimeout` + `.unref()`; no overlapping checks. Disabled (no keys) → `getStatus().enabled === false`, no fetch.
+- [x] `resolveActive()` (excluded-copy `fallbackReason`, one-retry rule, revoked never returned), `recordStartFailure()`, `recordRunning()`, `getStatus()` per contract. Use a local structurally identical status type plus local code/reason unions; 03 swaps them for the `@getpaseo/protocol/messages` exports.
+- [x] `updates/index.test.ts` (new, beside the module): local `node:http` fixture, Ed25519 keypair from `generateKeyPairSync("ed25519")` exported to the raw-base64 keyring shape, tar fixture built from a temp `zekoder/` dir. Assert the exact `lastError.code` in every failure case:
   - newer stable installs, becomes `stagedVersion`; installed dir holds `paseo-plugin.json` at its root (not under `zekoder/`)
   - manifest 500 → `manifest-fetch-failed`; bad envelope or payload, `pluginId` mismatch, URL outside prefix → `manifest-invalid`
   - bad signature, untrusted-only key id, `alg` not `ed25519` → `signature-invalid`; unknown key id plus a valid trusted entry → accepted
@@ -53,7 +53,7 @@ A successful check clears `lastError`; nothing throws out of `checkNow`. The cha
   - one start failure → still returned (retry); second → `{ fallbackReason: "previously-failed" }`
   - `getStatus()` right after `checkNow()` installs → `stagedVersion` + `restartRequired: true` synchronously; running downloaded version revoked with no other good copy → `stagedVersion === bundledVersion`, `restartRequired: true`
   - version ≤ bundled ignored; failed version ignored; disabled makes no request; prune keeps 3
-- [ ] `updates/tree-checksum.test.ts` (new): `computeTreeChecksum(<repo>/plugins/zekoder)` equals `checksum` in `plugins/zekoder.lock.json` (the script's own output; CI's `sync-zekoder-plugin --check` keeps the lock current), so the port cannot drift from the script.
+- [x] `updates/tree-checksum.test.ts` (new): `computeTreeChecksum(<repo>/plugins/zekoder)` equals `checksum` in `plugins/zekoder.lock.json` (the script's own output; CI's `sync-zekoder-plugin --check` keeps the lock current), so the port cannot drift from the script.
 
 ## Verification
 
@@ -63,6 +63,6 @@ A successful check clears `lastError`; nothing throws out of `checkNow`. The cha
 
 ## Progress
 
-- Status: planned
-- Completed: none
+- Status: implemented, awaiting supervisor review
+- Completed: all tasks
 - Blockers: none (external dependency 1 is the format owner; contracts.md mirrors its final format).

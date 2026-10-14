@@ -1838,6 +1838,8 @@ export class VoiceAssistantWebSocketServer {
         pluginGitManagement: true,
         pluginSourceInstallation: true,
         pluginSourceUpdates: true,
+        // COMPAT(pluginUpdates): added in v0.11.2, remove gate after 2027-04-14.
+        pluginUpdates: true,
         pluginLogs: true,
         // COMPAT(pluginThemes): added in v0.5.0, remove gate after 2027-08-20.
         pluginThemes: true,

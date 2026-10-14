@@ -7261,6 +7261,46 @@ test("rejects source installation on an older host before sending a request", as
   expect(transport.sent.length).toBe(sentBefore);
 });
 
+test("built-in plugin update status gates on its own feature flag", async () => {
+  for (const features of [{}, { pluginSourceUpdates: true }, { pluginUpdates: true }]) {
+    const transport = createMockTransport();
+    const client = new DaemonClient({
+      url: "ws://test",
+      clientId: "builtin-update-status",
+      logger: createMockLogger(),
+      reconnect: { enabled: false },
+      transportFactory: () => transport.transport,
+    });
+    clients.push(client);
+    const connecting = client.connect();
+    transport.triggerOpen({ features });
+    await connecting;
+    if (!("pluginUpdates" in features)) {
+      const sent = transport.sent.length;
+      await expect(client.getBuiltinPluginUpdateStatus("zekoder")).rejects.toThrow(
+        "Update the host to view plugin update status.",
+      );
+      expect(transport.sent.length).toBe(sent);
+      continue;
+    }
+    const checking = client.getBuiltinPluginUpdateStatus("zekoder");
+    const request = parseSentFrame(transport.sent.at(-1));
+    expect(request).toEqual({
+      type: "plugin.updates.get_status.request",
+      requestId: expect.any(String),
+      pluginId: "zekoder",
+    });
+    const status = { pluginId: "zekoder", runningVersion: "1.0.0", source: "bundled" };
+    transport.triggerMessage(
+      wrapSessionMessage({
+        type: "plugin.updates.get_status.response",
+        payload: { requestId: request.requestId, plugins: [status] },
+      }),
+    );
+    await expect(checking).resolves.toEqual([status]);
+  }
+});
+
 test("reviewed plugin updates gate before requests and preserve exact proposal data", async () => {
   for (const supported of [false, true]) {
     const transport = createMockTransport();

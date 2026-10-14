@@ -64,6 +64,7 @@ $PASEO_HOME/
 ├── runtime/
 │   └── managed-processes/
 │       └── {recordId}.json              # Helper processes owned by Paseo; reconciled on daemon bootstrap
+├── builtin-plugin-updates/               # Signed `zekoder` plugin updates: desktop-channel.json, zekoder/{version}/, zekoder/state.json
 ├── plugins/
 │   ├── sources.json                      # Managed kind and Git acquisition remote
 │   └── {pluginId}/{uuid}/                # Git checkout or npm package/lockfile/dependency tree

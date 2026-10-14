@@ -141,6 +141,60 @@ export default function contribute(server: PluginServerContext) {
   }
 }, 60_000);
 
+test("plugin handlers read built-in update status through their Paseo API", async () => {
+  const pluginDirectory = await mkdtemp(path.join(tmpdir(), "paseo-updates-plugin-"));
+  roots.push(pluginDirectory);
+  await writeFile(
+    path.join(pluginDirectory, "paseo-plugin.json"),
+    JSON.stringify({
+      id: "paseo-updates",
+      requirements: { paseo: `>=${resolveDaemonVersion(import.meta.url)}` },
+    }),
+  );
+  await writeFile(
+    path.join(pluginDirectory, "index.server.ts"),
+    `import { defineRpc } from "@getpaseo/plugin";
+import { type PluginServerContext } from "@getpaseo/plugin/server";
+import { z } from "zod";
+
+const status = defineRpc({
+  name: "status",
+  input: z.object({}),
+  output: z.array(z.object({ pluginId: z.string(), runningVersion: z.string(), source: z.string() })),
+});
+
+export default function contribute(server: PluginServerContext) {
+  server.handle(status, async (_input, { paseo }) => await paseo.pluginUpdates.status("zekoder"));
+  return () => undefined;
+}`,
+  );
+  const entry = { pluginId: "zekoder", runningVersion: "1.2.3", source: "downloaded" as const };
+  const requested: Array<string | undefined> = [];
+  const daemon = await createTestPaseoDaemon({
+    builtinUpdateStatus: {
+      list: (pluginId) => {
+        requested.push(pluginId);
+        return [entry];
+      },
+    },
+  });
+  const client = new DaemonClient({
+    url: `ws://127.0.0.1:${daemon.port}/ws`,
+    appVersion: "0.4.0",
+  });
+
+  try {
+    await client.connect();
+    await client.patchDaemonConfig({ pluginsEnabled: true });
+    await client.installDirectoryPlugin(pluginDirectory);
+    await expect(client.invokePluginRpc("paseo-updates", "status", {})).resolves.toEqual([entry]);
+    expect(requested).toEqual(["zekoder"]);
+  } finally {
+    await client.close().catch(() => undefined);
+    await daemon.close();
+  }
+}, 60_000);
+
 test("daemon config reload enables and disables configured plugins without restarting", async () => {
   const pluginDirectory = await mkdtemp(path.join(tmpdir(), "paseo-reload-plugin-"));
   const paseoHomeRoot = await mkdtemp(path.join(tmpdir(), "paseo-reload-home-"));

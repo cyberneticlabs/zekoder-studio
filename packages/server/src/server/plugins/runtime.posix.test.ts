@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { fork } from "node:child_process";
 import { tmpdir } from "node:os";
 import { PassThrough } from "node:stream";
@@ -1498,6 +1498,25 @@ export default function contribute(server: { registerProvider(provider: Provider
     expect(runtime.catalog()[0]?.clientBundle).toContain("Attach Linear issue");
     expect(runtime.catalog()[0]?.clientBundle).not.toContain("LINEAR_API_KEY");
     expect(runtime.catalog()[0]?.clientBundle).not.toContain("api.linear.app");
+    await runtime.stopAll();
+  });
+
+  it("starts the vendored zekoder plugin from a copy outside the repo", async () => {
+    // A downloaded update lives under $PASEO_HOME, with no repo tsconfig or node_modules above it.
+    const source = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../../../plugins/zekoder",
+    );
+    const directory = await mkdtemp(path.join(tmpdir(), "paseo-downloaded-zekoder-"));
+    temporaryDirectories.push(directory);
+    await cp(source, directory, { recursive: true });
+    const settingsDirectory = await mkdtemp(path.join(tmpdir(), "paseo-zekoder-settings-"));
+    temporaryDirectories.push(settingsDirectory);
+    const runtime = createTestRuntime({ settingsDirectory }, undefined, "0.11.0");
+
+    await runtime.startBuiltinPlugin({ id: "zekoder", directory });
+
+    expect(runtime.catalog().map((plugin) => plugin.id)).toEqual(["zekoder"]);
     await runtime.stopAll();
   });
 

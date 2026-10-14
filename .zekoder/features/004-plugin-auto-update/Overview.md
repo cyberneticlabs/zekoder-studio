@@ -2,10 +2,11 @@
 id: 004-plugin-auto-update
 type: feature
 title: Signed Zekoder plugin auto-update without app rebuild
-status: planned
+status: merged
 createdAt: 2026-10-07
 openedAt: 2026-10-07T14:12:09.274Z
-updatedAt: 2026-10-07T16:39:30.323Z
+updatedAt: 2026-10-14T14:37:54.100Z
+completedAt: 2026-10-14T14:37:54.100Z
 promoted: true
 dependsOn: []
 packages:
@@ -14,13 +15,48 @@ packages:
     file: packages/01-update-engine.md
     branch: 004-plugin-auto-update-01-update-engine
     dependsOn: []
-    status: planned
+    status: merged
+    commit: 2d1ada709c08822824404770188920f625c70519
+    mergeMode: local
+    filesTouched:
+      - .zekoder/features/004-plugin-auto-update/packages/01-update-engine.md
+      - package-lock.json
+      - packages/server/package.json
+      - packages/server/src/server/plugins/builtin/updates/index.test.ts
+      - packages/server/src/server/plugins/builtin/updates/index.ts
+      - packages/server/src/server/plugins/builtin/updates/manifest.ts
+      - packages/server/src/server/plugins/builtin/updates/tree-checksum.test.ts
+      - packages/server/src/server/plugins/builtin/updates/tree-checksum.ts
+      - packages/server/src/server/plugins/builtin/updates/trusted-keys.ts
+      - packages/server/src/server/plugins/builtin/updates/types.ts
+    verifiedBaseSha: 11409f30ce889aa0a916fa476139428f85a80929
   - id: "02"
     name: status-rpc
     file: packages/02-status-rpc.md
     branch: 004-plugin-auto-update-02-status-rpc
     dependsOn: []
-    status: planned
+    status: merged
+    commit: 95c1d19e6eb5a4d4c50449d94501c6fa938852e1
+    mergeMode: local
+    filesTouched:
+      - .zekoder/features/004-plugin-auto-update/packages/02-status-rpc.md
+      - docs/architecture.md
+      - docs/plugins.md
+      - packages/client/src/daemon-client.test.ts
+      - packages/client/src/daemon-client.ts
+      - packages/client/src/index.test.ts
+      - packages/client/src/index.ts
+      - packages/protocol/src/messages.plugins.test.ts
+      - packages/protocol/src/messages.ts
+      - packages/server/src/server/authorization/operation-permissions.ts
+      - packages/server/src/server/bootstrap.ts
+      - packages/server/src/server/plugins/index.posix.test.ts
+      - packages/server/src/server/plugins/index.ts
+      - packages/server/src/server/plugins/plugin-paseo-api.e2e.test.ts
+      - packages/server/src/server/session.ts
+      - packages/server/src/server/test-utils/paseo-daemon.ts
+      - packages/server/src/server/websocket-server.ts
+    verifiedBaseSha: 5e149136973d3c9e9e9c68b2025b07c11907c5d0
   - id: "03"
     name: overlay-loader
     file: packages/03-overlay-loader.md
@@ -28,7 +64,26 @@ packages:
     dependsOn:
       - "01"
       - "02"
-    status: planned
+    status: merged
+    commit: 9587c4cb2226aefa0adcba1276201ccf674cbee8
+    mergeMode: local
+    filesTouched:
+      - .zekoder/features/004-plugin-auto-update/packages/03-overlay-loader.md
+      - docs/data-model.md
+      - docs/plugins.md
+      - packages/desktop/e2e/packaged-app-smoke.js
+      - packages/desktop/src/daemon/daemon-manager.test.ts
+      - packages/desktop/src/daemon/daemon-manager.ts
+      - packages/server/src/server/bootstrap.ts
+      - packages/server/src/server/plugins/builtin/index.ts
+      - packages/server/src/server/plugins/builtin/updates/index.ts
+      - packages/server/src/server/plugins/builtin/updates/types.ts
+      - packages/server/src/server/plugins/builtin/updates/wiring.ts
+      - packages/server/src/server/plugins/index.posix.test.ts
+      - packages/server/src/server/plugins/index.ts
+      - packages/server/src/server/plugins/runtime.posix.test.ts
+      - scripts/builtin-plugins-dist.test.mjs
+    verifiedBaseSha: 9277c0f848389a016cd30f75698b04873fe8bc65
 contracts:
   - id: builtin-plugin-updater
     type: internal
@@ -50,13 +105,20 @@ contracts:
     owner: external
     consumers:
       - "01"
+mergeMode: local
 relatedFeatures:
   - 003-desktop-gcs-release-pipeline
   - 001-builtin-zekoder-plugin
 relatedBugs: []
 relatedFollowups:
   - 002-plugin-signing-key-rotation
-statusHistory: []
+statusHistory:
+  - from: planned
+    to: in-progress
+    at: 2026-10-14T14:21:55.532Z
+  - from: in-progress
+    to: merged
+    at: 2026-10-14T14:37:54.100Z
 ---
 
 # Signed Zekoder plugin auto-update without app rebuild

@@ -19,6 +19,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { DaemonConfigStore } from "../daemon-config-store.js";
 import { PluginService } from "./index.js";
 import { BuiltinPluginLoader } from "./builtin/index.js";
+import { BuiltinPluginUpdater } from "./builtin/updates/index.js";
+import { createBuiltinUpdateWiring } from "./builtin/updates/wiring.js";
 import { ManagedPluginSources } from "./managed-source.js";
 import {
   startNpmRegistry,
@@ -251,6 +253,29 @@ describe("PluginService", () => {
       }
     },
   );
+
+  it("lists built-in update status only when a provider is supplied", async () => {
+    const home = await mkdtemp(path.join(tmpdir(), "paseo-update-status-"));
+    roots.push(home);
+    const entry = { pluginId: "zekoder", runningVersion: "1.0.0", source: "bundled" as const };
+    expect(createService(home).getBuiltinPluginUpdateStatus("zekoder")).toEqual([]);
+    const calls: Array<string | undefined> = [];
+    const service = createService(
+      home,
+      {},
+      {
+        builtinUpdateStatus: {
+          list: (pluginId) => {
+            calls.push(pluginId);
+            return [entry];
+          },
+        },
+      },
+    );
+    expect(service.getBuiltinPluginUpdateStatus("zekoder")).toEqual([entry]);
+    expect(service.getBuiltinPluginUpdateStatus()).toEqual([entry]);
+    expect(calls).toEqual(["zekoder", undefined]);
+  });
 
   it("resolves a provider icon path to sanitized inline SVG", async () => {
     const home = await mkdtemp(path.join(tmpdir(), "paseo-plugin-home-"));
@@ -1611,3 +1636,238 @@ async function applyReviewedUpdate(service: PluginService, pluginId: string) {
   expect(preview?.outcome).toBe("update");
   return service.applyUpdates([preview!.proposal!]);
 }
+
+describe("built-in plugin updates", () => {
+  const goodSource = `export default function contribute() { return () => {}; }`;
+  const badSource = `export default function contribute() { throw new Error("downloaded copy is broken"); }`;
+  const logger = pino({ level: "silent" });
+
+  interface Fixture {
+    home: string;
+    builtinRoot: string;
+    seedState(state: { installed?: string[]; revoked?: string[] }): Promise<void>;
+    installDownloaded(version: string, source: string): Promise<void>;
+    startService(): Promise<{ service: PluginService; updater: BuiltinPluginUpdater }>;
+  }
+
+  async function createFixture(): Promise<Fixture> {
+    const home = await mkdtemp(path.join(tmpdir(), "paseo-builtin-updates-"));
+    roots.push(home);
+    const builtinRoot = path.join(home, "builtins");
+    await mkdir(builtinRoot);
+    await cp(await createPlugin("zekoder", goodSource), path.join(builtinRoot, "zekoder"), {
+      recursive: true,
+    });
+    const pluginDir = path.join(home, "builtin-plugin-updates", "zekoder");
+    return {
+      home,
+      builtinRoot,
+      async seedState({ installed = [], revoked = [] }) {
+        await mkdir(pluginDir, { recursive: true });
+        await writeFile(
+          path.join(pluginDir, "state.json"),
+          JSON.stringify({
+            schemaVersion: 1,
+            installed,
+            failed: [],
+            startFailures: {},
+            revoked,
+            lastCheckAt: null,
+            lastError: null,
+            latestAvailable: null,
+            highestSequence: null,
+          }),
+        );
+      },
+      async installDownloaded(version, source) {
+        await cp(await createPlugin("zekoder", source), path.join(pluginDir, version), {
+          recursive: true,
+        });
+      },
+      // Each call is a daemon start: a new updater over the same home, as after a restart.
+      async startService() {
+        const updater = new BuiltinPluginUpdater({
+          pluginId: "zekoder",
+          paseoHome: home,
+          bundledVersion: "1.0.0",
+          daemonVersion: "0.4.0",
+          manifestUrl: "https://example.invalid/manifest.json",
+          trustedKeys: [],
+          logger,
+        });
+        const service = createService(
+          home,
+          {},
+          {
+            builtinPlugins: new BuiltinPluginLoader(builtinRoot, ["zekoder"]),
+            builtinUpdater: updater,
+            builtinUpdateStatus: { list: () => [updater.getStatus()] },
+          },
+        );
+        await service.start();
+        return { service, updater };
+      },
+    };
+  }
+
+  async function startAndStop(fixture: Fixture) {
+    const { service, updater } = await fixture.startService();
+    const catalog = catalogIds(service);
+    const status = updater.getStatus();
+    await service.stopAllPlugins();
+    return { catalog, status };
+  }
+
+  it("starts a downloaded copy and reports it as downloaded", async () => {
+    const fixture = await createFixture();
+    await fixture.seedState({ installed: ["1.1.0"] });
+    await fixture.installDownloaded("1.1.0", goodSource);
+
+    const { catalog, status } = await startAndStop(fixture);
+
+    expect(catalog).toEqual(["zekoder"]);
+    expect(status).toMatchObject({
+      source: "downloaded",
+      runningVersion: "1.1.0",
+      fallbackReason: null,
+    });
+  });
+
+  it("falls back to bundled in one start, retries once, then stops trying a failing copy", async () => {
+    const fixture = await createFixture();
+    await fixture.seedState({ installed: ["1.1.0"] });
+    await fixture.installDownloaded("1.1.0", badSource);
+
+    const first = await startAndStop(fixture);
+    expect(first.catalog).toEqual(["zekoder"]);
+    expect(first.status).toMatchObject({
+      source: "bundled",
+      runningVersion: "1.0.0",
+      fallbackReason: "start-failed",
+      lastError: { code: "start-failed" },
+    });
+
+    const second = await startAndStop(fixture);
+    expect(second.status).toMatchObject({ source: "bundled", fallbackReason: "start-failed" });
+
+    const third = await startAndStop(fixture);
+    expect(third.catalog).toEqual(["zekoder"]);
+    expect(third.status).toMatchObject({ source: "bundled", fallbackReason: "previously-failed" });
+  });
+
+  it("starts bundled when the only downloaded copy is revoked", async () => {
+    const fixture = await createFixture();
+    await fixture.seedState({ installed: ["1.1.0"], revoked: ["1.1.0"] });
+    await fixture.installDownloaded("1.1.0", goodSource);
+
+    const { catalog, status } = await startAndStop(fixture);
+
+    expect(catalog).toEqual(["zekoder"]);
+    expect(status).toMatchObject({ source: "bundled", fallbackReason: "revoked" });
+  });
+
+  it("starts bundled with no fallback reason when nothing is downloaded", async () => {
+    const fixture = await createFixture();
+
+    const { catalog, status } = await startAndStop(fixture);
+
+    expect(catalog).toEqual(["zekoder"]);
+    expect(status).toMatchObject({
+      source: "bundled",
+      runningVersion: "1.0.0",
+      fallbackReason: null,
+    });
+  });
+
+  it("keeps the built-in ID locked while an updater is attached", async () => {
+    const fixture = await createFixture();
+    await fixture.seedState({ installed: ["1.1.0"] });
+    await fixture.installDownloaded("1.1.0", goodSource);
+    const { service } = await fixture.startService();
+    const reserved = /Plugin ID "zekoder" is reserved for a built-in plugin/;
+    try {
+      await expect(service.disablePlugin("zekoder")).rejects.toThrow(reserved);
+      await expect(service.enablePlugin("zekoder")).rejects.toThrow(reserved);
+      await expect(service.previewUpdates({ pluginId: "zekoder" })).rejects.toThrow(reserved);
+      await expect(
+        service.applyUpdates([
+          { id: "zekoder" } as Parameters<PluginService["applyUpdates"]>[0][number],
+        ]),
+      ).rejects.toThrow(reserved);
+    } finally {
+      await service.stopAllPlugins();
+    }
+  });
+
+  describe("daemon wiring", () => {
+    async function packagedRoot(withLock: boolean, name = "builtin-plugins"): Promise<string> {
+      const base = await mkdtemp(path.join(tmpdir(), "paseo-builtin-root-"));
+      roots.push(base);
+      const root = path.join(base, name);
+      await mkdir(root);
+      if (withLock) await writeFile(path.join(root, "zekoder.lock.json"), '{"version":"1.2.3"}');
+      return root;
+    }
+
+    function wire(input: {
+      root: string;
+      list?: readonly string[];
+      desktopManaged?: boolean;
+      env?: Record<string, string | undefined>;
+    }) {
+      return createBuiltinUpdateWiring({
+        loader: new BuiltinPluginLoader(input.root, input.list ?? ["zekoder"]),
+        desktopManaged: input.desktopManaged ?? true,
+        env: input.env ?? {},
+        paseoHome: path.join(input.root, "..", "home"),
+        daemonVersion: "0.4.0",
+        logger,
+      });
+    }
+
+    const disabledStatus = {
+      pluginId: "zekoder",
+      runningVersion: "1.2.3",
+      source: "bundled",
+      bundledVersion: "1.2.3",
+      enabled: false,
+    };
+
+    it("builds the updater for a desktop-managed daemon on a packaged root", async () => {
+      const wiring = wire({ root: await packagedRoot(true) });
+
+      expect(wiring.updater).not.toBeNull();
+      expect(wiring.status.list("zekoder")).toMatchObject([
+        { pluginId: "zekoder", bundledVersion: "1.2.3", source: "bundled" },
+      ]);
+      expect(wiring.status.list("other")).toEqual([]);
+    });
+
+    it.each([
+      ["the daemon is not desktop-managed", { desktopManaged: false }],
+      ["updates are switched off", { env: { ZEKODER_PLUGIN_UPDATES: "off" } }],
+    ])("reports disabled status when %s", async (_name, options) => {
+      const wiring = wire({ root: await packagedRoot(true), ...options });
+
+      expect(wiring.updater).toBeNull();
+      expect(wiring.status.list()).toEqual([disabledStatus]);
+    });
+
+    it("does not build the updater outside a builtin-plugins root or without a lock", async () => {
+      const repoLike = wire({ root: await packagedRoot(true, "plugins") });
+      const unlocked = wire({ root: await packagedRoot(false) });
+
+      expect(repoLike.updater).toBeNull();
+      expect(repoLike.status.list()).toEqual([disabledStatus]);
+      expect(unlocked.updater).toBeNull();
+      expect(unlocked.status.list()).toEqual([]);
+    });
+
+    it("reports nothing when the loader does not include zekoder", async () => {
+      const wiring = wire({ root: await packagedRoot(true), list: ["other"] });
+
+      expect(wiring.updater).toBeNull();
+      expect(wiring.status.list()).toEqual([]);
+    });
+  });
+});

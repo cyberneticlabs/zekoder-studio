@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { mkdir, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { app, ipcMain, powerMonitor } from "electron";
 import log from "electron-log/main";
@@ -276,8 +277,28 @@ function assertBuiltInDaemonManagementEnabled(settings: DesktopSettings): void {
   }
 }
 
+// The daemon reads this file at every built-in plugin update check (contract
+// builtin-plugin-updater); it has no other way to learn the desktop's release channel, and a
+// CLI restart or a reused daemon never passes through the launch environment.
+async function writeBuiltinPluginUpdateChannel(channel: AppReleaseChannel): Promise<void> {
+  const directory = path.join(getPaseoHome(), "builtin-plugin-updates");
+  const file = path.join(directory, "desktop-channel.json");
+  const temporary = `${file}.${process.pid}.tmp`;
+  try {
+    await mkdir(directory, { recursive: true });
+    await writeFile(temporary, `${JSON.stringify({ channel })}\n`);
+    await rename(temporary, file);
+  } catch (error) {
+    logDesktopDaemonLifecycle("failed to write built-in plugin update channel", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
 async function startDaemon(): Promise<DesktopDaemonStatus> {
-  assertBuiltInDaemonManagementEnabled(await getDesktopSettingsStore().get());
+  const settings = await getDesktopSettingsStore().get();
+  assertBuiltInDaemonManagementEnabled(settings);
+  await writeBuiltinPluginUpdateChannel(settings.releaseChannel);
 
   const current = await resolveDesktopDaemonStatus();
   logDesktopDaemonLifecycle("initial status check before start", {
