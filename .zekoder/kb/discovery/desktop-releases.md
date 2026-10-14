@@ -10,7 +10,7 @@ Shipped by feature 003-desktop-gcs-release-pipeline. Process owner: docs/release
 - scripts/desktop-release/prepare-release.mjs — build outputs + GitHub Release body -> immutable per-target YAML snapshots, release-notes.md, catalog candidate. `--published-at` must stay fixed per tag across reruns (CI uses tagger date). `--release-json` for jobs that cannot read drafts.
 - scripts/desktop-release/publish-release.mjs — GCS JSON API, ifGenerationMatch=0 for immutable objects, byte-exact replay allowed, catalog CAS-merged last. Token from GCS_ACCESS_TOKEN.
 - Layout: gs://zekoder-releases/desktop/releases/TAG/PLATFORM/ARCH/ plus desktop/releases/manifest.json (max-age 60). Skills-owned releases/ untouched.
-- packages/desktop/electron-builder.yml — generic provider at the desktop/releases/ root; CI passes --publish never, -c.publish.channel, per-row output dir. AppImage basename Zekoder-x64.AppImage stays stable.
+- packages/desktop/electron-builder.yml — generic provider at the desktop/releases/ root; CI passes --publish never, -c.publish.channel, per-row output dir. AppImage basename Zekoder-x86_64.AppImage stays stable.
 - Upstream publishers guarded to `github.repository == 'getpaseo/paseo'`: deploy-app, android-apk-release, release-notes-sync, docker publish, desktop-rollout. deploy-website release-event trigger still open (followup 003-guard-deploy-website-release-event).
 - scripts/github-release.mjs — drafts matched by exact tag_name across pages; duplicates error unless --cleanup-duplicates.
 - Tests: scripts/desktop-release/*.test.mjs (node:test), registered in ci.yml "Validate CI contracts" step (that job installs root+protocol deps for js-yaml). scripts/ci-workflow.test.mjs asserts trigger/permissions/guards.

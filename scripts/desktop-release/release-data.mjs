@@ -167,7 +167,7 @@ export function requiredPayloads({ platform, arch }, version) {
     ];
   }
   return [
-    { kind: "installer", pattern: exact("Zekoder-x64.AppImage"), feedReferenced: true },
+    { kind: "installer", pattern: exact("Zekoder-x86_64.AppImage"), feedReferenced: true },
     {
       kind: "installer",
       pattern: new RegExp(`^Zekoder-${v}-(?:x64|amd64)\\.deb$`),
