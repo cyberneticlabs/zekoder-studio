@@ -252,6 +252,12 @@ jobs:
           APPLE_TEAM_ID: ${{ matrix.platform == 'darwin' && secrets.APPLE_TEAM_ID || '' }}
         run: |
           set -euo pipefail
+          # An absent secret arrives as an empty string, and electron-builder resolves an empty
+          # CSC_LINK against the project directory ("packages/desktop not a file"). Unsigned
+          # policies must leave the signing variables unset.
+          for name in CSC_LINK CSC_KEY_PASSWORD CSC_IDENTITY_AUTO_DISCOVERY APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            if [[ -z "${!name:-}" ]]; then unset "$name"; fi
+          done
           # Publishing is never done by the builder. Each target writes its own output directory
           # so Windows x64 and arm64 cannot overwrite each other's latest.yml.
           # BUILDER_SIGNING_FLAGS is set by the signing policy step and left unquoted on purpose so
