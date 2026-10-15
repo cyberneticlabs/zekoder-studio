@@ -1,11 +1,11 @@
 ---
 id: 012-omp-provider-settings
 type: feature
-title: OMP provider settings panel
+title: OMP provider configuration with preview and safe saves
 status: planned
 createdAt: 2026-10-15
 openedAt: 2026-10-15T15:15:23.846Z
-updatedAt: 2026-10-15T16:54:11.483Z
+updatedAt: 2026-10-15T18:12:21.783Z
 promoted: true
 dependsOn: []
 packages:
@@ -23,7 +23,7 @@ relatedBugs:
 relatedFollowups: []
 statusHistory: []
 ---
-# OMP provider settings panel
+# OMP provider configuration with preview and safe saves
 
 Imported from cyberneticlabs/zekoder-plugins feature 022; completed against this monorepo. Supersedes the imported execution instructions.
 
