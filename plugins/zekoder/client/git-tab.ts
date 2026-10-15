@@ -4,7 +4,11 @@ import { panelOpenLocation } from "./panel-location.js";
 export const GIT_PANEL_ID = "git";
 const WORKSPACE_PAGE_SIZE = 100;
 
-type WorkspaceLike = { id: string; projectKind: string; archivingAt?: string | null };
+interface WorkspaceLike {
+  id: string;
+  projectKind: string;
+  archivingAt?: string | null;
+}
 
 /**
  * Puts a Git button in every git workspace's header that opens the Git tab in the right panel (or in
@@ -69,13 +73,15 @@ export function trackGitTab(client: PluginClientContext): () => void {
       if (disposed) return void release().catch(() => {});
       upsertAll(entries);
       // The subscription only reports changes; later pages must be fetched to cover every workspace.
-      for (let cursor = pageInfo.hasMore ? pageInfo.nextCursor : null; cursor && !disposed; ) {
+      for (let cursor = pageInfo.hasMore ? pageInfo.nextCursor : null; cursor; ) {
+        if (disposed) break;
         const page = await client.paseo.workspaces.list({
           page: { limit: WORKSPACE_PAGE_SIZE, cursor },
         });
         upsertAll(page.entries);
         cursor = page.pageInfo.hasMore ? page.pageInfo.nextCursor : null;
       }
+      return undefined;
     })
     .catch((error) => console.warn("[zekoder] workspace list failed", error));
 

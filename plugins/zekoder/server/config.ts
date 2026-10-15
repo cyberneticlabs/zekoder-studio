@@ -22,13 +22,13 @@ import {
   zekoderProjects,
 } from "./zekoder.js";
 
-type ProviderModel = {
+interface ProviderModel {
   id: string;
   label: string;
   isDefault?: boolean;
   isSelectable?: boolean;
   thinkingOptions?: { id: string; label: string; isDefault?: boolean }[];
-};
+}
 
 /** Zekoder model definition to the plugin's `HarnessModel`. */
 function toHarnessModel(model: ProviderModel): HarnessModel {

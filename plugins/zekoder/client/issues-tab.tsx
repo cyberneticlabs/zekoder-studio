@@ -45,7 +45,10 @@ const STATUS_LABELS: Record<StatusFilter, string> = {
 const SEARCH_DEBOUNCE_MS = 250;
 const DETAIL_PANEL_WIDTH = 400;
 
-type Selection = { id: string; type: ItemType };
+interface Selection {
+  id: string;
+  type: ItemType;
+}
 
 /** Workspace tab: the issues page pinned to the workspace's own project. */
 export function IssuesPanel(props: PluginWorkspacePanelProps) {

@@ -31,18 +31,23 @@ export async function validateOrg(
     return { login: body.login, name: body.name ?? null };
   } catch (error) {
     const err = error as NodeJS.ErrnoException & { stderr?: string; stdout?: string };
-    if (err.code === "ENOENT") throw new Error("The gh CLI is not installed on the Zekoder host.");
+    if (err.code === "ENOENT")
+      throw new Error("The gh CLI is not installed on the Zekoder host.", { cause: error });
     const detail = `${err.stdout ?? ""} ${err.stderr ?? ""}`;
     if (/HTTP 404|Not Found/i.test(detail)) {
       throw new Error(
         `GitHub org "${org}" does not exist, or the gh login on the Zekoder host can't access it.`,
+        { cause: error },
       );
     }
     if (/auth login|HTTP 401/i.test(detail)) {
-      throw new Error("gh is not logged in on the Zekoder host. Run `gh auth login` there.");
+      throw new Error("gh is not logged in on the Zekoder host. Run `gh auth login` there.", {
+        cause: error,
+      });
     }
     throw new Error(
       `Could not check org "${org}": ${(err.stderr || err.message || String(error)).trim()}`,
+      { cause: error },
     );
   }
 }

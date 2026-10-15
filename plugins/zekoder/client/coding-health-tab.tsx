@@ -175,9 +175,7 @@ export function CodingHealthPage({ theme, layout }: PluginSurfaceProps) {
           <Text style={{ fontSize: 12, ...muted }}>
             {data
               ? `${data.window.start} → ${data.window.end} · ${dayLabel(data.window.days.length)} · built ${new Date(data.generatedAt).toLocaleString()}`
-              : days === 1
-                ? dayLabel(days)
-                : `Last ${dayLabel(days)}`}
+              : `${days === 1 ? "" : "Last "}${dayLabel(days)}`}
           </Text>
         </View>
         <Button
@@ -227,7 +225,7 @@ export function CodingHealthPage({ theme, layout }: PluginSurfaceProps) {
           }}
         >
           <Text style={{ color: theme.colors.statusWarning }}>
-            Partial: the cache doesn't cover this whole window
+            Partial: the cache doesn&apos;t cover this whole window
             {data.pendingCommitDetails > 0
               ? ` (${NUMBER.format(data.pendingCommitDetails)} commits lack line counts)`
               : ""}
@@ -268,7 +266,7 @@ export function CodingHealthPage({ theme, layout }: PluginSurfaceProps) {
             title="Per contributor"
             rows={rowsOf(agg.byUser, (u) => ({
               label: data.users[u].label,
-              tag: data.users[u].bot ? "bot" : data.users[u].unlinked ? "unlinked email" : "",
+              tag: userTag(data.users[u]),
             }))}
             onPick={(user) => patch({ user })}
           />
@@ -489,15 +487,22 @@ function FilterBar({ theme, report, filters, patch, reset }: FilterBarProps) {
   );
 }
 
+function userTag(user: { bot?: boolean; unlinked?: boolean }): string {
+  if (user.bot) return "bot";
+  return user.unlinked ? "unlinked email" : "";
+}
+
 function rowsOf(
   map: Aggregate["byUser"],
   describe: (key: number) => { label: string; tag: string },
 ): Row[] {
   return [...map.entries()].map(([key, b]) => {
     const prs = b.merged + b.closed;
+    const { label, tag } = describe(key);
     return {
       key,
-      ...describe(key),
+      label,
+      tag,
       commits: b.commits,
       add: b.add,
       del: b.del,

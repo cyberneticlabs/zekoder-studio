@@ -139,14 +139,12 @@ const tabDefaultsSchema = z.object({
 });
 const roleFieldsSchema = z.object({ model: z.string().optional(), effort: z.string().optional() });
 /** Every field optional; strings stored as given (no family translation here). */
-type TabDefaults = z.infer<typeof tabDefaultsSchema>;
 export type RoleFields = z.infer<typeof roleFieldsSchema>;
 const agentDefaultsSchema = z.object({
   planning: tabDefaultsSchema.optional(),
   coding: tabDefaultsSchema.optional(),
   roles: z.record(z.string(), z.record(z.string(), roleFieldsSchema)).optional(),
 });
-type AgentDefaults = z.infer<typeof agentDefaultsSchema>;
 
 const sourceSchema = z.enum(AGENT_SOURCES);
 const tabSourcesSchema = z.object({
@@ -165,7 +163,6 @@ const agentDefaultsSourcesSchema = z.object({
   coding: tabSourcesSchema.optional(),
   roles: z.record(z.string(), z.record(z.string(), roleSourcesSchema)).optional(),
 });
-type AgentDefaultsSources = z.infer<typeof agentDefaultsSourcesSchema>;
 
 export const agentDefaultsStateSchema = z.object({
   /** True when get_config has `sources.agentDefaults` (always added by zekoder-mcp 023). */

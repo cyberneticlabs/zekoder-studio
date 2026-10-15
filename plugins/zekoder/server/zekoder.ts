@@ -82,7 +82,10 @@ const HEADER_KEYS = new Set([
   "contracts",
 ]);
 
-type PooledClient = { client: McpStdioClient; idleTimer: ReturnType<typeof setTimeout> };
+interface PooledClient {
+  client: McpStdioClient;
+  idleTimer: ReturnType<typeof setTimeout>;
+}
 const clients = new Map<string, PooledClient>();
 
 export async function listProjects(
@@ -226,7 +229,12 @@ export async function migrateWorkspace(
 const LEGACY_PROVIDER = "claude";
 
 type Paseo = PluginHandlerContext["paseo"];
-type Launch = { provider: string; model: string; effort?: string; mode?: string };
+interface Launch {
+  provider: string;
+  model: string;
+  effort?: string;
+  mode?: string;
+}
 
 /**
  * Resolves the tab's provider, model, effort and mode. A field from the same or a higher tier than
@@ -496,13 +504,13 @@ export function disposeClient(root: string): void {
   clients.delete(root);
 }
 
-type ToolPayload = {
+interface ToolPayload {
   items?: Record<string, unknown>[];
   results?: Record<string, unknown>[];
   total?: number;
   count?: number;
   warnings?: string[];
-};
+}
 
 function toIssue(raw: Record<string, unknown>): ZekoderIssue {
   const text = (key: string) => (typeof raw[key] === "string" ? (raw[key] as string) : undefined);

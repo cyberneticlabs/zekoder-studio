@@ -97,6 +97,7 @@ export async function runReport(org: string, days: number): Promise<ReportFiles>
     if (err.code !== 2 || !err.stdout) {
       throw new Error(
         `zekoder-org-health report failed: ${(err.stderr || err.message || String(error)).trim()}`,
+        { cause: error },
       );
     }
     stdout = err.stdout;
@@ -125,7 +126,7 @@ export async function runCollect(org: string, days: number): Promise<void> {
     if (err.code === 2) return;
     // stderr carries progress lines too; the failure reason is the last one.
     const reason = (err.stderr || err.message || String(error)).trim().split("\n").at(-1);
-    throw new Error(`zekoder-org-health collect failed: ${reason}`);
+    throw new Error(`zekoder-org-health collect failed: ${reason}`, { cause: error });
   }
 }
 
@@ -140,6 +141,7 @@ export async function runOrgs(): Promise<string[]> {
     const err = error as { stderr?: string; message?: string };
     throw new Error(
       `zekoder-org-health orgs failed: ${(err.stderr || err.message || String(error)).trim()}`,
+      { cause: error },
     );
   }
 }

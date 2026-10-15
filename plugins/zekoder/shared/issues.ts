@@ -77,7 +77,6 @@ const issueDetailSchema = issueSchema.extend({
   packages: z.array(packageSchema),
   docs: z.array(z.string()),
 });
-type ZekoderIssueDetail = z.infer<typeof issueDetailSchema>;
 
 export const getIssueRpc = defineRpc({
   name: "zekoder.issues.get",

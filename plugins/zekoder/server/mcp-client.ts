@@ -8,11 +8,11 @@ export interface McpServerCommand {
   cwd: string;
 }
 
-type Pending = {
+interface Pending {
   resolve(value: unknown): void;
   reject(error: Error): void;
   timer: ReturnType<typeof setTimeout>;
-};
+}
 
 const REQUEST_TIMEOUT_MS = 30_000;
 const PROTOCOL_VERSION = "2025-06-18";

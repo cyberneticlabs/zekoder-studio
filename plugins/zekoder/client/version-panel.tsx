@@ -73,11 +73,8 @@ export function VersionPanel({ theme }: { theme: Theme }) {
     },
     onSuccess: setStatus,
   });
-  const selectedChannel = switchChannel.isPending
-    ? switchChannel.variables
-    : settings.status === "ready"
-      ? settings.values.channel
-      : "stable";
+  const savedChannel = settings.status === "ready" ? settings.values.channel : "stable";
+  const selectedChannel = switchChannel.isPending ? switchChannel.variables : savedChannel;
 
   const data = status.data;
   const muted = { color: theme.colors.foregroundMuted };
@@ -336,11 +333,7 @@ function TargetRow({ theme, target, retrying, onRetry }: TargetRowProps) {
           >
             <Icon name={showLog ? "ChevronDown" : "ChevronRight"} size={14} color={muted.color} />
             <Text style={{ fontSize: 12, color: jobColor(job.status, theme) }}>
-              {job.status === "queued"
-                ? "Install queued…"
-                : job.status === "running"
-                  ? "Installing…"
-                  : `Install ${job.status} · ${new Date(job.finishedAt ?? job.startedAt).toLocaleString()}`}
+              {jobSummary(job)}
             </Text>
           </Pressable>
           {job.status === "succeeded" && (
@@ -365,6 +358,12 @@ function TargetRow({ theme, target, retrying, onRetry }: TargetRowProps) {
       )}
     </View>
   );
+}
+
+function jobSummary(job: { status: string; startedAt: string; finishedAt: string | null }): string {
+  if (job.status === "queued") return "Install queued…";
+  if (job.status === "running") return "Installing…";
+  return `Install ${job.status} · ${new Date(job.finishedAt ?? job.startedAt).toLocaleString()}`;
 }
 
 function jobColor(status: string, theme: Theme): string {

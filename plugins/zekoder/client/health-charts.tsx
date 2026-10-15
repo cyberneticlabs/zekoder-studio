@@ -28,9 +28,10 @@ interface PrBar {
 
 /** Per-day totals for the filtered day range (zero-filled). */
 function dailyBars(report: CodingHealthReport, agg: Aggregate, f: HealthFilters): DayBar[] {
-  return report.window.days
-    .slice(f.from, f.to + 1)
-    .map((day, i) => ({ day, ...pick(agg.byDay[f.from + i]) }));
+  return report.window.days.slice(f.from, f.to + 1).map((day, i) => {
+    const { commits, add, del } = pick(agg.byDay[f.from + i]);
+    return { day, commits, add, del };
+  });
 }
 
 function pick(b: Bucket | undefined) {

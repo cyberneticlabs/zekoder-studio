@@ -107,7 +107,6 @@ export const builtinPluginUpdateStatusSchema = z
     enabled: z.boolean().nullish(),
   })
   .passthrough();
-type BuiltinPluginUpdateStatus = z.infer<typeof builtinPluginUpdateStatusSchema>;
 
 export const pluginVersionViewSchema = z.object({
   /** The version compiled into this plugin copy. */

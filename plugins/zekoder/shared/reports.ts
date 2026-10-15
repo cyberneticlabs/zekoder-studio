@@ -24,7 +24,6 @@ const reportSettingsSchema = z.object({
   org: z.string().nullable().default(null),
   days: reportDaysSchema.default(DEFAULT_REPORT_DAYS),
 });
-type ReportSettings = z.infer<typeof reportSettingsSchema>;
 export const reportSettings = defineSettings({
   id: "zekoder-report-settings",
   scope: "host",

@@ -52,23 +52,25 @@ export function StartAgentButton({
   const machine = useMachineDefaultsQuery(root, onboarding !== null);
   const machineScope = machine.data?.state?.machineScope === true;
   const muted = { fontSize: 12, color: theme.colors.foregroundMuted };
+  const started = start.isSuccess && !onboarding;
+  let buttonLabel = label;
+  if (started) buttonLabel = "Agent started";
+  if (start.isPending) buttonLabel = "Starting…";
   return (
     <View style={{ gap: 4, alignItems: "flex-start" }}>
       <Button
         theme={theme}
         icon={icon}
-        label={
-          start.isPending ? "Starting…" : start.isSuccess && !onboarding ? "Agent started" : label
-        }
+        label={buttonLabel}
         primary
-        disabled={!enabled || start.isPending || (start.isSuccess && !onboarding)}
+        disabled={!enabled || start.isPending || started}
         onPress={() => start.mutate()}
       />
       {!enabled && <Text style={muted}>{disabledHint}</Text>}
       {onboarding && machine.isPending && <Text style={muted}>Checking provider defaults…</Text>}
       {onboarding && !machine.isPending && !machineScope && (
         <Text style={muted}>
-          No {onboarding} provider is set yet. Set it in this project's Zekoder settings →{" "}
+          No {onboarding} provider is set yet. Set it in this project&apos;s Zekoder settings →{" "}
           {tabLabel(onboarding)} tab.
         </Text>
       )}

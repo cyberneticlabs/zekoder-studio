@@ -91,7 +91,12 @@ export function MachineEditor({
 
 /** Last path segment of a project root, for the footer. */
 function projectLabel(root: string): string {
-  return root.split(/[\\/]/).filter(Boolean).pop() ?? root;
+  return (
+    root
+      .replace(/[\\/]+$/, "")
+      .split(/[\\/]/)
+      .at(-1) || root
+  );
 }
 
 /** The Defaults tab of the global Zekoder page: the machine tier of agent defaults. */

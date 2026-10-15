@@ -117,7 +117,6 @@ function ConfigPanel({ theme, root: activeRoot }: { theme: Theme; root: string }
     },
   });
 
-  const muted = { color: theme.colors.foregroundMuted };
   const unset = new Set(config.data?.unset ?? []);
   const agentDefaults = config.data?.agentDefaults;
 
@@ -253,13 +252,13 @@ function ConfigPanel({ theme, root: activeRoot }: { theme: Theme; root: string }
   );
 
   /** Repo-tier provider/model/effort/mode for the tab's session plus its role defaults. */
-  function renderAgentDefaults(tab: "planning" | "coding") {
+  function renderAgentDefaults(sessionTab: "planning" | "coding") {
     if (!agentDefaults) return null;
     return (
       <AgentDefaultsEditor
         theme={theme}
         scope="repo"
-        tabs={[tab]}
+        tabs={[sessionTab]}
         showRoles
         state={agentDefaults}
         providers={providers}

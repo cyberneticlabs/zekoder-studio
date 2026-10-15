@@ -317,6 +317,60 @@ function SourceLine({
   );
 }
 
+type TabValues = NonNullable<State["values"][AgentTab]>;
+
+/** The effort choices for the tab's model; `familyEfforts` is set when the model is a family. */
+function tabEfforts(
+  values: TabValues,
+  models: readonly HarnessModel[],
+  defaultModel: HarnessModel | undefined,
+): { familyEfforts: Effort[] | null; efforts: readonly Effort[] } {
+  const model =
+    values.model && values.model !== INHERIT
+      ? models.find((entry) => entry.id === values.model)
+      : undefined;
+  const effortModel =
+    model ?? (!values.model || values.model === INHERIT ? defaultModel : undefined);
+  const familyEfforts = effortsFor(values.provider, values.model, models);
+  return { familyEfforts, efforts: familyEfforts ?? effortModel?.efforts ?? [] };
+}
+
+/** Whether the resolved provider still offers each field's current value. */
+function tabOffers(
+  values: TabValues,
+  models: readonly HarnessModel[],
+  efforts: readonly Effort[],
+  modes: readonly { id: string }[],
+): Record<TabField, boolean> {
+  return {
+    provider: true,
+    model:
+      !values.model ||
+      values.model === INHERIT ||
+      isModelFamily(values.provider ?? "", values.model) ||
+      models.some((entry) => entry.id === values.model),
+    effort: !values.effort || efforts.some((entry) => entry.id === values.effort),
+    mode: !values.mode || modes.some((entry) => entry.id === values.mode),
+  };
+}
+
+/** True when switching to `next` leaves the saved effort out of the new model's effort list. */
+function effortUnsupportedAfterModel(
+  values: TabValues,
+  next: string,
+  models: readonly HarnessModel[],
+  defaultModel: HarnessModel | undefined,
+): boolean {
+  const pickedEfforts =
+    effortsFor(values.provider, next, models) ??
+    (next === INHERIT ? defaultModel : models.find((entry) => entry.id === next))?.efforts;
+  return (
+    values.effort !== undefined &&
+    pickedEfforts !== undefined &&
+    !pickedEfforts.some((entry) => entry.id === values.effort)
+  );
+}
+
 function SessionBlock({
   theme,
   tab,
@@ -336,28 +390,12 @@ function SessionBlock({
   const sources = state.sources[tab] ?? {};
   const provider = providers.find((entry) => entry.id === values.provider);
   const models = provider?.models ?? [];
-  const model =
-    values.model && values.model !== INHERIT
-      ? models.find((entry) => entry.id === values.model)
-      : undefined;
   const defaultModel = models.find((entry) => entry.isDefault);
-  const effortModel =
-    model ?? (!values.model || values.model === INHERIT ? defaultModel : undefined);
-  const familyEfforts = effortsFor(values.provider, values.model, models);
-  const efforts = familyEfforts ?? effortModel?.efforts ?? [];
+  const { familyEfforts, efforts } = tabEfforts(values, models, defaultModel);
   const modes = provider?.modes ?? [];
   const path = (field: TabField) => `${tab}.${field}`;
 
-  const offers: Record<TabField, boolean> = {
-    provider: true,
-    model:
-      !values.model ||
-      values.model === INHERIT ||
-      isModelFamily(values.provider ?? "", values.model) ||
-      models.some((entry) => entry.id === values.model),
-    effort: !values.effort || efforts.some((entry) => entry.id === values.effort),
-    mode: !values.mode || modes.some((entry) => entry.id === values.mode),
-  };
+  const offers = tabOffers(values, models, efforts, modes);
   /** A soft field (lower tier than the provider's) that the resolved provider doesn't offer is ignored at launch. */
   const ignored = (field: TabField): boolean => {
     const fieldSource = sources[field];
@@ -388,13 +426,7 @@ function SessionBlock({
 
   const onModel = (next: string) => {
     if (next === UNSET) return onSave({ clear: [path("model")] });
-    const pickedEfforts =
-      effortsFor(values.provider, next, models) ??
-      (next === INHERIT ? defaultModel : models.find((entry) => entry.id === next))?.efforts;
-    const dropEffort =
-      values.effort !== undefined &&
-      pickedEfforts !== undefined &&
-      !pickedEfforts.some((entry) => entry.id === values.effort);
+    const dropEffort = effortUnsupportedAfterModel(values, next, models, defaultModel);
     onSave({ set: { [path("model")]: next }, ...(dropEffort ? { clear: [path("effort")] } : {}) });
   };
 
@@ -531,8 +563,8 @@ function RolesBlock({
         Role defaults
       </Text>
       <Text style={{ fontSize: 11, color: theme.colors.foregroundMuted }}>
-        Native model/effort per provider and built-in role. Unset = the agent's own default;
-        "inherit" = explicitly keep the session model. Each field saves on its own.
+        Native model/effort per provider and built-in role. Unset = the agent&apos;s own default;
+        &quot;inherit&quot; = explicitly keep the session model. Each field saves on its own.
       </Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
         {roleProviders.map((id) => (
@@ -611,11 +643,10 @@ function RoleRow(props: RoleRowProps) {
       }
     />
   );
-  const limit = !controls.model
-    ? `${provider} can't set a model or effort for ${role}; only inherit works.`
-    : !controls.effort
-      ? `${provider} has no effort control for ${role}.`
-      : null;
+  let limit: string | null = null;
+  if (!controls.model)
+    limit = `${provider} can't set a model or effort for ${role}; only inherit works.`;
+  else if (!controls.effort) limit = `${provider} has no effort control for ${role}.`;
 
   return (
     <Raise style={{ gap: 4 }}>
@@ -666,11 +697,12 @@ function RoleDropdowns({
   const current = models.find((entry) => entry.id === model);
 
   // A closed host list (Claude task roles) replaces Zekoder's native IDs, which that host rejects.
-  const choices = !controls.model
-    ? []
-    : controls.models
+  let choices: { value: string; label: string }[] = [];
+  if (controls.model) {
+    choices = controls.models
       ? controls.models.map((value) => ({ value, label: value }))
       : models.map((entry) => ({ value: entry.id, label: entry.label }));
+  }
   // Families come first; Claude task roles already list only families.
   const families = controls.model && !controls.models ? familyOptions(provider) : [];
   const modelOptions = withCurrent(

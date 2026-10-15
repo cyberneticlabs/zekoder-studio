@@ -3,7 +3,7 @@
   "options": {
     "typeAware": false
   },
-  "ignorePatterns": [".dev/**", "plugins/zekoder/**"],
+  "ignorePatterns": [".dev/**"],
   "plugins": ["react", "react-perf", "unicorn", "typescript", "oxc", "import", "promise"],
   "categories": {
     "correctness": "error",
@@ -355,6 +355,28 @@
       ],
       "rules": {
         "no-restricted-imports": "off"
+      }
+    },
+    {
+      "files": ["plugins/zekoder/**/*.{ts,tsx}"],
+      "rules": {
+        // The Zekoder plugin UI is a handful of settings and report panes, not the memoized
+        // virtualized lists these rules guard. Inline style objects, handlers and icon elements are
+        // its idiom and the allocation cost is irrelevant at its render rate.
+        "react-perf/jsx-no-new-object-as-prop": "off",
+        "react-perf/jsx-no-new-function-as-prop": "off",
+        "react-perf/jsx-no-new-array-as-prop": "off",
+        "react-perf/jsx-no-jsx-as-prop": "off",
+        // Page components and `resolveLaunch` branch on many independent loading/error/empty states
+        // and tiers. 40 caps further growth without splitting launch-critical code for the rule.
+        "complexity": ["error", { "max": 40 }]
+      }
+    },
+    {
+      // Static lists that are rendered once and never reorder or insert, so the index is the identity.
+      "files": ["plugins/zekoder/client/doc-viewer.tsx", "plugins/zekoder/client/date-picker.tsx"],
+      "rules": {
+        "react/no-array-index-key": "off"
       }
     },
     {

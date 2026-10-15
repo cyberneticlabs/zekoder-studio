@@ -79,9 +79,9 @@ export function GitPanel({ theme, workspaceId }: PluginWorkspacePanelProps) {
         <Text style={{ ...muted, color: theme.colors.statusDanger }}>
           {errorText(overview.error)}
         </Text>
-      ) : !data ? (
-        <Text style={muted}>Loading…</Text>
-      ) : (
+      ) : null}
+      {!overview.error && !data ? <Text style={muted}>Loading…</Text> : null}
+      {!overview.error && data ? (
         <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
           <Section theme={theme} title="Worktrees" count={data.worktrees.length}>
             {data.worktrees.map((worktree) => (
@@ -130,7 +130,7 @@ export function GitPanel({ theme, workspaceId }: PluginWorkspacePanelProps) {
             )}
           </Section>
         </ScrollView>
-      )}
+      ) : null}
     </View>
   );
 }
@@ -281,8 +281,18 @@ function TreeRow({
   );
 }
 
+function worktreeIcon(worktree: GitWorktree) {
+  if (worktree.current) return "CircleCheck";
+  return worktree.prunable ? "FolderX" : "FolderGit2";
+}
+
+function branchIcon(branch: GitBranch) {
+  if (branch.current) return "CircleCheck";
+  return branch.remote ? "Cloud" : "GitBranch";
+}
+
 function WorktreeRow({ theme, worktree }: { theme: Theme; worktree: GitWorktree }) {
-  const folder = worktree.path.split("/").filter(Boolean).pop() ?? worktree.path;
+  const folder = worktree.path.replace(/\/+$/, "").split("/").at(-1) || worktree.path;
   const label = worktree.branch ?? `detached @ ${worktree.sha}`;
   const flags = [
     worktree.main && "main",
@@ -292,7 +302,7 @@ function WorktreeRow({ theme, worktree }: { theme: Theme; worktree: GitWorktree 
   return (
     <TreeRow
       theme={theme}
-      icon={worktree.current ? "CircleCheck" : worktree.prunable ? "FolderX" : "FolderGit2"}
+      icon={worktreeIcon(worktree)}
       label={label}
       detail={folder}
       trailing={flags.join(" · ") || undefined}
@@ -310,7 +320,7 @@ function BranchRow({ theme, branch }: { theme: Theme; branch: GitBranch }) {
   return (
     <TreeRow
       theme={theme}
-      icon={branch.current ? "CircleCheck" : branch.remote ? "Cloud" : "GitBranch"}
+      icon={branchIcon(branch)}
       label={branch.name}
       detail={relativeTime(branch.date)}
       trailing={track || undefined}

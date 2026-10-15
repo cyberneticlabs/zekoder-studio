@@ -6,7 +6,12 @@ import { panelOpenLocation } from "./panel-location.js";
 /** Agent updates arrive on every streamed event; the branch only needs re-reading now and then. */
 const REFRESH_MIN_MS = 5_000;
 
-type Tracked = { pill: PluginButtonRegistration; cwd: string; refreshedAt: number; busy: boolean };
+interface Tracked {
+  pill: PluginButtonRegistration;
+  cwd: string;
+  refreshedAt: number;
+  busy: boolean;
+}
 
 /**
  * Keeps one composer pill per agent in a zekoder project, labelled with the branch its cwd is on.
@@ -105,6 +110,7 @@ export function trackAgentBranchPills(client: PluginClientContext): () => void {
           console.warn("[zekoder] agent branch pill failed", error);
         }
       }
+      return undefined;
     })
     .catch((error) => console.warn("[zekoder] agent list failed", error));
 

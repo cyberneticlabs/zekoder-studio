@@ -39,7 +39,7 @@ export async function resolveModelFamily(
     const stderr = (err as { stderr?: string }).stderr?.trim();
     if (stderr?.includes("unknown flag: --resolve-model"))
       throw new ResolverMissingError(family, source);
-    throw new Error(stderr || errorText(err));
+    throw new Error(stderr || errorText(err), { cause: err });
   }
   const id = stdout.trim();
   if (!id || id === family)
@@ -93,6 +93,7 @@ export async function materializeRoleDefaults(
           const stderr = (err as { stderr?: string }).stderr?.trim();
           throw new Error(
             `Could not prepare the ${role} role-default agent: ${stderr || errorText(err)}`,
+            { cause: err },
           );
         }
         const written = stdout.trim();

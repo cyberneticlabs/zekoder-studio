@@ -26,12 +26,13 @@ export function TabBar<Id extends string>({
   selected,
   onSelect,
 }: TabBarProps<Id>) {
+  const inset = compact ? 16 : 24;
   return (
     <View
       style={{
         flexDirection: "row",
         gap: 16,
-        paddingHorizontal: flush ? 0 : compact ? 16 : 24,
+        paddingHorizontal: flush ? 0 : inset,
         borderBottomWidth: 1,
         borderBottomColor: theme.colors.border,
       }}

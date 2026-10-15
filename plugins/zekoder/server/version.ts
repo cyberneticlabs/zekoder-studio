@@ -200,12 +200,13 @@ export function scheduleVersionChecks(
 ): () => void {
   settings = store;
   const tick = () =>
-    void checkLatest().then(() => {
-      if (host)
-        reconcile(host).catch((error) =>
-          console.warn("[zekoder] scheduled install check failed:", error),
-        );
-    });
+    void checkLatest().then(() =>
+      host
+        ? reconcile(host).catch((error) =>
+            console.warn("[zekoder] scheduled install check failed:", error),
+          )
+        : undefined,
+    );
   const first = setTimeout(tick, FIRST_CHECK_DELAY_MS);
   const interval = setInterval(tick, CHECK_INTERVAL_MS);
   first.unref?.();
@@ -349,13 +350,20 @@ async function ensureRelease(target: Release, log: (line: string) => void): Prom
     await rm(old, { recursive: true, force: true });
     log(`== unpacked into ${CACHE_DIR} ==\n`);
   } catch (error) {
-    throw new Error(`Could not update the zekoder-skills cache: ${errorText(error)}`);
+    throw new Error(`Could not update the zekoder-skills cache: ${errorText(error)}`, {
+      cause: error,
+    });
   } finally {
     await rm(staging, { recursive: true, force: true });
   }
 }
 
-type InstallProject = { id: string; name: string; root: string; worktrees: string[] };
+interface InstallProject {
+  id: string;
+  name: string;
+  root: string;
+  worktrees: string[];
+}
 
 /**
  * Every Zekoder project root, plus each open workspace directory that is not its project's root.
@@ -445,6 +453,11 @@ function enqueueInstall(dir: string): void {
   pending.set(dir, done);
 }
 
+interface InstallOutcome {
+  ok: boolean;
+  note?: string;
+}
+
 async function runInstall(dir: string, job: UpdateJob): Promise<void> {
   job.status = "running";
   job.startedAt = new Date().toISOString();
@@ -468,29 +481,25 @@ async function runInstall(dir: string, job: UpdateJob): Promise<void> {
   }
   const harnesses = installHarnesses(dir);
   const args = harnesses ? ["--harnesses", harnesses.join(","), dir] : [dir];
-  await new Promise<void>((done) => {
-    // Node installer works on Windows. Older releases only ship the bash one.
-    const [command, script] = existsSync(INSTALL_MJS)
-      ? ["node", INSTALL_MJS]
-      : ["bash", INSTALL_SH];
-    const child = spawn(command, [script, ...args], {
-      cwd: dir,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    const timer = setTimeout(() => child.kill(), INSTALL_TIMEOUT_MS);
-    child.stdout.on("data", append);
-    child.stderr.on("data", append);
-    child.on("error", (error) => {
-      clearTimeout(timer);
-      finish(false, `failed to start: ${error.message}`);
-      done();
-    });
-    child.on("exit", (code, signal) => {
-      clearTimeout(timer);
-      finish(code === 0, code === 0 ? undefined : `exited (${signal ?? code})`);
-      done();
-    });
+  // Node installer works on Windows. Older releases only ship the bash one.
+  const [command, script] = existsSync(INSTALL_MJS) ? ["node", INSTALL_MJS] : ["bash", INSTALL_SH];
+  const child = spawn(command, [script, ...args], {
+    cwd: dir,
+    stdio: ["ignore", "pipe", "pipe"],
   });
+  const timer = setTimeout(() => child.kill(), INSTALL_TIMEOUT_MS);
+  child.stdout.on("data", append);
+  child.stderr.on("data", append);
+  const outcome = await new Promise<InstallOutcome>((settle) => {
+    child.once("error", (error) =>
+      settle({ ok: false, note: `failed to start: ${error.message}` }),
+    );
+    child.once("exit", (code, signal) =>
+      settle({ ok: code === 0, note: code === 0 ? undefined : `exited (${signal ?? code})` }),
+    );
+  });
+  clearTimeout(timer);
+  finish(outcome.ok, outcome.note);
 }
 
 /** Behind the latest version, a wiped cache, or a harness installed on disk that the config list dropped. */
@@ -571,9 +580,14 @@ function installedVersion(dir: string): string | null {
   return typeof version === "string" ? version : null;
 }
 
-function readConfig(dir: string): any {
+interface ZekoderConfigFile {
+  supportedHarnessAgents?: unknown;
+  packages?: { zekoder?: { version?: unknown } };
+}
+
+function readConfig(dir: string): ZekoderConfigFile | null {
   try {
-    return JSON.parse(readFileSync(join(dir, ".zekoder/config.json"), "utf8"));
+    return JSON.parse(readFileSync(join(dir, ".zekoder/config.json"), "utf8")) as ZekoderConfigFile;
   } catch {
     return null;
   }
