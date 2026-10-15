@@ -28,7 +28,11 @@ const machineDefaultsKey = (root?: string) => ["zekoder", "machine-defaults", ro
 /** The machine tier read alone (no provider list). `root` only prefers a transport project. */
 export function useMachineDefaultsQuery(root?: string, enabled = true) {
   const fetchDefaults = useRpc(getMachineDefaultsRpc);
-  return useQuery({ queryKey: machineDefaultsKey(root), queryFn: () => fetchDefaults({ root }), enabled });
+  return useQuery({
+    queryKey: machineDefaultsKey(root),
+    queryFn: () => fetchDefaults({ root }),
+    enabled,
+  });
 }
 
 /** Machine tier state plus the provider list and its save mutation. */
@@ -68,7 +72,8 @@ export function MachineEditor({
   if (!state) return null;
   const error = save.isError
     ? errorText(save.error)
-    : (defaults.data?.error ?? (providers.data?.error ? `Provider list unavailable: ${providers.data.error}` : null));
+    : (defaults.data?.error ??
+      (providers.data?.error ? `Provider list unavailable: ${providers.data.error}` : null));
   return (
     <AgentDefaultsEditor
       theme={theme}
@@ -100,18 +105,28 @@ export function MachineDefaultsPanel({ theme }: { theme: Theme }) {
       {isPending && <Text style={muted}>Loading…</Text>}
       {isError && <Text style={{ color: theme.colors.statusDanger }}>{errorText(error)}</Text>}
       {data && !data.state && (
-        <Text style={muted}>{data.error ?? "Open a Zekoder project in Paseo first."}</Text>
+        <Text style={muted}>{data.error ?? "Machine defaults are unavailable."}</Text>
       )}
       {data?.state && (
         <>
           <Text style={{ fontSize: 13, ...muted }}>
-            Machine defaults apply to every repo unless the repo or its execution profile sets the field.
+            Machine defaults apply to every repo unless the repo or its execution profile sets the
+            field.
           </Text>
-          <TabBar<AgentTab> theme={theme} compact={false} flush tabs={DEFAULT_TABS} selected={tab} onSelect={setTab} />
+          <TabBar<AgentTab>
+            theme={theme}
+            compact={false}
+            flush
+            tabs={DEFAULT_TABS}
+            selected={tab}
+            onSelect={setTab}
+          />
           <MachineEditor theme={theme} machine={machine} tabs={[tab]} showRoles />
-          {data.transportRoot && (
-            <Text style={{ fontSize: 11, ...muted }}>Saved through zekoder-mcp of {projectLabel(data.transportRoot)}.</Text>
-          )}
+          <Text style={{ fontSize: 11, ...muted }}>
+            {data.transportRoot
+              ? `Saved through zekoder-mcp of ${projectLabel(data.transportRoot)}.`
+              : "Saved through the machine-level zekoder-mcp (no project needed)."}
+          </Text>
         </>
       )}
     </ScrollView>

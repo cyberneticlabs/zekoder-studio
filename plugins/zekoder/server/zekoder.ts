@@ -5,7 +5,13 @@ import { join, resolve, sep } from "node:path";
 import type { PluginHandlerContext } from "@getpaseo/plugin/server";
 import type { RpcInput, RpcOutput } from "@getpaseo/plugin";
 import { errorText } from "../shared/errors.js";
-import { isModelFamily, isStrictField, type AgentDefaultsState, type AgentTab, type ConfigStatus } from "../shared/config.js";
+import {
+  isModelFamily,
+  isStrictField,
+  type AgentDefaultsState,
+  type AgentTab,
+  type ConfigStatus,
+} from "../shared/config.js";
 import { canImplement, canPromote, skillPrompt } from "../shared/issues.js";
 import type {
   implementIssueRpc,
@@ -24,14 +30,20 @@ import type {
 } from "../shared/issues.js";
 import { listWorktrees } from "./git.js";
 import { McpStdioClient, type McpServerCommand } from "./mcp-client.js";
-import { materializeRoleDefaults, ResolverMissingError, resolveModelFamily } from "./role-variants.js";
+import {
+  materializeRoleDefaults,
+  ResolverMissingError,
+  resolveModelFamily,
+} from "./role-variants.js";
 
 /**
  * Unpacked zekoder-skills release that `scripts/install.sh` installs from. `ZEKODER_CACHE_DIR`
  * overrides it; `SKILLS_CACHE_DIR` is a deprecated fallback.
  */
 export const ZEKODER_CACHE_DIR =
-  process.env.ZEKODER_CACHE_DIR || process.env.SKILLS_CACHE_DIR || join(homedir(), ".cache/zekoder-skills");
+  process.env.ZEKODER_CACHE_DIR ||
+  process.env.SKILLS_CACHE_DIR ||
+  join(homedir(), ".cache/zekoder-skills");
 /** The cached zekoder-mcp bundle. */
 export const DEFAULT_BUNDLE = join(ZEKODER_CACHE_DIR, "mcp/dist/zekoder-mcp.mjs");
 const IDLE_SHUTDOWN_MS = 10 * 60_000;
@@ -39,18 +51,36 @@ const LIST_LIMIT = 500;
 const SEARCH_LIMIT = 50;
 
 /** Every non-terminal executable status, plus zekoder-mcp's `"open"` shorthand; decisions add `proposed`, ideas add `captured`. */
-const OPEN_STATUS_FILTER = ["planned", "in-progress", "ready", "pr-open", "open", "proposed", "captured"];
+const OPEN_STATUS_FILTER = [
+  "planned",
+  "in-progress",
+  "ready",
+  "pr-open",
+  "open",
+  "proposed",
+  "captured",
+];
 const OPEN_STATUSES = new Set(OPEN_STATUS_FILTER);
 /** Maps each UI status tab to the zekoder-mcp status values to query for; `"done"`/`"all"` fetch everything and filter client-side. */
-const STATUS_FILTER_MAP: Record<import("../shared/issues.js").StatusFilter, string[] | undefined> = {
-  open: OPEN_STATUS_FILTER,
-  planned: ["planned"],
-  "in-progress": ["in-progress"],
-  done: undefined,
-  all: undefined,
-};
+const STATUS_FILTER_MAP: Record<import("../shared/issues.js").StatusFilter, string[] | undefined> =
+  {
+    open: OPEN_STATUS_FILTER,
+    planned: ["planned"],
+    "in-progress": ["in-progress"],
+    done: undefined,
+    all: undefined,
+  };
 /** Keys the detail view renders in its header or its own section, not in the generic field list. */
-const HEADER_KEYS = new Set(["id", "title", "name", "type", "status", "path", "packages", "contracts"]);
+const HEADER_KEYS = new Set([
+  "id",
+  "title",
+  "name",
+  "type",
+  "status",
+  "path",
+  "packages",
+  "contracts",
+]);
 
 type PooledClient = { client: McpStdioClient; idleTimer: ReturnType<typeof setTimeout> };
 const clients = new Map<string, PooledClient>();
@@ -114,7 +144,7 @@ export async function getIssue(
 }
 
 /**
- * Opens (or reuses) the project's Paseo workspace and starts an agent there on the coding binding
+ * Opens (or reuses) the project's Zekoder workspace and starts an agent there on the coding binding
  * (provider, model, effort, mode), with the implement skill and `{id}` as its first prompt. The
  * item's status is re-read here, so a stale UI can't start a second run on an item already in progress.
  */
@@ -126,9 +156,19 @@ export async function implementIssue(
   const { item } = await getItem(input.root, input.id, input.type);
   const status = statusOf(item);
   if (!canImplement(input.type, status)) {
-    throw new Error(`Only a planned feature, bug or followup can be implemented (${input.id} is ${status || "unknown"}).`);
+    throw new Error(
+      `Only a planned feature, bug or followup can be implemented (${input.id} is ${status || "unknown"}).`,
+    );
   }
-  return startAgent(paseo, input.root, `Implement ${input.id}`, "zekoder-implement", input.id, "coding", { workspaceId: input.workspaceId });
+  return startAgent(
+    paseo,
+    input.root,
+    `Implement ${input.id}`,
+    "zekoder-implement",
+    input.id,
+    "coding",
+    { workspaceId: input.workspaceId },
+  );
 }
 
 /**
@@ -143,9 +183,19 @@ export async function promoteIdea(
   await assertZekoderProject(paseo, input.root);
   const status = statusOf((await getItem(input.root, input.id, "idea")).item);
   if (!canPromote("idea", status)) {
-    throw new Error(`Only a captured idea can be promoted (${input.id} is ${status || "unknown"}).`);
+    throw new Error(
+      `Only a captured idea can be promoted (${input.id} is ${status || "unknown"}).`,
+    );
   }
-  return startAgent(paseo, input.root, `Promote ${input.id}`, "zekoder-promote", input.id, "planning", { workspaceId: input.workspaceId });
+  return startAgent(
+    paseo,
+    input.root,
+    `Promote ${input.id}`,
+    "zekoder-promote",
+    input.id,
+    "planning",
+    { workspaceId: input.workspaceId },
+  );
 }
 
 /**
@@ -157,11 +207,19 @@ export async function migrateWorkspace(
   { paseo }: PluginHandlerContext,
 ): Promise<RpcOutput<typeof migrateWorkspaceRpc>> {
   await assertZekoderProject(paseo, input.root);
-  return startAgent(paseo, input.root, "Migrate zekoder workspace", "zekoder-migrate", undefined, "planning", {
-    allSoft: true,
-    role: "zekoder-migrate-agent",
-    workspaceId: input.workspaceId,
-  });
+  return startAgent(
+    paseo,
+    input.root,
+    "Migrate zekoder workspace",
+    "zekoder-migrate",
+    undefined,
+    "planning",
+    {
+      allSoft: true,
+      role: "zekoder-migrate-agent",
+      workspaceId: input.workspaceId,
+    },
+  );
 }
 
 /** Provider used when the bundle predates agent defaults (`supported` is false). Old-bundle path only. */
@@ -190,7 +248,8 @@ async function resolveLaunch(
   const roleValues = (role && values.roles?.[provider]?.[role]) || {};
   const roleSources = (role && sources.roles?.[provider]?.[role]) || {};
   // A role field that is unset or "inherit" leaves the tab's value in charge.
-  const fromRole = (field: "model" | "effort") => !!roleValues[field] && roleValues[field] !== "inherit";
+  const fromRole = (field: "model" | "effort") =>
+    !!roleValues[field] && roleValues[field] !== "inherit";
   const wanted = {
     ...tabValues,
     ...(fromRole("model") ? { model: roleValues.model } : {}),
@@ -200,7 +259,8 @@ async function resolveLaunch(
     (field === "model" || field === "effort") && fromRole(field)
       ? (roleSources[field] ?? providerSource)
       : (sources[tab]?.[field] ?? providerSource);
-  const strict = (field: keyof typeof wanted) => !allSoft && isStrictField(sourceOf(field), providerSource);
+  const strict = (field: keyof typeof wanted) =>
+    !allSoft && isStrictField(sourceOf(field), providerSource);
 
   const { models, error } = await paseo.providers.listModels(provider, { cwd: root });
   const selectable = (models ?? []).filter((entry) => entry.isSelectable !== false);
@@ -226,7 +286,7 @@ async function resolveLaunch(
     else if (strict("model")) {
       throw new Error(
         isModelFamily(provider, wanted.model)
-          ? `Model ${wanted.model} (from ${modelSource}) could not be used for ${provider}: ${wantedId ? `${wantedId} is not listed by Paseo` : missReason}.`
+          ? `Model ${wanted.model} (from ${modelSource}) could not be used for ${provider}: ${wantedId ? `${wantedId} is not listed by Zekoder` : missReason}.`
           : `Model ${wanted.model} (from ${modelSource}) is not available for ${provider}.`,
       );
     }
@@ -235,9 +295,12 @@ async function resolveLaunch(
 
   let effort: string | undefined;
   if (wanted.effort) {
-    if (model.thinkingOptions?.some((option) => option.id === wanted.effort)) effort = wanted.effort;
+    if (model.thinkingOptions?.some((option) => option.id === wanted.effort))
+      effort = wanted.effort;
     else if (strict("effort")) {
-      throw new Error(`Effort ${wanted.effort} (from ${sourceOf("effort")}) is not offered by ${model.id}.`);
+      throw new Error(
+        `Effort ${wanted.effort} (from ${sourceOf("effort")}) is not offered by ${model.id}.`,
+      );
     }
   }
 
@@ -246,7 +309,9 @@ async function resolveLaunch(
     const listed = await paseo.providers.listModes(provider, { cwd: root });
     if (listed.modes?.some((entry) => entry.id === wanted.mode)) mode = wanted.mode;
     else if (strict("mode")) {
-      throw new Error(`Mode ${wanted.mode} (from ${sourceOf("mode")}) is not available for ${provider}.`);
+      throw new Error(
+        `Mode ${wanted.mode} (from ${sourceOf("mode")}) is not available for ${provider}.`,
+      );
     }
   }
   return { status: "resolved", provider, model: model.id, effort, mode };
@@ -260,7 +325,11 @@ async function startAgent(
   skill: string,
   arg: string | undefined,
   tab: AgentTab,
-  { allSoft = false, role, workspaceId }: { allSoft?: boolean; role?: string; workspaceId?: string } = {},
+  {
+    allSoft = false,
+    role,
+    workspaceId,
+  }: { allSoft?: boolean; role?: string; workspaceId?: string } = {},
 ): Promise<LaunchResult> {
   const { agentDefaults } = await fetchConfig(root);
   const launch = await resolveLaunch(paseo, root, agentDefaults, tab, { allSoft, role });
@@ -268,11 +337,18 @@ async function startAgent(
 
   // Claude Code loads agents only at session start, so its role variants must exist beforehand.
   if (launch.provider === "claude") {
-    await materializeRoleDefaults(root, launch.provider, agentDefaults.values.roles?.[launch.provider] ?? {}, agentDefaults.sources.roles?.[launch.provider]);
+    await materializeRoleDefaults(
+      root,
+      launch.provider,
+      agentDefaults.values.roles?.[launch.provider] ?? {},
+      agentDefaults.sources.roles?.[launch.provider],
+    );
   }
 
   // The workspace the user clicked from (it may be a worktree); the project root only as a fallback.
-  const workspace = workspaceId ? paseo.workspaces.ref(workspaceId) : await paseo.workspaces.open(root);
+  const workspace = workspaceId
+    ? paseo.workspaces.ref(workspaceId)
+    : await paseo.workspaces.open(root);
   const agent = await workspace.agents.create({
     config: {
       provider: `${launch.provider}/${launch.model}`,
@@ -286,7 +362,7 @@ async function startAgent(
 }
 
 /** The only place the machine-scope capability flag name lives (`payload.capabilities`). */
-export const MACHINE_SCOPE_FLAG = "machineScopeRead";
+const MACHINE_SCOPE_FLAG = "machineScopeRead";
 
 const EMPTY_AGENT_DEFAULTS: AgentDefaultsState = {
   supported: false,
@@ -299,11 +375,15 @@ const EMPTY_AGENT_DEFAULTS: AgentDefaultsState = {
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
 }
 
 function stringList(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === "string")
+    : [];
 }
 
 /**
@@ -314,7 +394,10 @@ function stringList(value: unknown): string[] {
 export function toAgentDefaultsState(payload: unknown): AgentDefaultsState {
   const raw = asRecord(payload) ?? {};
   const available = asRecord(asRecord(raw.roleDefaults)?.available);
-  const roster = { providers: stringList(available?.harnesses), roles: stringList(available?.roles) };
+  const roster = {
+    providers: stringList(available?.harnesses),
+    roles: stringList(available?.roles),
+  };
   const sources = asRecord(asRecord(raw.sources)?.agentDefaults);
   if (!sources) return { ...EMPTY_AGENT_DEFAULTS, roster };
   const active = asRecord(raw.executionProfiles)?.active;
@@ -366,12 +449,17 @@ export async function readDoc(
   await assertZekoderProject(paseo, input.root);
   // Not a git repo, or git failed: the project root alone is searched.
   const worktrees = await listWorktrees(input.root).catch(() => []);
-  const checkouts = [input.root, ...worktrees.filter((worktree) => !worktree.prunable).map((worktree) => worktree.path)];
+  const checkouts = [
+    input.root,
+    ...worktrees.filter((worktree) => !worktree.prunable).map((worktree) => worktree.path),
+  ];
   for (const checkout of new Set(checkouts)) {
     const content = await readDocIn(checkout, input.path);
     if (content !== null) return { path: input.path, content };
   }
-  throw new Error(`${input.path} is not on disk in this project or any of its worktrees. Its branch may not be checked out.`);
+  throw new Error(
+    `${input.path} is not on disk in this project or any of its worktrees. Its branch may not be checked out.`,
+  );
 }
 
 /** The doc's text, or null when the checkout has no such file. Throws when the path escapes `.zekoder/`. */
@@ -461,11 +549,13 @@ function splitMetadata(raw: Record<string, unknown>) {
 export async function assertZekoderProject(paseo: PluginHandlerContext["paseo"], root: string) {
   const projects = await zekoderProjects(paseo);
   if (!projects.some((project) => project.root === root)) {
-    throw new Error(`Not a Paseo project with a .zekoder/ workspace: ${root}`);
+    throw new Error(`Not a Zekoder project with a .zekoder/ workspace: ${root}`);
   }
 }
 
-export async function zekoderProjects(paseo: PluginHandlerContext["paseo"]): Promise<ZekoderProject[]> {
+export async function zekoderProjects(
+  paseo: PluginHandlerContext["paseo"],
+): Promise<ZekoderProject[]> {
   const { projects } = await paseo.projects.list();
   const seen = new Set<string>();
   const result: ZekoderProject[] = [];
@@ -482,8 +572,20 @@ export async function zekoderProjects(paseo: PluginHandlerContext["paseo"]): Pro
   return result.sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** Pool key for the project-less zekoder-mcp (machine-tier calls only). Not a real path. */
+const MACHINE_KEY = "\0machine";
+
+/** Machine-tier call (telemetry, machine config) with no project: bundle fallback, neutral cwd (`$HOME`). */
+export function callMachineTool(name: string, args: Record<string, unknown>): Promise<unknown> {
+  return callTool(MACHINE_KEY, name, args);
+}
+
 /** One zekoder-mcp process per project root, shut down after a quiet spell. Throws on an `ok: false` envelope. */
-export async function callTool(root: string, name: string, args: Record<string, unknown>): Promise<unknown> {
+export async function callTool(
+  root: string,
+  name: string,
+  args: Record<string, unknown>,
+): Promise<unknown> {
   let pooled = clients.get(root);
   if (!pooled) {
     pooled = { client: new McpStdioClient(resolveServer(root)), idleTimer: setTimeout(() => {}) };
@@ -494,7 +596,10 @@ export async function callTool(root: string, name: string, args: Record<string, 
     pooled.client.dispose();
     clients.delete(root);
   }, IDLE_SHUTDOWN_MS);
-  const payload = (await pooled.client.callTool(name, args)) as { ok?: boolean; error?: { message?: string } } | null;
+  const payload = (await pooled.client.callTool(name, args)) as {
+    ok?: boolean;
+    error?: { message?: string };
+  } | null;
   if (payload?.ok === false) throw new Error(payload.error?.message ?? `${name} failed`);
   return payload;
 }
@@ -504,20 +609,22 @@ export async function callTool(root: string, name: string, args: Record<string, 
  * (written by the zekoder-skills installer). Falls back to `ZEKODER_MCP_BUNDLE`, then the shared cache.
  */
 function resolveServer(root: string): McpServerCommand {
-  const configured = readMcpJsonEntry(root, "zekoder");
-  if (configured) return { ...configured, cwd: root };
+  const machine = root === MACHINE_KEY;
+  const cwd = machine ? homedir() : root;
+  const configured = machine ? null : readMcpJsonEntry(root, "zekoder");
+  if (configured) return { ...configured, cwd };
 
   const bundle = process.env.ZEKODER_MCP_BUNDLE || DEFAULT_BUNDLE;
   if (!existsSync(bundle)) {
     throw new Error(
-      `No zekoder MCP server for ${root} yet. The plugin installs zekoder there automatically — see Zekoder → Version for progress, or set ZEKODER_MCP_BUNDLE.`,
+      `No zekoder MCP server for ${machine ? "this machine" : root} yet. The plugin installs zekoder there automatically — see Zekoder → Version for progress, or set ZEKODER_MCP_BUNDLE.`,
     );
   }
-  return { command: "node", args: [bundle], cwd: root };
+  return { command: "node", args: [bundle], cwd };
 }
 
 /** The project's `.mcp.json` entry for one MCP server (`zekoder`, `zekoder-org-health`), if usable. */
-export function readMcpJsonEntry(root: string, server: string): Omit<McpServerCommand, "cwd"> | null {
+function readMcpJsonEntry(root: string, server: string): Omit<McpServerCommand, "cwd"> | null {
   const file = join(root, ".mcp.json");
   if (!existsSync(file)) return null;
   try {

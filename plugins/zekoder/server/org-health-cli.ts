@@ -18,12 +18,17 @@ const MAX_OUTPUT = 64 * 1024 * 1024;
 const MIN_VERSION: [number, number, number] = [0, 34, 0];
 const ORG_HEALTH_BUNDLE = join(dirname(DEFAULT_BUNDLE), "zekoder-org-health-mcp.mjs");
 /** Run from home so a stray relative path never lands in a project checkout. */
-const CLI_OPTIONS = { cwd: homedir(), env: process.env, timeout: REPORT_TIMEOUT_MS, maxBuffer: MAX_OUTPUT };
+const CLI_OPTIONS = {
+  cwd: homedir(),
+  env: process.env,
+  timeout: REPORT_TIMEOUT_MS,
+  maxBuffer: MAX_OUTPUT,
+};
 
 /** Bundles already checked, keyed by `path + mtimeMs`, so an updated bundle is re-checked. */
 const versionPassed = new Set<string>();
 
-export interface ReportFiles {
+interface ReportFiles {
   json: string;
   html: string;
 }
@@ -76,17 +81,29 @@ export async function runReport(org: string, days: number): Promise<ReportFiles>
   await assertBundleVersion(bundle);
   let stdout: string;
   try {
-    ({ stdout } = await run("node", [bundle, "report", "--org", org, "--days", String(days)], CLI_OPTIONS));
+    ({ stdout } = await run(
+      "node",
+      [bundle, "report", "--org", org, "--days", String(days)],
+      CLI_OPTIONS,
+    ));
   } catch (error) {
     // Exit code 2 = report written but partial (window not fully cached). Still a result.
-    const err = error as { code?: number | string; stdout?: string; stderr?: string; message?: string };
+    const err = error as {
+      code?: number | string;
+      stdout?: string;
+      stderr?: string;
+      message?: string;
+    };
     if (err.code !== 2 || !err.stdout) {
-      throw new Error(`zekoder-org-health report failed: ${(err.stderr || err.message || String(error)).trim()}`);
+      throw new Error(
+        `zekoder-org-health report failed: ${(err.stderr || err.message || String(error)).trim()}`,
+      );
     }
     stdout = err.stdout;
   }
   const result = JSON.parse(stdout) as { files?: { db?: string; json?: string; html?: string } };
-  if (!result.files?.json || !result.files.html) throw new Error("zekoder-org-health report returned no files");
+  if (!result.files?.json || !result.files.html)
+    throw new Error("zekoder-org-health report returned no files");
   if (result.files.db !== join(cacheHome(), "org_health", "org-health.db")) throw tooOld(bundle);
   return { json: result.files.json, html: result.files.html };
 }
@@ -121,7 +138,9 @@ export async function runOrgs(): Promise<string[]> {
     return body.orgs ?? [];
   } catch (error) {
     const err = error as { stderr?: string; message?: string };
-    throw new Error(`zekoder-org-health orgs failed: ${(err.stderr || err.message || String(error)).trim()}`);
+    throw new Error(
+      `zekoder-org-health orgs failed: ${(err.stderr || err.message || String(error)).trim()}`,
+    );
   }
 }
 

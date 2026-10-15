@@ -97,3 +97,19 @@ test("built output reports plugin updates disabled without desktop management", 
   const statuses = wiring.status.list("zekoder");
   assert.ok(statuses.every((status) => status.enabled === false));
 });
+
+test("built output reports the in-repo plugin version as the bundled version", async () => {
+  const { version } = JSON.parse(
+    await readFile(path.join(packagedRoot, "zekoder", "package.json"), "utf8"),
+  );
+  const wiring = createBuiltinUpdateWiring({
+    loader: new BuiltinPluginLoader(),
+    desktopManaged: true,
+    env: {},
+    paseoHome: os.tmpdir(),
+    daemonVersion: "0.0.0",
+    logger: pino({ level: "silent" }),
+  });
+  assert.ok(wiring.updater, "a desktop-managed packaged root builds the updater");
+  assert.equal(wiring.status.list("zekoder")[0].bundledVersion, version);
+});

@@ -6,11 +6,30 @@ import { Pressable, Text, View } from "react-native";
 type Theme = PluginSurfaceProps["theme"];
 
 const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
-const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 const CELL = 36;
 
 /** The trigger that shows a day and opens its `Calendar`. */
-export function DateButton(props: { theme: Theme; title: string; day: string; open: boolean; onPress(): void }) {
+export function DateButton(props: {
+  theme: Theme;
+  title: string;
+  day: string;
+  open: boolean;
+  onPress(): void;
+}) {
   const { theme, title, day, open, onPress } = props;
   return (
     <View style={{ gap: 4 }}>
@@ -73,7 +92,13 @@ export function Calendar({ theme, days, value, onPick }: CalendarProps) {
   const canPrev = month > first.slice(0, 7);
   const canNext = month < last.slice(0, 7);
   const arrow = (glyph: string, enabled: boolean, delta: number, label: string) => (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} disabled={!enabled} onPress={() => shift(delta)} style={{ padding: 6, opacity: enabled ? 1 : 0.3 }}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      disabled={!enabled}
+      onPress={() => shift(delta)}
+      style={{ padding: 6, opacity: enabled ? 1 : 0.3 }}
+    >
       <Text style={{ fontSize: 16, color: theme.colors.foreground }}>{glyph}</Text>
     </Pressable>
   );
@@ -127,7 +152,12 @@ export function Calendar({ theme, days, value, onPick }: CalendarProps) {
                 opacity: enabled ? 1 : 0.3,
               }}
             >
-              <Text style={{ fontSize: 12, color: selected ? theme.colors.accentForeground : theme.colors.foreground }}>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: selected ? theme.colors.accentForeground : theme.colors.foreground,
+                }}
+              >
                 {Number(day.slice(8))}
               </Text>
             </Pressable>

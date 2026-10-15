@@ -1,7 +1,13 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { REPORT_DAYS_ERROR, assertOrgName, reportDaysSchema } from "../shared/reports.js";
-import type { codingHealthRpc, collectReportRpc, listOrgsRpc, openReportRpc, validateOrgRpc } from "../shared/reports.js";
+import type {
+  codingHealthRpc,
+  collectReportRpc,
+  listOrgsRpc,
+  openReportRpc,
+  validateOrgRpc,
+} from "../shared/reports.js";
 import type { RpcInput, RpcOutput } from "@getpaseo/plugin";
 import { errorText } from "../shared/errors.js";
 import { readReport, runCollect, runOrgs, runReport } from "./org-health-cli.js";
@@ -11,7 +17,9 @@ const run = promisify(execFile);
 const GH_TIMEOUT_MS = 20_000;
 
 /** `gh api orgs/{org}` 404s for a missing org, a user account, or an org this login can't see. */
-export async function validateOrg(input: RpcInput<typeof validateOrgRpc>): Promise<RpcOutput<typeof validateOrgRpc>> {
+export async function validateOrg(
+  input: RpcInput<typeof validateOrgRpc>,
+): Promise<RpcOutput<typeof validateOrgRpc>> {
   const org = assertOrgName(input.org);
   try {
     const { stdout } = await run("gh", ["api", `orgs/${org}`], {
@@ -23,15 +31,19 @@ export async function validateOrg(input: RpcInput<typeof validateOrgRpc>): Promi
     return { login: body.login, name: body.name ?? null };
   } catch (error) {
     const err = error as NodeJS.ErrnoException & { stderr?: string; stdout?: string };
-    if (err.code === "ENOENT") throw new Error("The gh CLI is not installed on the Paseo host.");
+    if (err.code === "ENOENT") throw new Error("The gh CLI is not installed on the Zekoder host.");
     const detail = `${err.stdout ?? ""} ${err.stderr ?? ""}`;
     if (/HTTP 404|Not Found/i.test(detail)) {
-      throw new Error(`GitHub org "${org}" does not exist, or the gh login on the Paseo host can't access it.`);
+      throw new Error(
+        `GitHub org "${org}" does not exist, or the gh login on the Zekoder host can't access it.`,
+      );
     }
     if (/auth login|HTTP 401/i.test(detail)) {
-      throw new Error("gh is not logged in on the Paseo host. Run `gh auth login` there.");
+      throw new Error("gh is not logged in on the Zekoder host. Run `gh auth login` there.");
     }
-    throw new Error(`Could not check org "${org}": ${(err.stderr || err.message || String(error)).trim()}`);
+    throw new Error(
+      `Could not check org "${org}": ${(err.stderr || err.message || String(error)).trim()}`,
+    );
   }
 }
 
@@ -91,7 +103,9 @@ export async function listOrgs(): Promise<RpcOutput<typeof listOrgsRpc>> {
 }
 
 /** Starts the local report service and returns the tokenised URL of the org's web report. */
-export async function openReport(input: RpcInput<typeof openReportRpc>): Promise<RpcOutput<typeof openReportRpc>> {
+export async function openReport(
+  input: RpcInput<typeof openReportRpc>,
+): Promise<RpcOutput<typeof openReportRpc>> {
   const org = assertOrgName(input.org);
   if (!reportDaysSchema.safeParse(input.days).success) throw new Error(REPORT_DAYS_ERROR);
   const { port, token } = await ensureReportServer();

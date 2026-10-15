@@ -55,7 +55,10 @@ const REVIEWER_POLICY_LABELS: Record<(typeof REVIEWER_POLICIES)[number], string>
   "always-opus": "Always Opus",
 };
 /** Shared by `worktreeCleanup` and `branchDeletion`, which take the same three values. */
-const ALWAYS_NEVER_ASK_LABELS: Record<(typeof WORKTREE_CLEANUP_MODES | typeof BRANCH_DELETION_MODES)[number], string> = {
+const ALWAYS_NEVER_ASK_LABELS: Record<
+  (typeof WORKTREE_CLEANUP_MODES | typeof BRANCH_DELETION_MODES)[number],
+  string
+> = {
   always: "Always",
   never: "Never",
   ask: "Ask each time",
@@ -83,7 +86,7 @@ export function ConfigWorkspacePanel({ workspaceId, theme }: PluginWorkspacePane
 }
 
 /** `root` comes from the workspace and is never persisted; the server re-validates it. */
-export function ConfigPanel({ theme, root: activeRoot }: { theme: Theme; root: string }) {
+function ConfigPanel({ theme, root: activeRoot }: { theme: Theme; root: string }) {
   const queryClient = useQueryClient();
   const fetchConfig = useRpc(getConfigRpc);
   const saveConfig = useRpc(setConfigRpc);
@@ -106,10 +109,7 @@ export function ConfigPanel({ theme, root: activeRoot }: { theme: Theme; root: s
   }, [config.data, activeRoot]);
 
   const save = useMutation({
-    mutationFn: (input: {
-      workflow?: WorkflowPatch;
-      agentDefaults?: AgentDefaultsPatch;
-    }) =>
+    mutationFn: (input: { workflow?: WorkflowPatch; agentDefaults?: AgentDefaultsPatch }) =>
       saveConfig({ root: activeRoot, ...input }),
     onSuccess: (data: ConfigStatus) => {
       queryClient.setQueryData(configKey, data);
@@ -130,12 +130,23 @@ export function ConfigPanel({ theme, root: activeRoot }: { theme: Theme; root: s
 
   return (
     <ScrollView contentContainerStyle={{ gap: 20 }}>
-      {config.isError && <Text style={{ color: theme.colors.statusDanger }}>{errorText(config.error)}</Text>}
-      {save.isError && <Text style={{ color: theme.colors.statusDanger }}>{errorText(save.error)}</Text>}
+      {config.isError && (
+        <Text style={{ color: theme.colors.statusDanger }}>{errorText(config.error)}</Text>
+      )}
+      {save.isError && (
+        <Text style={{ color: theme.colors.statusDanger }}>{errorText(save.error)}</Text>
+      )}
 
       {form && (
         <>
-          <TabBar<ConfigTab> theme={theme} compact={false} flush tabs={CONFIG_TABS} selected={tab} onSelect={setTab} />
+          <TabBar<ConfigTab>
+            theme={theme}
+            compact={false}
+            flush
+            tabs={CONFIG_TABS}
+            selected={tab}
+            onSelect={setTab}
+          />
 
           {tab === "basic" && (
             <>
@@ -150,9 +161,24 @@ export function ConfigPanel({ theme, root: activeRoot }: { theme: Theme; root: s
               </Section>
 
               <Section theme={theme} title="Merge">
-                {renderRadio("defaultMergeMode", "Default merge mode", DEFAULT_MERGE_MODES, MERGE_MODE_LABELS)}
-                {renderRadio("worktreeCleanup", "Worktree cleanup", WORKTREE_CLEANUP_MODES, ALWAYS_NEVER_ASK_LABELS)}
-                {renderRadio("branchDeletion", "Branch deletion", BRANCH_DELETION_MODES, ALWAYS_NEVER_ASK_LABELS)}
+                {renderRadio(
+                  "defaultMergeMode",
+                  "Default merge mode",
+                  DEFAULT_MERGE_MODES,
+                  MERGE_MODE_LABELS,
+                )}
+                {renderRadio(
+                  "worktreeCleanup",
+                  "Worktree cleanup",
+                  WORKTREE_CLEANUP_MODES,
+                  ALWAYS_NEVER_ASK_LABELS,
+                )}
+                {renderRadio(
+                  "branchDeletion",
+                  "Branch deletion",
+                  BRANCH_DELETION_MODES,
+                  ALWAYS_NEVER_ASK_LABELS,
+                )}
               </Section>
             </>
           )}
@@ -161,7 +187,12 @@ export function ConfigPanel({ theme, root: activeRoot }: { theme: Theme; root: s
             <>
               <Section theme={theme} title="Planning">
                 {renderRadio("planningTier", "Planning tier", PLANNING_TIERS, PLANNING_TIER_LABELS)}
-                {renderRadio("reviewerPolicy", "Reviewer policy", REVIEWER_POLICIES, REVIEWER_POLICY_LABELS)}
+                {renderRadio(
+                  "reviewerPolicy",
+                  "Reviewer policy",
+                  REVIEWER_POLICIES,
+                  REVIEWER_POLICY_LABELS,
+                )}
                 <NumberField
                   theme={theme}
                   label="Max packages per feature"
@@ -200,11 +231,19 @@ export function ConfigPanel({ theme, root: activeRoot }: { theme: Theme; root: s
               <TextInput
                 multiline
                 value={form.customPrompt ?? ""}
-                onChangeText={(text) => setForm((current) => (current ? { ...current, customPrompt: text } : current))}
+                onChangeText={(text) =>
+                  setForm((current) => (current ? { ...current, customPrompt: text } : current))
+                }
                 onBlur={() => patchAndSave({ customPrompt: form.customPrompt?.trim() || null })}
                 placeholder="Extra instructions appended to every planning/coding prompt"
                 placeholderTextColor={theme.colors.foregroundMuted}
-                style={{ ...inputStyle(theme), minHeight: 80, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 8 }}
+                style={{
+                  ...inputStyle(theme),
+                  minHeight: 80,
+                  paddingHorizontal: 10,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                }}
               />
             </Section>
           )}
@@ -225,7 +264,11 @@ export function ConfigPanel({ theme, root: activeRoot }: { theme: Theme; root: s
         state={agentDefaults}
         providers={providers}
         saving={save.isPending}
-        error={providersQuery.data?.error ? `Provider list unavailable: ${providersQuery.data.error}` : null}
+        error={
+          providersQuery.data?.error
+            ? `Provider list unavailable: ${providersQuery.data.error}`
+            : null
+        }
         onSave={(patch) => save.mutate({ agentDefaults: patch })}
       />
     );
@@ -258,7 +301,13 @@ export function ConfigPanel({ theme, root: activeRoot }: { theme: Theme; root: s
 }
 
 /** The workflow settings edited as a fixed set of choices. */
-type RadioKey = "defaultMergeMode" | "worktreeCleanup" | "branchDeletion" | "planningTier" | "reviewerPolicy" | "simplify";
+type RadioKey =
+  | "defaultMergeMode"
+  | "worktreeCleanup"
+  | "branchDeletion"
+  | "planningTier"
+  | "reviewerPolicy"
+  | "simplify";
 
 interface RadioFieldProps<T extends string> {
   theme: Theme;
@@ -270,7 +319,15 @@ interface RadioFieldProps<T extends string> {
   onChange(value: T): void;
 }
 
-function RadioField<T extends string>({ theme, label, hint, value, options, labels, onChange }: RadioFieldProps<T>) {
+function RadioField<T extends string>({
+  theme,
+  label,
+  hint,
+  value,
+  options,
+  labels,
+  onChange,
+}: RadioFieldProps<T>) {
   return (
     <View style={{ gap: 6 }}>
       <Text style={{ fontSize: 13, color: theme.colors.foreground }}>{label}</Text>
@@ -368,10 +425,17 @@ function BranchField({
           theme={theme}
           label="Save"
           selected={false}
-          onPress={() => trimmed !== "" && trimmed !== (value ?? "") && !saving && onSubmit(trimmed)}
+          onPress={() =>
+            trimmed !== "" && trimmed !== (value ?? "") && !saving && onSubmit(trimmed)
+          }
         />
         {value !== null && (
-          <Chip theme={theme} label="Clear (auto-detect)" selected={false} onPress={() => !saving && onSubmit(null)} />
+          <Chip
+            theme={theme}
+            label="Clear (auto-detect)"
+            selected={false}
+            onPress={() => !saving && onSubmit(null)}
+          />
         )}
       </View>
     </View>

@@ -2,7 +2,14 @@ import { defineRpc, defineSettings } from "@getpaseo/plugin";
 import { z } from "zod";
 import { AGENT_TABS } from "./config.js";
 
-export const ITEM_TYPES = ["feature", "bug", "followup", "vendor-issues", "decision", "idea"] as const;
+export const ITEM_TYPES = [
+  "feature",
+  "bug",
+  "followup",
+  "vendor-issues",
+  "decision",
+  "idea",
+] as const;
 export type ItemType = (typeof ITEM_TYPES)[number];
 
 /** UI-level status buckets. The server maps each onto zekoder-mcp status filters. */
@@ -64,13 +71,13 @@ export const packageSchema = z.object({
 });
 export type ZekoderPackage = z.infer<typeof packageSchema>;
 
-export const issueDetailSchema = issueSchema.extend({
+const issueDetailSchema = issueSchema.extend({
   fields: z.array(fieldSchema),
   relations: z.array(relationSchema),
   packages: z.array(packageSchema),
   docs: z.array(z.string()),
 });
-export type ZekoderIssueDetail = z.infer<typeof issueDetailSchema>;
+type ZekoderIssueDetail = z.infer<typeof issueDetailSchema>;
 
 export const getIssueRpc = defineRpc({
   name: "zekoder.issues.get",
@@ -128,7 +135,12 @@ export function implementCommand(id: string): string {
 /** Starts an agent in the project's workspace running the implement skill on the coding binding. */
 export const implementIssueRpc = defineRpc({
   name: "zekoder.issues.implement",
-  input: z.object({ root: z.string(), id: z.string(), type: z.enum(ITEM_TYPES), workspaceId: z.string().optional() }),
+  input: z.object({
+    root: z.string(),
+    id: z.string(),
+    type: z.enum(ITEM_TYPES),
+    workspaceId: z.string().optional(),
+  }),
   output: launchResultSchema,
 });
 
@@ -145,7 +157,7 @@ export const promoteIdeaRpc = defineRpc({
 });
 
 /** The slash command that brings a workspace's `.zekoder/` schema up to the installed server's. */
-export const MIGRATE_COMMAND = "/zekoder-migrate";
+const MIGRATE_COMMAND = "/zekoder-migrate";
 
 /** True for a zekoder-mcp warning whose fix is `/zekoder-migrate` (a pending schema migration). */
 export function needsMigration(warning: string): boolean {

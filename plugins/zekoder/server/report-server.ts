@@ -98,9 +98,13 @@ async function handle(rawUrl: string, token: string, res: ServerResponse): Promi
     const beat = `<script>setInterval(function(){fetch("/heartbeat?token=${token}")},30000)</script>`;
     const at = html.lastIndexOf("</body>");
     const body = at === -1 ? html + beat : html.slice(0, at) + beat + html.slice(at);
-    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" }).end(body);
+    res
+      .writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" })
+      .end(body);
   } catch (error) {
     const message = errorText(error);
-    res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" }).end(message);
+    res
+      .writeHead(500, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" })
+      .end(message);
   }
 }

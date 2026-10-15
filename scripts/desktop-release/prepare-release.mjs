@@ -28,6 +28,7 @@ import { isMainModule } from "../is-main-module.mjs";
 import { MACOS_MINIMUM_DARWIN_VERSION } from "../merge-mac-manifest.mjs";
 import { stampRollout } from "../stamp-rollout.mjs";
 import { validateDesktopManifests } from "../validate-desktop-manifests.mjs";
+import { zekoderPluginProvenanceAt } from "../zekoder-plugin-tree.mjs";
 import {
   BETA_ROLLOUT_HOURS,
   DEFAULT_BUCKET,
@@ -42,7 +43,6 @@ import {
   feedFilename,
   feedFilenames,
   parseDesktopTag,
-  pluginsFromLock,
   publicUrl,
   releasePrefix,
   requiredPayloads,
@@ -265,15 +265,7 @@ export function prepareRelease({
   }
 
   const { upstreamCommit } = resolveUpstreamCommit(git, tagCommit);
-  let lock;
-  try {
-    lock = JSON.parse(git(["show", `${tagCommit}:plugins/zekoder.lock.json`]));
-  } catch (error) {
-    throw new Error(`Could not read plugins/zekoder.lock.json at ${tagCommit}: ${error.message}`, {
-      cause: error,
-    });
-  }
-  const plugins = pluginsFromLock(lock);
+  const plugins = zekoderPluginProvenanceAt(git, tagCommit);
 
   const release = fetchRelease(repo, tag);
   const notes = validateGitHubReleaseForTag(release, tag);

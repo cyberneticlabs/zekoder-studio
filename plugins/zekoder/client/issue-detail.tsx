@@ -42,7 +42,16 @@ interface IssueDetailProps {
 }
 
 /** Metadata + packages of one item. Rendered as a side panel on wide layouts, in a modal on compact ones. */
-export function IssueDetail({ theme, root, workspaceId, id, type, navigation, onClose, inlineDocs }: IssueDetailProps) {
+export function IssueDetail({
+  theme,
+  root,
+  workspaceId,
+  id,
+  type,
+  navigation,
+  onClose,
+  inlineDocs,
+}: IssueDetailProps) {
   const [openDoc, setOpenDoc] = useState<string | null>(null);
   const fetchIssue = useRpc(getIssueRpc);
   const implement = useRpc(implementIssueRpc);
@@ -130,9 +139,7 @@ export function IssueDetail({ theme, root, workspaceId, id, type, navigation, on
 
       {detail.isPending && <Text style={muted}>Loading…</Text>}
       {detail.isError && (
-        <Text style={{ color: theme.colors.statusDanger }}>
-          {errorText(detail.error)}
-        </Text>
+        <Text style={{ color: theme.colors.statusDanger }}>{errorText(detail.error)}</Text>
       )}
 
       {issue && (

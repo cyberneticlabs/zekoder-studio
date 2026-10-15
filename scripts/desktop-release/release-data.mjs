@@ -4,7 +4,6 @@
 // ../release-version-utils.mjs stay untouched; desktop entry points validate with the
 // strict functions in this file.
 import { createHash } from "node:crypto";
-import { validateLock } from "../sync-zekoder-plugin.mjs";
 
 export const CATALOG_SCHEMA_VERSION = 1;
 export const DEFAULT_BUCKET = "zekoder-releases";
@@ -255,18 +254,32 @@ export function sha256Hex(bytes) {
 // Plugins, notes, provenance
 // ---------------------------------------------------------------------------
 
-export function pluginsFromLock(lock) {
-  const problems = validateLock(lock);
-  if (problems.length > 0) {
-    throw new Error(`plugins/zekoder.lock.json is invalid: ${problems.join("; ")}`);
+const PLUGIN_SHA_PATTERN = /^[0-9a-f]{40}$/;
+const PLUGIN_CHECKSUM_PATTERN = /^[0-9a-f]{64}$/;
+const PLUGIN_SEMVER_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+
+// Shape of a catalog `plugins` record. Old catalogs hold tag refs from the zekoder-plugins repo;
+// new ones hold `plugins/zekoder` of this repo (see scripts/zekoder-plugin-tree.mjs).
+function validatePluginRecord(record) {
+  const errors = [];
+  if (typeof record.repo !== "string" || record.repo.trim() === "") {
+    errors.push("repo must be a non-empty string");
   }
-  return {
-    repo: lock.repo,
-    ref: lock.ref,
-    commit: lock.commit,
-    version: lock.version,
-    checksum: lock.checksum,
-  };
+  if (typeof record.commit !== "string" || !PLUGIN_SHA_PATTERN.test(record.commit)) {
+    errors.push("commit must be a 40-character lowercase hex SHA");
+  }
+  if (typeof record.ref !== "string" || record.ref.trim() === "") {
+    errors.push("ref must be a non-empty string");
+  } else if (PLUGIN_SHA_PATTERN.test(record.ref) && record.ref !== record.commit) {
+    errors.push("ref is a SHA that differs from commit");
+  }
+  if (typeof record.version !== "string" || !PLUGIN_SEMVER_PATTERN.test(record.version)) {
+    errors.push("version must be a semver string");
+  }
+  if (typeof record.checksum !== "string" || !PLUGIN_CHECKSUM_PATTERN.test(record.checksum)) {
+    errors.push("checksum must be a 64-character lowercase hex sha256");
+  }
+  return errors;
 }
 
 function validatePlugins(plugins, label, errors) {
@@ -274,8 +287,7 @@ function validatePlugins(plugins, label, errors) {
     errors.push(`${label}.plugins must be an object`);
     return;
   }
-  const problems = validateLock(plugins);
-  for (const problem of problems) errors.push(`${label}.plugins: ${problem}`);
+  for (const problem of validatePluginRecord(plugins)) errors.push(`${label}.plugins: ${problem}`);
 }
 
 const COMMIT_BULLET = /^\s*[-*+]\s+`?[0-9a-f]{7,40}`?(?:\s|$)/;

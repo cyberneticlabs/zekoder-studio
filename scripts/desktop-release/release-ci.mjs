@@ -29,13 +29,13 @@ import {
   getReleaseLookupTag,
 } from "../github-release.mjs";
 import { isMainModule } from "../is-main-module.mjs";
+import { zekoderPluginProvenanceAt } from "../zekoder-plugin-tree.mjs";
 import { hashFileSync } from "./prepare-release.mjs";
 import {
   CATALOG_OBJECT,
   DEFAULT_BUCKET,
   DEFAULT_PUBLIC_BASE,
   parseDesktopTag,
-  pluginsFromLock,
   publicUrl,
   resolveUpstreamCommit,
   sha256Hex,
@@ -97,15 +97,7 @@ export async function runPreflight({ tag, sha, git, fetchCatalog }) {
     throw new Error(`Could not read the tagger date of ${tag}.`);
   }
   const { upstreamCommit } = resolveUpstreamCommit(git, commit);
-  let lock;
-  try {
-    lock = JSON.parse(git(["show", `${commit}:plugins/zekoder.lock.json`]));
-  } catch (error) {
-    throw new Error(`Could not read plugins/zekoder.lock.json at ${commit}: ${error.message}`, {
-      cause: error,
-    });
-  }
-  pluginsFromLock(lock);
+  zekoderPluginProvenanceAt(git, commit);
 
   let alreadyPublished = false;
   const catalog = fetchCatalog ? await fetchCatalog() : null;

@@ -17,11 +17,11 @@ Branded Zekoder Suite desktop, mobile and web distribution of Paseo. It bundles 
 - Not a permanent divergent rewrite of Paseo.
 - Not the owner of agent execution, protocol or pairing (upstream's).
 - Not the product backend: orgs, subscriptions, payments and entitlements are enforced by Spine.
-- Not the `cyberneticlabs/zekoder-plugins` repo (plugins are versioned independently).
+- Not a separate plugin repo: it owns the Zekoder plugin source in `plugins/zekoder/`, versioned and released independently of the desktop.
 
 ## Doing its job looks like
 
-Branded desktop installs beside upstream Paseo; bundled plugins load at pinned versions; branding works before any daemon connects; login matches the agreed access policy; existing pairing and execution still work; one upstream upgrade completes; the release manifest identifies all bundled revisions.
+Branded desktop installs beside upstream Paseo; the desktop bundles the Zekoder plugin as a baseline and signed plugin releases update it without a desktop rebuild; branding works before any daemon connects; login matches the agreed access policy; existing pairing and execution still work; one upstream upgrade completes; the release manifest identifies all bundled revisions.
 
 ## Horizon (absolute dates)
 
@@ -38,7 +38,7 @@ Signal: baseline versions and check results recorded; branding and deployment to
 
 ### G2 Branded desktop (by 2026-11-03)
 
-Central branding config, bundled pinned plugins and theme, isolated app state and update channel.
+Central branding config, the bundled Zekoder plugin baseline (updated by signed plugin releases), other bundled plugins pinned, and theme, isolated app state and update channel.
 Signal: clean install beside upstream Paseo; branding visible before any daemon connects; startup and disconnected appearance validated separately.
 
 ### G3 Login and paid versions (before 2027-01-01)

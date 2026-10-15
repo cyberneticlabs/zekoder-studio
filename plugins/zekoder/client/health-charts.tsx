@@ -10,24 +10,24 @@ const NUMBER = new Intl.NumberFormat();
 const TOP_LIMIT = 15;
 const CHART_HEIGHT = 96;
 
-export interface DayBar {
+interface DayBar {
   day: string;
   commits: number;
   add: number;
   del: number;
 }
-export interface CountBar {
+interface CountBar {
   label: string;
   count: number;
 }
-export interface PrBar {
+interface PrBar {
   repo: string;
   merged: number;
   closed: number;
 }
 
 /** Per-day totals for the filtered day range (zero-filled). */
-export function dailyBars(report: CodingHealthReport, agg: Aggregate, f: HealthFilters): DayBar[] {
+function dailyBars(report: CodingHealthReport, agg: Aggregate, f: HealthFilters): DayBar[] {
   return report.window.days
     .slice(f.from, f.to + 1)
     .map((day, i) => ({ day, ...pick(agg.byDay[f.from + i]) }));
@@ -38,7 +38,11 @@ function pick(b: Bucket | undefined) {
 }
 
 /** Top contributors by commits, like the web page. */
-export function topContributors(report: CodingHealthReport, agg: Aggregate, limit = TOP_LIMIT): CountBar[] {
+function topContributors(
+  report: CodingHealthReport,
+  agg: Aggregate,
+  limit = TOP_LIMIT,
+): CountBar[] {
   return [...agg.byUser.entries()]
     .map(([user, b]) => ({ label: report.users[user].label, count: b.commits }))
     .filter((bar) => bar.count > 0)
@@ -47,7 +51,7 @@ export function topContributors(report: CodingHealthReport, agg: Aggregate, limi
 }
 
 /** Merged vs closed-unmerged PRs per repo, busiest first. */
-export function prsByRepo(report: CodingHealthReport, agg: Aggregate, limit = TOP_LIMIT): PrBar[] {
+function prsByRepo(report: CodingHealthReport, agg: Aggregate, limit = TOP_LIMIT): PrBar[] {
   return [...agg.byRepo.entries()]
     .map(([repo, b]) => ({ repo: report.repos[repo], merged: b.merged, closed: b.closed }))
     .filter((bar) => bar.merged + bar.closed > 0)
@@ -91,7 +95,9 @@ export function HealthCharts({ theme, report, agg, filters }: HealthChartsProps)
         {days.every((d) => d.commits === 0) ? (
           <Empty color={muted} />
         ) : (
-          <View style={{ flexDirection: "row", alignItems: "flex-end", height: CHART_HEIGHT, gap: 1 }}>
+          <View
+            style={{ flexDirection: "row", alignItems: "flex-end", height: CHART_HEIGHT, gap: 1 }}
+          >
             {days.map((d) => (
               <View
                 key={d.day}
@@ -115,7 +121,9 @@ export function HealthCharts({ theme, report, agg, filters }: HealthChartsProps)
           <Empty color={muted} />
         ) : (
           <>
-            <View style={{ flexDirection: "row", alignItems: "flex-end", height: CHART_HEIGHT, gap: 1 }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "flex-end", height: CHART_HEIGHT, gap: 1 }}
+            >
               {days.map((d) => (
                 <View
                   key={d.day}
@@ -189,7 +197,15 @@ function Empty({ color }: { color: string }) {
   return <Text style={{ fontSize: 12, color }}>No activity in this window.</Text>;
 }
 
-function ChartCard({ theme, title, children }: { theme: Theme; title: string; children: React.ReactNode }) {
+function ChartCard({
+  theme,
+  title,
+  children,
+}: {
+  theme: Theme;
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <View
       style={{
@@ -201,7 +217,9 @@ function ChartCard({ theme, title, children }: { theme: Theme; title: string; ch
         backgroundColor: theme.colors.surface1,
       }}
     >
-      <Text style={{ fontSize: 13, fontWeight: "600", color: theme.colors.foregroundMuted }}>{title.toUpperCase()}</Text>
+      <Text style={{ fontSize: 13, fontWeight: "600", color: theme.colors.foregroundMuted }}>
+        {title.toUpperCase()}
+      </Text>
       {children}
     </View>
   );
@@ -223,7 +241,11 @@ function HBar(props: {
   const { theme, label, value, a, b, accessibility } = props;
   const pct = (fraction: number) => `${Math.max(0, fraction) * 100}%` as const;
   return (
-    <View accessible accessibilityLabel={accessibility} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+    <View
+      accessible
+      accessibilityLabel={accessibility}
+      style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+    >
       <Text numberOfLines={1} style={{ width: 150, fontSize: 12, color: theme.colors.foreground }}>
         {label}
       </Text>
@@ -231,7 +253,11 @@ function HBar(props: {
         <View style={{ width: pct(a.width), backgroundColor: a.color }} />
         {b && <View style={{ width: pct(b.width), backgroundColor: b.color }} />}
       </View>
-      <Text style={{ width: 80, textAlign: "right", fontSize: 12, color: theme.colors.foregroundMuted }}>{value}</Text>
+      <Text
+        style={{ width: 80, textAlign: "right", fontSize: 12, color: theme.colors.foregroundMuted }}
+      >
+        {value}
+      </Text>
     </View>
   );
 }

@@ -79,7 +79,10 @@ export function CodingHealthPage({ theme, layout }: PluginSurfaceProps) {
   const org = params.status === "ready" ? params.values.org : null;
   const days = params.status === "ready" ? params.values.days : DEFAULT_REPORT_DAYS;
 
-  const orgsQuery = useQuery({ queryKey: ["zekoder", "report-orgs"], queryFn: () => fetchOrgs({}) });
+  const orgsQuery = useQuery({
+    queryKey: ["zekoder", "report-orgs"],
+    queryFn: () => fetchOrgs({}),
+  });
   const orgChoices = [...new Set([...(orgsQuery.data?.orgs ?? []), ...(org ? [org] : [])])];
   const dayChoices = [...new Set([...DAY_CHOICES, days])].sort((a, b) => a - b);
   const choose = (patch: { org?: string; days?: number }) => {
@@ -166,11 +169,15 @@ export function CodingHealthPage({ theme, layout }: PluginSurfaceProps) {
 
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <View style={{ flex: 1, gap: 2 }}>
-          <Text style={{ fontSize: 18, fontWeight: "600", color: theme.colors.foreground }}>{org ?? "Coding health"}</Text>
+          <Text style={{ fontSize: 18, fontWeight: "600", color: theme.colors.foreground }}>
+            {org ?? "Coding health"}
+          </Text>
           <Text style={{ fontSize: 12, ...muted }}>
             {data
               ? `${data.window.start} → ${data.window.end} · ${dayLabel(data.window.days.length)} · built ${new Date(data.generatedAt).toLocaleString()}`
-              : days === 1 ? dayLabel(days) : `Last ${dayLabel(days)}`}
+              : days === 1
+                ? dayLabel(days)
+                : `Last ${dayLabel(days)}`}
           </Text>
         </View>
         <Button
@@ -180,15 +187,20 @@ export function CodingHealthPage({ theme, layout }: PluginSurfaceProps) {
           disabled={report.isFetching || org === null}
           onPress={() => void report.refetch()}
         />
-        {org !== null && <Button theme={theme} icon="ExternalLink" label="Open report" onPress={openPage} />}
+        {org !== null && (
+          <Button theme={theme} icon="ExternalLink" label="Open report" onPress={openPage} />
+        )}
       </View>
 
       {report.isError && <Text style={danger}>{errorText(report.error)}</Text>}
       {report.data?.collectError && <Text style={danger}>{report.data.collectError}</Text>}
-      {orgsQuery.isError && !(report.isError && errorText(report.error) === errorText(orgsQuery.error)) && (
-        <Text style={danger}>{errorText(orgsQuery.error)}</Text>
+      {orgsQuery.isError &&
+        !(report.isError && errorText(report.error) === errorText(orgsQuery.error)) && (
+          <Text style={danger}>{errorText(orgsQuery.error)}</Text>
+        )}
+      {org !== null && report.isPending && !report.isError && (
+        <Text style={muted}>Building report…</Text>
       )}
-      {org !== null && report.isPending && !report.isError && <Text style={muted}>Building report…</Text>}
 
       {collecting && (
         <Text
@@ -199,7 +211,8 @@ export function CodingHealthPage({ theme, layout }: PluginSurfaceProps) {
             color: theme.colors.statusWarning,
           }}
         >
-          Collecting {org} from GitHub. This can take several minutes; the page updates when it finishes.
+          Collecting {org} from GitHub. This can take several minutes; the page updates when it
+          finishes.
         </Text>
       )}
 
@@ -215,7 +228,10 @@ export function CodingHealthPage({ theme, layout }: PluginSurfaceProps) {
         >
           <Text style={{ color: theme.colors.statusWarning }}>
             Partial: the cache doesn't cover this whole window
-            {data.pendingCommitDetails > 0 ? ` (${NUMBER.format(data.pendingCommitDetails)} commits lack line counts)` : ""}.
+            {data.pendingCommitDetails > 0
+              ? ` (${NUMBER.format(data.pendingCommitDetails)} commits lack line counts)`
+              : ""}
+            .
           </Text>
           <Button theme={theme} icon="Download" label="Fetch missing days" onPress={fetchMissing} />
         </View>
@@ -240,7 +256,9 @@ export function CodingHealthPage({ theme, layout }: PluginSurfaceProps) {
                 }}
               >
                 <Text style={{ fontSize: 12, ...muted }}>{label}</Text>
-                <Text style={{ fontSize: 20, fontWeight: "600", color: theme.colors.foreground }}>{value}</Text>
+                <Text style={{ fontSize: 20, fontWeight: "600", color: theme.colors.foreground }}>
+                  {value}
+                </Text>
               </View>
             ))}
           </View>
@@ -261,9 +279,9 @@ export function CodingHealthPage({ theme, layout }: PluginSurfaceProps) {
             onPick={(repo) => patch({ repo })}
           />
           <Text style={{ fontSize: 11, ...muted }}>
-            Commits: default branch only, merge commits excluded. Lines exclude lockfiles and generated files. Pull
-            requests: merged and closed-unmerged, dated by close day. Days are UTC; today and yesterday are never
-            included. Tap a table row to filter by it.
+            Commits: default branch only, merge commits excluded. Lines exclude lockfiles and
+            generated files. Pull requests: merged and closed-unmerged, dated by close day. Days are
+            UTC; today and yesterday are never included. Tap a table row to filter by it.
           </Text>
         </>
       )}
@@ -271,16 +289,33 @@ export function CodingHealthPage({ theme, layout }: PluginSurfaceProps) {
   );
 }
 
-function Table({ theme, title, rows, onPick }: { theme: Theme; title: string; rows: Row[]; onPick(key: number): void }) {
+function Table({
+  theme,
+  title,
+  rows,
+  onPick,
+}: {
+  theme: Theme;
+  title: string;
+  rows: Row[];
+  onPick(key: number): void;
+}) {
   const [sortKey, setSortKey] = useState<SortKey>("commits");
   const sorted = useMemo(
     () =>
       [...rows].sort((a, b) =>
-        sortKey === "label" ? a.label.localeCompare(b.label) : b[sortKey] - a[sortKey] || a.label.localeCompare(b.label),
+        sortKey === "label"
+          ? a.label.localeCompare(b.label)
+          : b[sortKey] - a[sortKey] || a.label.localeCompare(b.label),
       ),
     [rows, sortKey],
   );
-  const cell = { width: 90, textAlign: "right" as const, fontSize: 12, color: theme.colors.foreground };
+  const cell = {
+    width: 90,
+    textAlign: "right" as const,
+    fontSize: 12,
+    color: theme.colors.foreground,
+  };
   const head = { fontWeight: "600" as const, color: theme.colors.foregroundMuted };
   const border = { borderBottomWidth: 1, borderBottomColor: theme.colors.border };
   const mark = (key: SortKey) => (key === sortKey ? " ↓" : "");
@@ -290,7 +325,9 @@ function Table({ theme, title, rows, onPick }: { theme: Theme; title: string; ro
         {title.toUpperCase()} ({rows.length})
       </Text>
       {rows.length === 0 ? (
-        <Text style={{ fontSize: 12, color: theme.colors.foregroundMuted }}>No activity for these filters.</Text>
+        <Text style={{ fontSize: 12, color: theme.colors.foregroundMuted }}>
+          No activity for these filters.
+        </Text>
       ) : (
         <ScrollView horizontal>
           <View>
@@ -299,7 +336,11 @@ function Table({ theme, title, rows, onPick }: { theme: Theme; title: string; ro
                 <Text style={{ width: 220, fontSize: 12, ...head }}>Name{mark("label")}</Text>
               </Pressable>
               {COLUMNS.map((column) => (
-                <Pressable key={column.key} accessibilityRole="button" onPress={() => setSortKey(column.key)}>
+                <Pressable
+                  key={column.key}
+                  accessibilityRole="button"
+                  onPress={() => setSortKey(column.key)}
+                >
                   <Text style={{ ...cell, ...head }}>
                     {column.label}
                     {mark(column.key)}
@@ -315,9 +356,14 @@ function Table({ theme, title, rows, onPick }: { theme: Theme; title: string; ro
                 onPress={() => onPick(row.key)}
                 style={{ flexDirection: "row", paddingVertical: 6, ...border }}
               >
-                <Text numberOfLines={1} style={{ width: 220, fontSize: 12, color: theme.colors.foreground }}>
+                <Text
+                  numberOfLines={1}
+                  style={{ width: 220, fontSize: 12, color: theme.colors.foreground }}
+                >
                   {row.label}
-                  {row.tag ? <Text style={{ color: theme.colors.foregroundMuted }}> · {row.tag}</Text> : null}
+                  {row.tag ? (
+                    <Text style={{ color: theme.colors.foregroundMuted }}> · {row.tag}</Text>
+                  ) : null}
                 </Text>
                 {COLUMNS.map((column) => (
                   <Text key={column.key} style={cell}>
@@ -348,7 +394,10 @@ function FilterBar({ theme, report, filters, patch, reset }: FilterBarProps) {
   const label = { fontSize: 12, color: theme.colors.foregroundMuted };
   const byLabel = <T extends { i: number; label: string }>(items: T[]) =>
     items.sort((a, b) => a.label.localeCompare(b.label));
-  const repos = useMemo(() => byLabel(report.repos.map((r, i) => ({ i, label: r }))), [report.repos]);
+  const repos = useMemo(
+    () => byLabel(report.repos.map((r, i) => ({ i, label: r }))),
+    [report.repos],
+  );
   const users = useMemo(
     () => byLabel(report.users.map((u, i) => ({ i, label: u.label + (u.bot ? " (bot)" : "") }))),
     [report.users],
@@ -369,7 +418,10 @@ function FilterBar({ theme, report, filters, patch, reset }: FilterBarProps) {
         maxListHeight={280}
         placeholder={allLabel}
         value={String(current)}
-        options={[{ value: "-1", label: allLabel }, ...items.map((item) => ({ value: String(item.i), label: item.label }))]}
+        options={[
+          { value: "-1", label: allLabel },
+          ...items.map((item) => ({ value: String(item.i), label: item.label })),
+        ]}
         onChange={(value) => set(Number(value))}
       />
     </Raise>
@@ -386,9 +438,26 @@ function FilterBar({ theme, report, filters, patch, reset }: FilterBarProps) {
       }}
     >
       <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "flex-end", gap: 12 }}>
-        <DateButton theme={theme} title="From" day={days[filters.from]} open={picking === "from"} onPress={() => setPicking(picking === "from" ? null : "from")} />
-        <DateButton theme={theme} title="To" day={days[filters.to]} open={picking === "to"} onPress={() => setPicking(picking === "to" ? null : "to")} />
-        <Chip theme={theme} label="Include bots" selected={filters.bots} onPress={() => patch({ bots: !filters.bots })} />
+        <DateButton
+          theme={theme}
+          title="From"
+          day={days[filters.from]}
+          open={picking === "from"}
+          onPress={() => setPicking(picking === "from" ? null : "from")}
+        />
+        <DateButton
+          theme={theme}
+          title="To"
+          day={days[filters.to]}
+          open={picking === "to"}
+          onPress={() => setPicking(picking === "to" ? null : "to")}
+        />
+        <Chip
+          theme={theme}
+          label="Include bots"
+          selected={filters.bots}
+          onPress={() => patch({ bots: !filters.bots })}
+        />
         <Button theme={theme} icon="RotateCcw" label="Reset" onPress={reset} />
       </View>
       {picking && (
@@ -399,20 +468,31 @@ function FilterBar({ theme, report, filters, patch, reset }: FilterBarProps) {
           value={days[picking === "from" ? filters.from : filters.to]}
           onPick={(day) => {
             const i = days.indexOf(day);
-            patch(picking === "from" ? { from: i, to: Math.max(i, filters.to) } : { to: i, from: Math.min(i, filters.from) });
+            patch(
+              picking === "from"
+                ? { from: i, to: Math.max(i, filters.to) }
+                : { to: i, from: Math.min(i, filters.from) },
+            );
             setPicking(null);
           }}
         />
       )}
       <Raise style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "flex-start", gap: 12 }}>
-        {pickerFor("Repository", "All repositories", repos, filters.repo, (repo) => patch({ repo }))}
-        {pickerFor("Contributor", "All contributors", users, filters.user, (user) => patch({ user }))}
+        {pickerFor("Repository", "All repositories", repos, filters.repo, (repo) =>
+          patch({ repo }),
+        )}
+        {pickerFor("Contributor", "All contributors", users, filters.user, (user) =>
+          patch({ user }),
+        )}
       </Raise>
     </Raise>
   );
 }
 
-function rowsOf(map: Aggregate["byUser"], describe: (key: number) => { label: string; tag: string }): Row[] {
+function rowsOf(
+  map: Aggregate["byUser"],
+  describe: (key: number) => { label: string; tag: string },
+): Row[] {
   return [...map.entries()].map(([key, b]) => {
     const prs = b.merged + b.closed;
     return {

@@ -37,25 +37,31 @@ export function TelemetryPanel({ theme }: { theme: Theme }) {
     <ScrollView contentContainerStyle={{ gap: 20 }}>
       {isPending && <Text style={muted}>Loading…</Text>}
       {isError && <Text style={{ color: theme.colors.statusDanger }}>{errorText(error)}</Text>}
-      {save.isError && <Text style={{ color: theme.colors.statusDanger }}>{errorText(save.error)}</Text>}
-      {data && !state && <Text style={muted}>Open a Zekoder project in Paseo to change telemetry.</Text>}
+      {save.isError && (
+        <Text style={{ color: theme.colors.statusDanger }}>{errorText(save.error)}</Text>
+      )}
       {state && (
         <Section theme={theme} title="Usage telemetry">
           <Text style={{ fontSize: 13, color: theme.colors.foreground }}>
-            Zekoder can send anonymous usage events. This choice applies to every repo on this machine.
+            Zekoder can send anonymous usage events. This choice applies to every repo on this
+            machine.
           </Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
             <Chip
               theme={theme}
               label="Opt in"
               selected={state.consent === "granted"}
-              onPress={() => state.consent !== "granted" && !save.isPending && save.mutate("granted")}
+              onPress={() =>
+                state.consent !== "granted" && !save.isPending && save.mutate("granted")
+              }
             />
             <Chip
               theme={theme}
               label="Opt out"
               selected={state.consent === "declined"}
-              onPress={() => state.consent !== "declined" && !save.isPending && save.mutate("declined")}
+              onPress={() =>
+                state.consent !== "declined" && !save.isPending && save.mutate("declined")
+              }
             />
             {save.isPending && <Text style={{ fontSize: 12, ...muted }}>Saving…</Text>}
           </View>

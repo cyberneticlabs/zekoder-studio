@@ -8,9 +8,11 @@ import {
   RELEASE_CHANNELS,
   VERSION_POLL_MS,
   checkVersionRpc,
+  pluginVersionRpc,
   updateProjectRpc,
   versionSettings,
   versionStatusRpc,
+  type PluginVersionView,
   type ProjectVersion,
   type ReleaseChannel,
   type TargetVersion,
@@ -34,7 +36,9 @@ export function hasFailedInstall(status: VersionStatus | undefined): boolean {
 
 function hasActiveInstall(status: VersionStatus | undefined): boolean {
   return (status?.projects ?? []).some((project) =>
-    [project, ...project.worktrees].some((target) => target.job?.status === "queued" || target.job?.status === "running"),
+    [project, ...project.worktrees].some(
+      (target) => target.job?.status === "queued" || target.job?.status === "running",
+    ),
   );
 }
 
@@ -48,7 +52,8 @@ export function VersionPanel({ theme }: { theme: Theme }) {
     queryKey: VERSION_STATUS_KEY,
     queryFn: () => fetchStatus({}),
     // Poll fast only while an install runs, so its log and result show up promptly.
-    refetchInterval: (query) => (hasActiveInstall(query.state.data) ? JOB_POLL_MS : VERSION_POLL_MS),
+    refetchInterval: (query) =>
+      hasActiveInstall(query.state.data) ? JOB_POLL_MS : VERSION_POLL_MS,
   });
   const setStatus = (data: VersionStatus) => queryClient.setQueryData(VERSION_STATUS_KEY, data);
   const checkNow = useMutation({ mutationFn: () => check({}), onSuccess: setStatus });
@@ -59,7 +64,8 @@ export function VersionPanel({ theme }: { theme: Theme }) {
   const settings = useSettings(versionSettings);
   const switchChannel = useMutation({
     mutationFn: async (next: ReleaseChannel) => {
-      if (settings.status !== "ready" && settings.status !== "invalid") throw new Error("Settings are still loading.");
+      if (settings.status !== "ready" && settings.status !== "invalid")
+        throw new Error("Settings are still loading.");
       if (!(await settings.save({ channel: next }, settings.revision))) {
         throw new Error(settings.saveError ?? "Could not save the channel.");
       }
@@ -79,9 +85,12 @@ export function VersionPanel({ theme }: { theme: Theme }) {
 
   return (
     <ScrollView contentContainerStyle={{ gap: 16 }}>
+      <PluginVersionCard theme={theme} />
       <View style={{ gap: 4 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Text style={{ flex: 1, fontSize: 16, fontWeight: "600", color: theme.colors.foreground }}>
+          <Text
+            style={{ flex: 1, fontSize: 16, fontWeight: "600", color: theme.colors.foreground }}
+          >
             Latest version: {data?.latest ?? "unknown"}
           </Text>
           <Button
@@ -100,7 +109,11 @@ export function VersionPanel({ theme }: { theme: Theme }) {
               theme={theme}
               label={option}
               selected={selectedChannel === option}
-              onPress={() => option !== selectedChannel && !switchChannel.isPending && switchChannel.mutate(option)}
+              onPress={() =>
+                option !== selectedChannel &&
+                !switchChannel.isPending &&
+                switchChannel.mutate(option)
+              }
             />
           ))}
         </View>
@@ -110,24 +123,30 @@ export function VersionPanel({ theme }: { theme: Theme }) {
           </Text>
         )}
         <Text style={{ fontSize: 12, ...muted }}>
-          {data?.checkedAt ? `Last checked ${new Date(data.checkedAt).toLocaleString()}` : "Not checked yet"}
+          {data?.checkedAt
+            ? `Last checked ${new Date(data.checkedAt).toLocaleString()}`
+            : "Not checked yet"}
           {data ? ` · checks every ${data.intervalMinutes / 60} h` : ""}
         </Text>
         <Text style={{ fontSize: 12, ...muted }}>
-          Zekoder is installed and updated automatically in every Paseo project and its worktrees.
+          Zekoder is installed and updated automatically in every Zekoder project and its worktrees.
         </Text>
         {data?.error && <Text style={{ color: theme.colors.statusDanger }}>{data.error}</Text>}
-        {status.isError && <Text style={{ color: theme.colors.statusDanger }}>{errorText(status.error)}</Text>}
+        {status.isError && (
+          <Text style={{ color: theme.colors.statusDanger }}>{errorText(status.error)}</Text>
+        )}
         {checkNow.isError && (
           <Text style={{ color: theme.colors.statusDanger }}>{errorText(checkNow.error)}</Text>
         )}
         {switchChannel.isError && (
           <Text style={{ color: theme.colors.statusDanger }}>{errorText(switchChannel.error)}</Text>
         )}
-        {retry.isError && <Text style={{ color: theme.colors.statusDanger }}>{errorText(retry.error)}</Text>}
+        {retry.isError && (
+          <Text style={{ color: theme.colors.statusDanger }}>{errorText(retry.error)}</Text>
+        )}
       </View>
 
-      {data?.projects.length === 0 && <Text style={muted}>No Paseo projects yet.</Text>}
+      {data?.projects.length === 0 && <Text style={muted}>No Zekoder projects yet.</Text>}
       {data?.projects.map((project) => (
         <ProjectVersionCard
           key={project.root}
@@ -138,6 +157,97 @@ export function VersionPanel({ theme }: { theme: Theme }) {
         />
       ))}
     </ScrollView>
+  );
+}
+
+const SOURCE_LABELS: Record<string, string> = { bundled: "Bundled", downloaded: "Downloaded" };
+
+function fallbackText(reason: string): string {
+  if (reason === "previously-failed") {
+    return "Using bundled copy: a downloaded version failed to start before; waiting for a newer version";
+  }
+  return `Using bundled copy: ${reason}`;
+}
+
+/** The plugin's own version and the host's update state. Read-only: the plugin never restarts anything. */
+function PluginVersionCard({ theme }: { theme: Theme }) {
+  const fetchPlugin = useRpc(pluginVersionRpc);
+  const query = useQuery({
+    queryKey: ["zekoder", "version", "plugin"],
+    queryFn: () => fetchPlugin({}),
+    refetchInterval: VERSION_POLL_MS,
+  });
+  const view: PluginVersionView | undefined = query.data;
+  const status = view?.status ?? null;
+  const muted = { fontSize: 12, color: theme.colors.foregroundMuted };
+  const source = status ? (SOURCE_LABELS[status.source] ?? status.source) : "Unknown";
+  const rows: [string, string | null | undefined][] = status
+    ? [
+        ["Channel", status.channel],
+        ["Bundled version", status.bundledVersion],
+        ["Latest available", status.latestAvailable],
+        [
+          "Last check",
+          status.lastCheckAt ? new Date(status.lastCheckAt).toLocaleString() : "never",
+        ],
+      ]
+    : [];
+
+  return (
+    <View
+      style={{
+        gap: 6,
+        padding: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        backgroundColor: theme.colors.surface1,
+      }}
+    >
+      <Text style={{ color: theme.colors.foreground }}>
+        <Text style={{ fontWeight: "600" }}>Zekoder plugin </Text>
+        {status?.runningVersion ?? view?.pluginVersion ?? "…"} · {source}
+      </Text>
+      {view?.host === "absent" && (
+        <Text style={muted}>
+          Unknown — host does not report plugin updates. Running the installed copy.
+        </Text>
+      )}
+      {status?.enabled === false && (
+        <Text style={muted}>Updates are managed by the desktop app</Text>
+      )}
+      {rows.map(([label, value]) =>
+        value ? (
+          <Text key={label} style={muted}>
+            {label}: {value}
+          </Text>
+        ) : null,
+      )}
+      {view?.restartRequired && (
+        <Text style={{ fontSize: 12, color: theme.colors.statusWarning }}>
+          Restart the daemon to apply (Settings → Host → Restart daemon)
+        </Text>
+      )}
+      {status?.fallbackReason && (
+        <Text style={{ fontSize: 12, color: theme.colors.statusWarning }}>
+          {fallbackText(status.fallbackReason)}
+        </Text>
+      )}
+      {status?.lastError && (
+        <Text style={{ fontSize: 12, color: theme.colors.statusDanger }}>
+          {status.lastError.code}: {status.lastError.message} ·{" "}
+          {new Date(status.lastError.at).toLocaleString()}
+        </Text>
+      )}
+      {view?.host === "error" && view.error && (
+        <Text style={{ fontSize: 12, color: theme.colors.statusDanger }}>{view.error}</Text>
+      )}
+      {query.isError && (
+        <Text style={{ fontSize: 12, color: theme.colors.statusDanger }}>
+          {errorText(query.error)}
+        </Text>
+      )}
+    </View>
   );
 }
 
@@ -161,7 +271,12 @@ function ProjectVersionCard({ theme, project, retrying, onRetry }: ProjectVersio
       }}
     >
       <Text style={{ fontWeight: "600", color: theme.colors.foreground }}>{project.name}</Text>
-      <TargetRow theme={theme} target={project} retrying={retrying === project.dir} onRetry={onRetry} />
+      <TargetRow
+        theme={theme}
+        target={project}
+        retrying={retrying === project.dir}
+        onRetry={onRetry}
+      />
       {project.worktrees.map((worktree) => (
         <TargetRow
           key={worktree.dir}
@@ -230,8 +345,8 @@ function TargetRow({ theme, target, retrying, onRetry }: TargetRowProps) {
           </Pressable>
           {job.status === "succeeded" && (
             <Text style={{ fontSize: 12, ...muted }}>
-              Agents started before this install: Claude /mcp reconnect zekoder, then /zekoder-migrate.
-              Codex: restart, then $zekoder-migrate.
+              Agents started before this install: Claude /mcp reconnect zekoder, then
+              /zekoder-migrate. Codex: restart, then $zekoder-migrate.
             </Text>
           )}
           {showLog && (
@@ -239,7 +354,9 @@ function TargetRow({ theme, target, retrying, onRetry }: TargetRowProps) {
               style={{ maxHeight: 240, borderRadius: 6, backgroundColor: theme.colors.surface0 }}
               contentContainerStyle={{ padding: 8 }}
             >
-              <Text style={{ fontFamily: "monospace", fontSize: 11, color: theme.colors.foreground }}>
+              <Text
+                style={{ fontFamily: "monospace", fontSize: 11, color: theme.colors.foreground }}
+              >
                 {job.log || "(no output yet)"}
               </Text>
             </ScrollView>

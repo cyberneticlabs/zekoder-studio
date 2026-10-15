@@ -31,7 +31,16 @@ function tabLabel(tab: AgentTab): string {
 }
 
 /** Starts an agent in the project's workspace via `start`, then opens it. */
-export function StartAgentButton({ theme, icon, label, enabled, disabledHint, navigation, root, start: run }: StartAgentButtonProps) {
+export function StartAgentButton({
+  theme,
+  icon,
+  label,
+  enabled,
+  disabledHint,
+  navigation,
+  root,
+  start: run,
+}: StartAgentButtonProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const start = useMutation({
     mutationFn: run,
@@ -48,7 +57,9 @@ export function StartAgentButton({ theme, icon, label, enabled, disabledHint, na
       <Button
         theme={theme}
         icon={icon}
-        label={start.isPending ? "Starting…" : start.isSuccess && !onboarding ? "Agent started" : label}
+        label={
+          start.isPending ? "Starting…" : start.isSuccess && !onboarding ? "Agent started" : label
+        }
         primary
         disabled={!enabled || start.isPending || (start.isSuccess && !onboarding)}
         onPress={() => start.mutate()}
@@ -57,15 +68,23 @@ export function StartAgentButton({ theme, icon, label, enabled, disabledHint, na
       {onboarding && machine.isPending && <Text style={muted}>Checking provider defaults…</Text>}
       {onboarding && !machine.isPending && !machineScope && (
         <Text style={muted}>
-          No {onboarding} provider is set yet. Set it in this project's Zekoder settings → {tabLabel(onboarding)} tab.
+          No {onboarding} provider is set yet. Set it in this project's Zekoder settings →{" "}
+          {tabLabel(onboarding)} tab.
         </Text>
       )}
       {onboarding && machineScope && (
         <>
-          <Button theme={theme} icon="Settings" label="Choose a provider" onPress={() => setPickerOpen(true)} />
+          <Button
+            theme={theme}
+            icon="Settings"
+            label="Choose a provider"
+            onPress={() => setPickerOpen(true)}
+          />
           <Modal title="Set up providers" open={pickerOpen} onOpenChange={setPickerOpen}>
             <Modal.Content>
-              <Text style={{ ...muted, marginBottom: 12 }}>No {onboarding} provider is set yet. Pick one to continue.</Text>
+              <Text style={{ ...muted, marginBottom: 12 }}>
+                No {onboarding} provider is set yet. Pick one to continue.
+              </Text>
               <ProviderOnboarding
                 theme={theme}
                 root={root}
@@ -79,7 +98,9 @@ export function StartAgentButton({ theme, icon, label, enabled, disabledHint, na
         </>
       )}
       {start.isError && (
-        <Text style={{ fontSize: 12, color: theme.colors.statusDanger }}>{errorText(start.error)}</Text>
+        <Text style={{ fontSize: 12, color: theme.colors.statusDanger }}>
+          {errorText(start.error)}
+        </Text>
       )}
     </View>
   );

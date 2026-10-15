@@ -2,9 +2,9 @@ import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-// Port of `computeTreeChecksum` in scripts/sync-zekoder-plugin.mjs (the reference). The server
+// Port of `computeTreeChecksum` in scripts/zekoder-plugin-tree.mjs (the reference). The server
 // package cannot import from scripts/, so behaviour must stay identical; tree-checksum.test.ts
-// pins the two together through plugins/zekoder.lock.json.
+// asserts the two agree on plugins/zekoder.
 
 function listFiles(directory: string): string[] {
   const files: string[] = [];

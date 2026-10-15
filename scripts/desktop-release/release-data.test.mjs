@@ -23,7 +23,7 @@ import {
   validateReleaseNotes,
 } from "./release-data.mjs";
 import {
-  FIXTURE_LOCK,
+  fixturePlugins,
   GOOD_NOTES,
   githubRelease,
   git,
@@ -210,7 +210,7 @@ test("candidate catalog records tag-derived identity and exact provenance", () =
   assert.equal(entry.channel, "stable");
   assert.equal(entry.sourceCommit, git(source.dir, "rev-parse", "v0.1.0^{commit}"));
   assert.equal(entry.upstreamCommit, source.upstreamCommit);
-  assert.deepEqual(entry.plugins, FIXTURE_LOCK);
+  assert.deepEqual(entry.plugins, fixturePlugins(source.dir, entry.sourceCommit));
   assert.equal(entry.githubReleaseUrl, `https://github.com/${REPO}/releases/tag/v0.1.0`);
   assert.deepEqual(candidate.channels, { stable: "v0.1.0", beta: "v0.1.0" });
   assert.deepEqual(validateCatalog(candidate, { publicBase: gcs.base }), []);
@@ -408,13 +408,10 @@ test("resolves the upstream commit from the latest sync merge's second parent", 
   );
 });
 
-test("rejects plugin locks that are not pinned", () => {
-  const unpinned = makeSourceRepo({ lock: { ...FIXTURE_LOCK, commit: "main" } });
-  tempDirs.push(unpinned.dir);
-  assert.throws(
-    () => prepare("v0.3.0", { root: unpinned }),
-    /zekoder\.lock\.json is invalid.*commit/,
-  );
+test("rejects a plugin whose package.json has no valid version", () => {
+  const unversioned = makeSourceRepo({ pluginVersion: "main" });
+  tempDirs.push(unversioned.dir);
+  assert.throws(() => prepare("v0.3.0", { root: unversioned }), /valid semver "version"/);
 });
 
 test("publishes complete snapshots with generation preconditions and the catalog last", async () => {

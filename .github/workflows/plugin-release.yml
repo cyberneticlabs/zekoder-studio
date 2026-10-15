@@ -1,0 +1,150 @@
+name: plugin-release
+
+# Publishes the Zekoder plugin: immutable artifact first, signed manifest last.
+# Tag zekoder-plugin-vX.Y.Z -> stable, zekoder-plugin-vX.Y.Z-beta.N -> beta. workflow_dispatch on
+# main revokes a version. Independent of the desktop release (tags v*). See docs/release.md.
+
+on:
+  push:
+    tags:
+      - "zekoder-plugin-v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to revoke (for example 0.12.1)"
+        required: true
+      reason:
+        description: "Revoke reason (shown in the manifest)"
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: zekoder-plugin-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: plugin-release
+    env:
+      BUCKET: ${{ vars.ZEKODER_RELEASE_BUCKET }}
+      ZEKODER_PLUGIN_SIGNING_KEY: ${{ secrets.ZEKODER_PLUGIN_SIGNING_KEY }}
+      ZEKODER_PLUGIN_SIGNING_KEY_ID: ${{ vars.ZEKODER_PLUGIN_SIGNING_KEY_ID }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+
+      - name: Check settings
+        run: |
+          if [ -z "$BUCKET" ]; then echo "vars.ZEKODER_RELEASE_BUCKET is empty"; exit 1; fi
+          if [ -z "$ZEKODER_PLUGIN_SIGNING_KEY" ] || [ -z "$ZEKODER_PLUGIN_SIGNING_KEY_ID" ]; then
+            echo "signing key secret or key id variable is missing"; exit 1
+          fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "revoke runs must be on main"; exit 1
+          fi
+
+      - name: Check tag
+        if: github.event_name == 'push'
+        run: |
+          out="$(node scripts/plugin-release.mjs check-tag "$GITHUB_REF_NAME")"
+          echo "VERSION=${out% *}" >> "$GITHUB_ENV"
+          echo "CHANNEL=${out#* }" >> "$GITHUB_ENV"
+
+      - name: Tag commit must be on main
+        if: github.event_name == 'push'
+        run: git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+
+      - name: Build artifact
+        if: github.event_name == 'push'
+        run: |
+          mkdir -p out
+          node scripts/plugin-release.mjs build "$VERSION" out > out/build.json
+          cat out/build.json
+
+      - uses: google-github-actions/auth@b7593ed2efd1c1617e1b0254da33b86225adb2a5 # v2.1.12
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
+
+      - name: Upload artifact (immutable)
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          PREFIX="gs://${BUCKET}/plugins/zekoder"
+          NAME="zekoder-plugin-v${VERSION}.tar.gz"
+          DEST="${PREFIX}/releases/v${VERSION}/${NAME}"
+          FILE="out/${NAME}"
+          gcloud storage cp --no-clobber \
+            --cache-control="public, max-age=31536000, immutable" "$FILE" "$DEST" || true
+          # Whatever is stored is the truth (a re-run must not change it).
+          mkdir -p stored
+          gcloud storage cp "$DEST" "stored/${NAME}"
+          SHA="$(sha256sum "stored/${NAME}" | cut -d' ' -f1)"
+          SIZE="$(stat -c %s "stored/${NAME}")"
+          TREE="$(node -p 'JSON.parse(require("fs").readFileSync("out/build.json","utf8")).treeChecksum')"
+          node -e '
+            const [v,t,c,url,sha,size,tree,sh]=process.argv.slice(1);
+            require("fs").writeFileSync("release.json", JSON.stringify({
+              version:v, tag:t, channel:c, commit:sh,
+              artifact:{url, sha256:sha, size:Number(size)}, treeChecksum:tree
+            }, null, 2));
+          ' "$VERSION" "$GITHUB_REF_NAME" "$CHANNEL" \
+            "https://storage.googleapis.com/${BUCKET}/plugins/zekoder/releases/v${VERSION}/${NAME}" \
+            "$SHA" "$SIZE" "$TREE" "$GITHUB_SHA"
+
+      - name: Publish manifest (compare-and-set loop)
+        env:
+          REVOKE_VERSION: ${{ inputs.version }}
+          REVOKE_REASON: ${{ inputs.reason }}
+        run: |
+          set -uo pipefail
+          MANIFEST="gs://${BUCKET}/plugins/zekoder/manifest.json"
+          for attempt in 1 2 3 4 5; do
+            echo "attempt ${attempt}"
+            rm -f current.json payload.json envelope.json
+            GEN="$(gcloud storage objects describe "$MANIFEST" --format='value(generation)' 2>/dev/null || true)"
+            if [ -n "$GEN" ]; then
+              gcloud storage cp "${MANIFEST}#${GEN}" current.json || exit 1
+            else
+              GEN=0
+              : > current.json
+            fi
+            if [ "${{ github.event_name }}" = "push" ]; then
+              RESULT="$(node scripts/plugin-release.mjs next --current current.json --release release.json --out payload.json)" || exit 1
+            else
+              RESULT="$(node scripts/plugin-release.mjs revoke --current current.json \
+                --version "$REVOKE_VERSION" --reason "$REVOKE_REASON" --out payload.json)" || exit 1
+            fi
+            echo "$RESULT"
+            if [ "$RESULT" = "unchanged" ]; then echo "already published, nothing to do"; exit 0; fi
+            node scripts/plugin-release.mjs sign payload.json envelope.json || exit 1
+            node scripts/plugin-release.mjs verify envelope.json || exit 1
+            if OUT="$(gcloud storage cp envelope.json "$MANIFEST" \
+                 --if-generation-match="$GEN" \
+                 --cache-control="public, max-age=60" \
+                 --content-type="application/json" 2>&1)"; then
+              echo "$OUT"
+              echo "published"
+              exit 0
+            fi
+            echo "$OUT"
+            if echo "$OUT" | grep -qiE '412|precondition|conditionNotMet'; then
+              echo "manifest changed under us; retrying"
+              sleep $((attempt * 2))
+              continue
+            fi
+            exit 1
+          done
+          echo "gave up after 5 attempts"
+          exit 1

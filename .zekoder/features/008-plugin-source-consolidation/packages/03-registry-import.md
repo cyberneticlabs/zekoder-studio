@@ -27,13 +27,13 @@
 
 ## Tasks
 
-- [ ] Create each item with the same slug and title (`full: true` for the four folder features), write every doc body verbatim with `zekoder_write_doc`, then prepend one provenance line to each primary doc: `> Imported from cyberneticlabs/zekoder-plugins <type> <old id> (feature 008-plugin-source-consolidation).`
-- [ ] Planned features 012 and 014: keep status `planned` and the bodies verbatim (no rewritten gates or paths); their provenance line adds `Needs re-plan against zekoder-studio before execution.`
-- [ ] Merged and other items: rewrite old item ids → new ids (map above) and `paseo/` / `packages/paseo/` paths → `plugins/zekoder/` inside the bodies.
-- [ ] `zekoder_update_item` each: status, severity/origin, `externalSystem`, relations rewritten to new ids (010↔009/011, 011↔010, decision 002 → features 010/011, feature 013 → followup 002), `packages`/`contracts` arrays with re-rooted `filesTouched` (planned features unchanged). If the server rejects a terminal status on a new item, stop and report; do not fake history.
-- [ ] Studio followup 002-plugin-signing-key-rotation: `zekoder_write_doc` patch it to absorb zekoder-plugins followup 001 (CI dual-sign + secret swap now in `scripts/plugin-release.mjs` and `plugin-release.yml`), remove its "paired repo" TODO, link feature 013.
-- [ ] Feature 005-dev-zekoder-plugin-path-override (user decision): `zekoder_update_item` to status `cancelled` (or the server's superseded equivalent) and patch its doc with `Superseded by feature 008-plugin-source-consolidation: the plugin source now lives in plugins/zekoder/.`
-- [ ] New followup via `zekoder_create_item` (user decision): "Publish @cyberneticlabs/paseo-zekoder to npm from plugin-release.yml", related feature 008 and 006; context: `packages/app/src/zekoder/host-provisioning.ts` pins `0.11.1` for stock daemons and can only move once the in-repo release workflow publishes the npm package.
+- [x] Create each item with the same slug and title (`full: true` for the four folder features), write every doc body verbatim with `zekoder_write_doc`, then prepend one provenance line to each primary doc: `> Imported from cyberneticlabs/zekoder-plugins <type> <old id> (feature 008-plugin-source-consolidation).`
+- [x] Planned features 012 and 014: keep status `planned` and the bodies verbatim (no rewritten gates or paths); their provenance line adds `Needs re-plan against zekoder-studio before execution.`
+- [x] Merged and other items: rewrite old item ids → new ids (map above) and `paseo/` / `packages/paseo/` paths → `plugins/zekoder/` inside the bodies.
+- [x] `zekoder_update_item` each: status, severity/origin, `externalSystem`, relations rewritten to new ids (010↔009/011, 011↔010, decision 002 → features 010/011, feature 013 → followup 002), `packages`/`contracts` arrays with re-rooted `filesTouched` (planned features unchanged). If the server rejects a terminal status on a new item, stop and report; do not fake history.
+- [x] Studio followup 002-plugin-signing-key-rotation: `zekoder_write_doc` patch it to absorb zekoder-plugins followup 001 (CI dual-sign + secret swap now in `scripts/plugin-release.mjs` and `plugin-release.yml`), remove its "paired repo" TODO, link feature 013.
+- [x] Feature 005-dev-zekoder-plugin-path-override (user decision): `zekoder_update_item` to status `cancelled` (or the server's superseded equivalent) and patch its doc with `Superseded by feature 008-plugin-source-consolidation: the plugin source now lives in plugins/zekoder/.`
+- [x] New followup via `zekoder_create_item` (user decision): "Publish @cyberneticlabs/paseo-zekoder to npm from plugin-release.yml", related feature 008 and 006; context: `packages/app/src/zekoder/host-provisioning.ts` pins `0.11.1` for stock daemons and can only move once the in-repo release workflow publishes the npm package.
 
 ## Verification
 
@@ -42,6 +42,28 @@
 
 ## Progress
 
-- Status: planned
-- Completed: none
+- Status: complete (ready for supervisor review)
+- Completed: all tasks
 - Blockers: none
+- Real id map (package 04 consumes this; ids came from `zekoder_create_item {baseRef: "main"}`, and followup ids differ from the plan table because followup 008 already existed):
+
+| zekoder-plugins | Studio | Status |
+|---|---|---|
+| feature 019-paseo-copy-implement-and-promote-idea-buttons | feature 009-paseo-copy-implement-and-promote-idea-buttons | merged |
+| feature 020-launch-button-defaults | feature 010-launch-button-defaults | merged |
+| feature 021-versionless-role-model-defaults | feature 011-versionless-role-model-defaults | merged |
+| feature 022-omp-provider-settings | feature 012-omp-provider-settings | planned, needs re-plan |
+| feature 023-plugin-auto-update-publishing | feature 013-plugin-auto-update-publishing | merged |
+| feature 024-remote-file-explorer | feature 014-remote-file-explorer | planned, needs re-plan |
+| bug 001-git-panel-not-showing-on-ipad | bug 011-git-panel-not-showing-on-ipad | merged |
+| bug 002-machine-settings-need-project | bug 012-machine-settings-need-project | merged |
+| followup 001-plugin-signing-key-rotation | merged into followup 002-plugin-signing-key-rotation (absorbed, no new item) | planned |
+| followup 002-replace-unzip-with-node-extraction | followup 009-replace-unzip-with-node-extraction | merged |
+| decision 001-three-tier-agent-defaults | decision 002-three-tier-agent-defaults | accepted |
+| idea 001-branded-zekoder-app-after-synkvault | idea 001-branded-zekoder-app-after-synkvault | rejected |
+| vendor-issue 001-zekoder-installer-not-windows-compatible | vendor-issues 001-zekoder-installer-not-windows-compatible | resolved |
+| (new) npm publish followup | followup 010-publish-paseo-zekoder-to-npm | planned |
+
+- Feature 005-dev-zekoder-plugin-path-override: the server accepts only planned, in-progress, ready, pr-open and merged for features, so `cancelled` was rejected and no superseded status exists. The item stays `planned`; its doc now opens with the supersession note. Decide separately whether to close it.
+- Wording changes in imported bodies, beyond id and path rewrites: four mentions of the old repo name (feature 013 Overview and external-dependencies, bug 012 note) were reworded so no imported body names the old repo outside provenance lines.
+- The shared sqlite cache was rebuilt once (`zekoder_repair rebuild`) from this worktree to release a duplicate-slug reservation created by a first full-form create of feature 009.

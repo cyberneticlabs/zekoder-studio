@@ -450,3 +450,73 @@ test("inherited upstream publishing jobs only run in the upstream repository", (
     }
   }
 });
+
+const pluginReleasePath = new URL(".github/workflows/plugin-release.yml", repoRoot);
+
+// GitHub tag filter globs: `*` stops at `/`, `**` does not, and a `!` pattern excludes. The last
+// matching pattern decides.
+function tagFilterMatches(patterns, tag) {
+  const toRegExp = (glob) =>
+    new RegExp(
+      `^${glob
+        .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+        .replace(/\*\*/g, "\u0000")
+        .replace(/\*/g, "[^/]*")
+        .replaceAll("\u0000", ".*")}$`,
+    );
+  let matched = false;
+  for (const pattern of patterns) {
+    const negated = pattern.startsWith("!");
+    if (toRegExp(negated ? pattern.slice(1) : pattern).test(tag)) matched = !negated;
+  }
+  return matched;
+}
+
+function pushTagFilters(workflowSource) {
+  const trigger = withoutComments(workflowSource).split("\njobs:", 1)[0];
+  const block = /^ {4}tags:\n((?: {6}- .+\n)+)/m.exec(`${trigger}\n`)?.[1];
+  return block
+    ? block
+        .trim()
+        .split("\n")
+        .map((line) => line.replace(/^\s*- /, "").replace(/^["']|["']$/g, ""))
+    : [];
+}
+
+test("plugin release starts only from a zekoder-plugin tag or a revoke dispatch", () => {
+  const source = readFileSync(pluginReleasePath, "utf8");
+  const code = withoutComments(source);
+  const trigger = code.split("\njobs:", 1)[0];
+
+  assert.deepEqual(pushTagFilters(source), ["zekoder-plugin-v*"]);
+  assert.doesNotMatch(trigger, /pull_request|release:|schedule|branches/);
+  assert.match(trigger, /^ {2}workflow_dispatch:\n {4}inputs:\n {6}version:/m);
+  assert.match(code, /^permissions:\n {2}contents: read\n {2}id-token: write$/m);
+  assert.match(code, /^ {4}environment: plugin-release$/m);
+  assert.match(code, /cancel-in-progress: false/);
+  // Revoke runs only from main; tag runs only publish commits that are on main.
+  assert.match(code, /revoke runs must be on main/);
+  assert.match(code, /git merge-base --is-ancestor "\$GITHUB_SHA" origin\/main/);
+  // The script is plain Node with no dependencies, so nothing installs the workspace.
+  assert.doesNotMatch(code, /npm (?:ci|install)|npm run/);
+});
+
+test("plugin tags start no other workflow and desktop tags do not start the plugin release", () => {
+  const pluginTag = "zekoder-plugin-v1.0.0";
+  const pluginBetaTag = "zekoder-plugin-v1.0.0-beta.1";
+  const workflowsDirectory = new URL(".github/workflows/", repoRoot);
+  const pluginFilters = pushTagFilters(readFileSync(pluginReleasePath, "utf8"));
+
+  for (const file of readdirSync(workflowsDirectory).filter((name) => name.endsWith(".yml"))) {
+    if (file === "plugin-release.yml") continue;
+    const filters = pushTagFilters(readFileSync(new URL(file, workflowsDirectory), "utf8"));
+    for (const tag of [pluginTag, pluginBetaTag]) {
+      assert.ok(!tagFilterMatches(filters, tag), `${file} must not start for ${tag}`);
+    }
+  }
+  assert.ok(tagFilterMatches(pluginFilters, pluginTag));
+  assert.ok(tagFilterMatches(pluginFilters, pluginBetaTag));
+  for (const tag of ["v1.0.0", "v1.0.0-beta.1", "app-v1.0.0", "android-v1.0.0"]) {
+    assert.ok(!tagFilterMatches(pluginFilters, tag), `plugin release must not start for ${tag}`);
+  }
+});

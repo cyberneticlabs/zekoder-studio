@@ -4,7 +4,7 @@
     "plugins": {
       "entry": ["**/index.{server,client}.{ts,tsx}", "**/*.test.ts"],
       "project": ["**/*.{ts,tsx}"],
-      "ignore": ["zekoder/**"]
+      "ignoreDependencies": ["react", "react-native", "@tanstack/react-query"]
     },
     ".": {
       "entry": ["scripts/**/*.{js,mjs,cjs,ts}"],

@@ -1,11 +1,14 @@
 /**
  * Fork-owned: lets the app install the `zekoder` plugin on a host whose daemon does not ship it
- * built in (stock upstream daemons). The pin below is test-locked to `plugins/zekoder.lock.json`.
+ * built in (stock upstream daemons).
  */
 export const ZEKODER_PLUGIN_ID = "zekoder";
 /** The one place to change the npm package name. */
 export const ZEKODER_NPM_PACKAGE = "@cyberneticlabs/paseo-zekoder";
-/** Keep equal to `version` in `plugins/zekoder.lock.json`. Publish the npm package before bumping. */
+/**
+ * Pins the published npm package, not the built-in plugin in `plugins/zekoder` (which versions
+ * independently in its `package.json`). Publish the npm package before bumping.
+ */
 export const ZEKODER_PLUGIN_VERSION = "0.11.1";
 export const ZEKODER_PLUGIN_SOURCE = `npm:${ZEKODER_NPM_PACKAGE}@${ZEKODER_PLUGIN_VERSION}`;
 

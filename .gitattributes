@@ -1,3 +1,4 @@
-# The vendored plugin must keep its exact bytes on every platform so its tree checksum matches
-# plugins/zekoder.lock.json (Windows checkouts otherwise convert LF to CRLF).
+# The Zekoder plugin must keep its exact bytes on every platform so its allowlist checksum
+# (scripts/zekoder-plugin-tree.mjs) equals the release artifact's treeChecksum (Windows checkouts
+# otherwise convert LF to CRLF).
 plugins/zekoder/** -text

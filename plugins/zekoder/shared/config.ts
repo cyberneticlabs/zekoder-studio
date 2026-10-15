@@ -35,13 +35,12 @@ export type WorkflowConfig = z.infer<typeof workflowConfigSchema>;
 export const workflowPatchSchema = workflowConfigSchema.partial();
 export type WorkflowPatch = z.infer<typeof workflowPatchSchema>;
 
-
 /** One native role binding: `model` is a native ID or the literal "inherit"; `effort` is optional. */
-export const roleBindingSchema = z.object({
+const roleBindingSchema = z.object({
   model: z.string().min(1),
   effort: z.string().min(1).optional(),
 });
-export type RoleBinding = z.infer<typeof roleBindingSchema>;
+type RoleBinding = z.infer<typeof roleBindingSchema>;
 
 /** Built-in agent roles a role default can bind (zekoder-mcp's roster minus the file-less task roles below). */
 export const AGENT_ROLES = [
@@ -62,7 +61,7 @@ export const AGENT_ROLES = [
 const TASK_ROLES: ReadonlySet<string> = new Set(["discovery", "simplify"]);
 
 /** The only model values Claude's Agent tool `model` parameter accepts (besides `inherit`). */
-export const CLAUDE_TASK_MODELS = ["sonnet", "opus", "haiku", "fable"] as const;
+const CLAUDE_TASK_MODELS = ["sonnet", "opus", "haiku", "fable"] as const;
 
 /** Model family names per provider. A family is stored as given and resolved to a native ID at launch. */
 export const MODEL_FAMILIES: Record<string, readonly string[]> = {
@@ -78,7 +77,8 @@ export function isModelFamily(provider: string, model: string | undefined): bool
 export function familyOf(provider: string, modelId: string): string | null {
   const parts = modelId.toLowerCase().split("-");
   const families = MODEL_FAMILIES[provider] ?? [];
-  if (provider === "claude") return parts[0] === "claude" ? (families.find((f) => f === parts[1]) ?? null) : null;
+  if (provider === "claude")
+    return parts[0] === "claude" ? (families.find((f) => f === parts[1]) ?? null) : null;
   if (provider === "codex") return families.find((f) => f === parts[parts.length - 1]) ?? null;
   return null;
 }
@@ -94,7 +94,8 @@ export function roleControls(
   harness: string,
   role: string,
 ): { model: boolean; effort: boolean; models: readonly string[] | null } {
-  if (!TASK_ROLES.has(role) || harness === "codex") return { model: true, effort: true, models: null };
+  if (!TASK_ROLES.has(role) || harness === "codex")
+    return { model: true, effort: true, models: null };
   if (harness === "claude") return { model: true, effort: false, models: CLAUDE_TASK_MODELS };
   return { model: false, effort: false, models: null };
 }
@@ -108,13 +109,19 @@ export function acceptedModelFor(harness: string, role: string, model: string): 
 }
 
 /** Why `binding` can't run for this harness/role, or null when it can. */
-export function roleBindingProblem(harness: string, role: string, binding: RoleBinding): string | null {
+export function roleBindingProblem(
+  harness: string,
+  role: string,
+  binding: RoleBinding,
+): string | null {
   const controls = roleControls(harness, role);
-  if (!controls.model && binding.model !== "inherit") return `${harness} can't set a model for ${role}; only inherit works.`;
+  if (!controls.model && binding.model !== "inherit")
+    return `${harness} can't set a model for ${role}; only inherit works.`;
   if (controls.models && binding.model !== "inherit" && !controls.models.includes(binding.model)) {
     return `${harness} takes only ${controls.models.join(", ")} or inherit for ${role}; ${binding.model} stops the run.`;
   }
-  if (!controls.effort && binding.effort) return `${harness} can't set effort for ${role}; the run stops on it.`;
+  if (!controls.effort && binding.effort)
+    return `${harness} can't set effort for ${role}; the run stops on it.`;
   return null;
 }
 
@@ -132,14 +139,14 @@ const tabDefaultsSchema = z.object({
 });
 const roleFieldsSchema = z.object({ model: z.string().optional(), effort: z.string().optional() });
 /** Every field optional; strings stored as given (no family translation here). */
-export type TabDefaults = z.infer<typeof tabDefaultsSchema>;
+type TabDefaults = z.infer<typeof tabDefaultsSchema>;
 export type RoleFields = z.infer<typeof roleFieldsSchema>;
-export const agentDefaultsSchema = z.object({
+const agentDefaultsSchema = z.object({
   planning: tabDefaultsSchema.optional(),
   coding: tabDefaultsSchema.optional(),
   roles: z.record(z.string(), z.record(z.string(), roleFieldsSchema)).optional(),
 });
-export type AgentDefaults = z.infer<typeof agentDefaultsSchema>;
+type AgentDefaults = z.infer<typeof agentDefaultsSchema>;
 
 const sourceSchema = z.enum(AGENT_SOURCES);
 const tabSourcesSchema = z.object({
@@ -148,14 +155,17 @@ const tabSourcesSchema = z.object({
   effort: sourceSchema.optional(),
   mode: sourceSchema.optional(),
 });
-const roleSourcesSchema = z.object({ model: sourceSchema.optional(), effort: sourceSchema.optional() });
+const roleSourcesSchema = z.object({
+  model: sourceSchema.optional(),
+  effort: sourceSchema.optional(),
+});
 /** Same tree as `AgentDefaults`; every leaf is the tier that supplied the value. */
-export const agentDefaultsSourcesSchema = z.object({
+const agentDefaultsSourcesSchema = z.object({
   planning: tabSourcesSchema.optional(),
   coding: tabSourcesSchema.optional(),
   roles: z.record(z.string(), z.record(z.string(), roleSourcesSchema)).optional(),
 });
-export type AgentDefaultsSources = z.infer<typeof agentDefaultsSourcesSchema>;
+type AgentDefaultsSources = z.infer<typeof agentDefaultsSourcesSchema>;
 
 export const agentDefaultsStateSchema = z.object({
   /** True when get_config has `sources.agentDefaults` (always added by zekoder-mcp 023). */
@@ -198,12 +208,14 @@ export const configStatusSchema = z.object({
 });
 export type ConfigStatus = z.infer<typeof configStatusSchema>;
 
-/** One selectable model of a harness, as Paseo reports it; `efforts` are that model's thinking levels. */
+/** One selectable model of a harness, as Zekoder reports it; `efforts` are that model's thinking levels. */
 export const harnessModelSchema = z.object({
   id: z.string(),
   label: z.string(),
   isDefault: z.boolean().optional(),
-  efforts: z.array(z.object({ id: z.string(), label: z.string(), isDefault: z.boolean().optional() })),
+  efforts: z.array(
+    z.object({ id: z.string(), label: z.string(), isDefault: z.boolean().optional() }),
+  ),
 });
 export type HarnessModel = z.infer<typeof harnessModelSchema>;
 
@@ -214,7 +226,7 @@ export const listHarnessModelsRpc = defineRpc({
   output: z.object({ models: z.array(harnessModelSchema), error: z.string().nullable() }),
 });
 
-/** One available provider: Paseo enabled + ready (callers also intersect with `roster.providers`). */
+/** One available provider: Zekoder enabled + ready (callers also intersect with `roster.providers`). */
 const providerOptionSchema = z.object({
   id: z.string(),
   label: z.string(),

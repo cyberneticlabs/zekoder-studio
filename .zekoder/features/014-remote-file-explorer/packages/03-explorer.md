@@ -1,0 +1,15 @@
+# Package 03 — Explorer
+Branch 024-remote-file-explorer-03-explorer. Depends on 01,02. Blocked by external task 2. Consumes project-filesystem/file-transfers; host picker/context integration is confined to this package.
+
+## Setup/context
+After dependencies land in staging: git worktree add /tmp/024-03 -b 024-remote-file-explorer-03-explorer; cd /tmp/024-03/paseo; npm ci. Read ../docs/paseo-plugin-project-scope.md, ../docs/paseo-plugin-explorer-panel.md and ../.zekoder/features/024-remote-file-explorer/contracts.md from the paseo directory. External task 2 must deliver a public user-triggered single-file picker on Electron/browser with bounded bytes/name and cancellation, plus supported archive secondary-click context menu and keyboard equivalent. Public imports/types/versions must be concrete before coding; native viewer stays deferred.
+Reuse git-panel.tsx useWorkspace/useRpc/react-query patterns, button.tsx, SDK Icon/FlatList/Modal/useToast and theme/accessibility. Existing dropdown document workaround conflicts with official rules; no precedent for new DOM bridge.
+
+## Task
+- [ ] 3. Add paseo/client/explorer-panel.tsx; register main addWorkspacePanel id project-explorer/title Explorer/icon FolderOpen/context workspace/locations workspace in index.client.tsx. Desktop/web; mobile unsupported. Folder/file listing, root-ending breadcrumb/back, refresh/loading/error/empty, disabled symlink/special rows. rootLabel visible; query keys include workspaceId/path; clear stale selection/responses on workspace/root change. Approved picker uploads sequential bounded files to selected folder with cancellation/busy/success/error and refetch (no percentage progress promise). Approved right-click menu plus keyboard equivalent confirms named new extraction folder, calls RPC/refetch. Normal file rows explain native opening unavailable; no alternate viewer. Update paseo/README.md limits/root/worktree/collisions/formats/deferral. Bump the plugin's own version in paseo/package.json for this user-visible feature and keep paseo/package-lock.json root package version consistent, following kb/conventions.md and the version on the implementation staging branch; this is part of Task 3, not another task. Bump SDK/manifest minimum only to approved compatible versions when needed.
+
+## Verification
+Typecheck; verify paseo/package.json and paseo/package-lock.json root package versions match and the plugin own version is bumped; plugin reload and app window reload. Remote daemon on Electron and browser: workspace + opens tab; root cannot ascend; external worktree displays project root. Binary/empty upload, cancel, too-large/collision/permission error; safe ZIP/TAR right-click and keyboard action, corrupt archive/existing destination. Workspace switch during pending request cannot display stale data. Narrow width/theme/keyboard/disabled links, mobile and missing-capability state. Missing API state does not fulfill required picker/context acceptance.
+
+## Progress
+Tasks done: pending. Verification done: pending. Ready for review: pending.

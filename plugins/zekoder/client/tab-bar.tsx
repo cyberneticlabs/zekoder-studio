@@ -18,7 +18,14 @@ interface TabBarProps<Id extends string> {
   onSelect(id: Id): void;
 }
 
-export function TabBar<Id extends string>({ theme, compact, flush, tabs, selected, onSelect }: TabBarProps<Id>) {
+export function TabBar<Id extends string>({
+  theme,
+  compact,
+  flush,
+  tabs,
+  selected,
+  onSelect,
+}: TabBarProps<Id>) {
   return (
     <View
       style={{
@@ -59,7 +66,12 @@ export function TabBar<Id extends string>({ theme, compact, flush, tabs, selecte
             {dot && (
               <View
                 accessibilityLabel={dot}
-                style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.colors.statusWarning }}
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: theme.colors.statusWarning,
+                }}
               />
             )}
           </Pressable>

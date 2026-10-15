@@ -10,16 +10,16 @@ Keep fork changes small and isolated. Prefer supported plugins and configuration
 
 ## Repository and branch strategy
 
-| Location                         | Responsibility                                |
-| -------------------------------- | --------------------------------------------- |
-| `cyberneticlabs/zekoder-studio`  | Branded application distribution              |
-| `~/Code/zekoder/apps`            | Local checkout                                |
-| `origin`                         | Cybernetic Labs fork                          |
-| `upstream`                       | `https://github.com/getpaseo/paseo.git`       |
-| `main`                           | Branded integration and release baseline      |
-| `feature/*`                      | Individual product changes                    |
-| `sync/paseo-*`                   | Upstream integration and compatibility checks |
-| `cyberneticlabs/zekoder-plugins` | Independently maintained product plugins      |
+| Location                         | Responsibility                                   |
+| -------------------------------- | ------------------------------------------------ |
+| `cyberneticlabs/zekoder-studio`  | Branded application distribution                 |
+| `~/Code/zekoder/apps`            | Local checkout                                   |
+| `origin`                         | Cybernetic Labs fork                             |
+| `upstream`                       | `https://github.com/getpaseo/paseo.git`          |
+| `main`                           | Branded integration and release baseline         |
+| `feature/*`                      | Individual product changes                       |
+| `sync/paseo-*`                   | Upstream integration and compatibility checks    |
+| `cyberneticlabs/zekoder-plugins` | Merged here (`plugins/zekoder/`); to be archived |
 
 Keep one monorepo across platforms. Keep branded work on `main`. No separate permanent branding branch. Preserve upstream directories and internal names. Avoid repeatedly rebasing published branch history.
 
@@ -42,7 +42,7 @@ Do not assume hooks already exist. Validate boundaries against selected upstream
 
 Paseo installs plugins into individual daemons. Connected clients receive plugin contributions. Mobile packaging alone cannot provision hosts.
 
-- Bundle exact, tested plugin artifacts. The Zekoder plugin ships as a non-removable built-in vendored from `cyberneticlabs/zekoder-plugins` tag `v0.11.1` by `scripts/sync-zekoder-plugin.mjs`; `plugins/zekoder.lock.json` (repo, ref, commit, version, checksum) is the release manifest's source for it.
+- Bundle exact, tested plugin artifacts. The Zekoder plugin ships as a non-removable built-in whose source lives in `plugins/zekoder/`; its `package.json` version and the allowlist checksum from `scripts/zekoder-plugin-tree.mjs` are the release manifest's source for it.
 - Provision desktop daemons during onboarding.
 - Provide equivalent remote-daemon provisioning.
 - Explain bundled plugin trust during onboarding.
@@ -51,7 +51,7 @@ Paseo installs plugins into individual daemons. Connected clients receive plugin
 - Avoid floating Git branches during installation.
 - Test plugin compatibility before each release.
 
-Keep product plugins independently versioned. Record versions inside each release manifest. Include upstream commit and artifact checksums.
+Keep product plugins independently versioned. The Zekoder plugin has its own signed releases (`zekoder-plugin-v*` tags) that a desktop-launched daemon applies without a desktop rebuild; the bundled copy is the baseline and fallback. Record versions inside each release manifest. Include upstream commit and artifact checksums.
 
 Provide startup branding before daemon connection. Apply theme plugins after plugin availability. Validate startup and disconnected appearance separately.
 
@@ -165,7 +165,7 @@ Keep previous signed artifacts available. Document application and plugin rollba
 ## Initial acceptance criteria
 
 - Branded desktop installs beside upstream Paseo.
-- Bundled plugins load at pinned versions.
+- The Zekoder plugin loads as the bundled baseline and other bundled plugins load at exact tested versions.
 - Branding works before connecting any daemon.
 - Login behavior matches agreed access policy.
 - Existing pairing and execution remain functional.

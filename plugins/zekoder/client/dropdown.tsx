@@ -1,5 +1,13 @@
 import type { PluginSurfaceProps } from "@getpaseo/plugin/client";
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { Pressable, ScrollView, Text, View, type ViewStyle } from "react-native";
 
 type Theme = PluginSurfaceProps["theme"];
@@ -31,8 +39,16 @@ interface DomNode {
   contains(other: unknown): boolean;
 }
 interface DomDocument {
-  addEventListener(type: "pointerdown", listener: (event: { target: unknown }) => void, capture: boolean): void;
-  removeEventListener(type: "pointerdown", listener: (event: { target: unknown }) => void, capture: boolean): void;
+  addEventListener(
+    type: "pointerdown",
+    listener: (event: { target: unknown }) => void,
+    capture: boolean,
+  ): void;
+  removeEventListener(
+    type: "pointerdown",
+    listener: (event: { target: unknown }) => void,
+    capture: boolean,
+  ): void;
 }
 
 /**
@@ -45,7 +61,10 @@ const RaiseContext = createContext<((open: boolean) => void) | null>(null);
 export function Raise({ style, children }: { style?: ViewStyle; children: ReactNode }) {
   const parent = useContext(RaiseContext);
   const [openBelow, setOpenBelow] = useState(0);
-  const report = useCallback((open: boolean) => setOpenBelow((count) => count + (open ? 1 : -1)), []);
+  const report = useCallback(
+    (open: boolean) => setOpenBelow((count) => count + (open ? 1 : -1)),
+    [],
+  );
   const raised = openBelow > 0;
 
   useEffect(() => {
@@ -116,11 +135,17 @@ export function Dropdown({
       >
         <Text
           numberOfLines={1}
-          style={{ flexShrink: 1, fontSize: 12, color: selected ? theme.colors.foreground : theme.colors.foregroundMuted }}
+          style={{
+            flexShrink: 1,
+            fontSize: 12,
+            color: selected ? theme.colors.foreground : theme.colors.foregroundMuted,
+          }}
         >
           {selected?.label ?? placeholder}
         </Text>
-        <Text style={{ fontSize: 12, color: theme.colors.foregroundMuted }}>{open ? "▴" : "▾"}</Text>
+        <Text style={{ fontSize: 12, color: theme.colors.foregroundMuted }}>
+          {open ? "▴" : "▾"}
+        </Text>
       </Pressable>
       {open && (
         <ScrollView
@@ -160,7 +185,10 @@ export function Dropdown({
               <Text
                 style={{
                   fontSize: 12,
-                  color: option.value === value ? theme.colors.accentForeground : theme.colors.foreground,
+                  color:
+                    option.value === value
+                      ? theme.colors.accentForeground
+                      : theme.colors.foreground,
                 }}
               >
                 {option.label}

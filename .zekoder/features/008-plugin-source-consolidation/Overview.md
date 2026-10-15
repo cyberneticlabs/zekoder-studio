@@ -2,10 +2,11 @@
 id: 008-plugin-source-consolidation
 type: feature
 title: Consolidate Zekoder plugin source and independent releases into Studio
-status: planned
+status: merged
 createdAt: 2026-10-15
 openedAt: 2026-10-15T00:01:47.631Z
-updatedAt: 2026-10-15T08:05:02.821Z
+updatedAt: 2026-10-15T15:35:04.399Z
+completedAt: 2026-10-15T15:35:04.399Z
 promoted: true
 dependsOn: []
 packages:
@@ -14,21 +15,151 @@ packages:
     file: packages/01-in-repo-source.md
     branch: 008-plugin-source-consolidation-01-in-repo-source
     dependsOn: []
-    status: planned
+    status: merged
+    commit: 09a00c46041c263b60fa30ceff07f29db6fe0152
+    mergeMode: local
+    filesTouched:
+      - .gitattributes
+      - .github/workflows/ci.yml
+      - .oxfmtrc.json
+      - .zekoder/features/008-plugin-source-consolidation/packages/01-in-repo-source.md
+      - .zekoder/followups/008-lint-zekoder-plugin-source.md
+      - docs/plugins.md
+      - docs/release.md
+      - knip.json
+      - packages/app/src/zekoder/host-provisioning.test.ts
+      - packages/app/src/zekoder/host-provisioning.ts
+      - packages/server/src/server/plugins/builtin/updates/tree-checksum.test.ts
+      - packages/server/src/server/plugins/builtin/updates/tree-checksum.ts
+      - packages/server/src/server/plugins/builtin/updates/wiring.ts
+      - packages/server/src/server/plugins/index.posix.test.ts
+      - plan.md
+      - plugins/zekoder.lock.json
+      - plugins/zekoder/README.md
+      - plugins/zekoder/client/agent-branch-pills.ts
+      - plugins/zekoder/client/agent-defaults.tsx
+      - plugins/zekoder/client/coding-health-tab.tsx
+      - plugins/zekoder/client/config-panel.tsx
+      - plugins/zekoder/client/date-picker.tsx
+      - plugins/zekoder/client/doc-viewer.tsx
+      - plugins/zekoder/client/dropdown.tsx
+      - plugins/zekoder/client/git-panel.tsx
+      - plugins/zekoder/client/git-tab.ts
+      - plugins/zekoder/client/health-aggregate.ts
+      - plugins/zekoder/client/health-charts.tsx
+      - plugins/zekoder/client/issue-detail.tsx
+      - plugins/zekoder/client/issues-tab.tsx
+      - plugins/zekoder/client/machine-defaults-panel.tsx
+      - plugins/zekoder/client/panel-location.ts
+      - plugins/zekoder/client/provider-onboarding.tsx
+      - plugins/zekoder/client/report-settings-panel.tsx
+      - plugins/zekoder/client/start-agent-button.tsx
+      - plugins/zekoder/client/tab-bar.tsx
+      - plugins/zekoder/client/telemetry-panel.tsx
+      - plugins/zekoder/client/version-panel.tsx
+      - plugins/zekoder/client/zekoder-surface.tsx
+      - plugins/zekoder/index.server.ts
+      - plugins/zekoder/package.json
+      - plugins/zekoder/server/config.ts
+      - plugins/zekoder/server/git.ts
+      - plugins/zekoder/server/org-health-cli.ts
+      - plugins/zekoder/server/report-server.ts
+      - plugins/zekoder/server/reports.ts
+      - plugins/zekoder/server/role-variants.ts
+      - plugins/zekoder/server/telemetry.ts
+      - plugins/zekoder/server/unzip.ts
+      - plugins/zekoder/server/version.ts
+      - plugins/zekoder/server/zekoder.ts
+      - plugins/zekoder/shared/config.ts
+      - plugins/zekoder/shared/issues.ts
+      - plugins/zekoder/shared/plugin-version.ts
+      - plugins/zekoder/shared/reports.ts
+      - plugins/zekoder/shared/version.ts
+      - scripts/builtin-plugins-dist.test.mjs
+      - scripts/desktop-release/prepare-release.mjs
+      - scripts/desktop-release/release-ci.mjs
+      - scripts/desktop-release/release-data.mjs
+      - scripts/desktop-release/release-data.test.mjs
+      - scripts/desktop-release/test-fixtures.mjs
+      - scripts/sync-zekoder-plugin.mjs
+      - scripts/sync-zekoder-plugin.test.mjs
+      - scripts/zekoder-plugin-tree.mjs
+      - scripts/zekoder-plugin-tree.test.mjs
+    verifiedBaseSha: 6058a01ee57cae0aeccf1c91b3d0997aa94cc6e0
   - id: "02"
     name: plugin-release
     file: packages/02-plugin-release.md
     branch: 008-plugin-source-consolidation-02-plugin-release
     dependsOn:
       - "01"
-    status: planned
+    status: merged
+    filesTouched:
+      - .github/workflows/ci.yml
+      - .github/workflows/plugin-release.yml
+      - .zekoder/features/008-plugin-source-consolidation/packages/02-plugin-release.md
+      - CLAUDE.md
+      - docs/plugins.md
+      - docs/release.md
+      - packages/server/src/server/plugins/builtin/updates/trusted-keys.ts
+      - scripts/ci-workflow.test.mjs
+      - scripts/plugin-release-keys.json
+      - scripts/plugin-release.mjs
+      - scripts/plugin-release.test.mjs
+    verifiedBaseSha: 09a00c46041c263b60fa30ceff07f29db6fe0152
+    commit: 17f2f772541b4f336ede3f7cc2f32df53d7655a3
+    mergeMode: local
   - id: "03"
     name: registry-import
     file: packages/03-registry-import.md
     branch: 008-plugin-source-consolidation-03-registry-import
     dependsOn:
       - "01"
-    status: planned
+    status: merged
+    filesTouched:
+      - .zekoder/bugs/011-git-panel-not-showing-on-ipad.md
+      - .zekoder/bugs/012-machine-settings-need-project.md
+      - .zekoder/decisions/002-three-tier-agent-defaults.md
+      - .zekoder/features/005-dev-zekoder-plugin-path-override.md
+      - .zekoder/features/008-plugin-source-consolidation/packages/03-registry-import.md
+      - .zekoder/features/009-paseo-copy-implement-and-promote-idea-buttons.md
+      - .zekoder/features/010-launch-button-defaults/Overview.md
+      - .zekoder/features/010-launch-button-defaults/checklist.md
+      - .zekoder/features/010-launch-button-defaults/contracts.md
+      - .zekoder/features/010-launch-button-defaults/external-dependencies.md
+      - .zekoder/features/010-launch-button-defaults/get-started.md
+      - .zekoder/features/010-launch-button-defaults/packages/01-tiered-config-repo-panel.md
+      - .zekoder/features/010-launch-button-defaults/packages/02-tiered-launch.md
+      - .zekoder/features/010-launch-button-defaults/packages/03-machine-defaults-tab.md
+      - .zekoder/features/011-versionless-role-model-defaults/Overview.md
+      - .zekoder/features/011-versionless-role-model-defaults/checklist.md
+      - .zekoder/features/011-versionless-role-model-defaults/contracts.md
+      - .zekoder/features/011-versionless-role-model-defaults/external-dependencies.md
+      - .zekoder/features/011-versionless-role-model-defaults/get-started.md
+      - .zekoder/features/011-versionless-role-model-defaults/packages/01-role-family-defaults.md
+      - .zekoder/features/012-omp-provider-settings.md
+      - .zekoder/features/013-plugin-auto-update-publishing/Overview.md
+      - .zekoder/features/013-plugin-auto-update-publishing/checklist.md
+      - .zekoder/features/013-plugin-auto-update-publishing/contracts.md
+      - .zekoder/features/013-plugin-auto-update-publishing/external-dependencies.md
+      - .zekoder/features/013-plugin-auto-update-publishing/get-started.md
+      - .zekoder/features/013-plugin-auto-update-publishing/packages/01-release-pipeline.md
+      - .zekoder/features/013-plugin-auto-update-publishing/packages/02-version-tab.md
+      - .zekoder/features/014-remote-file-explorer/Overview.md
+      - .zekoder/features/014-remote-file-explorer/checklist.md
+      - .zekoder/features/014-remote-file-explorer/contracts.md
+      - .zekoder/features/014-remote-file-explorer/external-dependencies.md
+      - .zekoder/features/014-remote-file-explorer/get-started.md
+      - .zekoder/features/014-remote-file-explorer/packages/01-boundary.md
+      - .zekoder/features/014-remote-file-explorer/packages/02-transfers.md
+      - .zekoder/features/014-remote-file-explorer/packages/03-explorer.md
+      - .zekoder/followups/002-plugin-signing-key-rotation.md
+      - .zekoder/followups/009-replace-unzip-with-node-extraction.md
+      - .zekoder/followups/010-publish-paseo-zekoder-to-npm.md
+      - .zekoder/ideas/001-branded-zekoder-app-after-synkvault.md
+      - .zekoder/vendor-issues/001-zekoder-installer-not-windows-compatible.md
+    verifiedBaseSha: 17f2f772541b4f336ede3f7cc2f32df53d7655a3
+    commit: 65be10d446223535c066a187d820a81fa07f173b
+    mergeMode: local
   - id: "04"
     name: kb-docs
     file: packages/04-kb-docs.md
@@ -36,7 +167,22 @@ packages:
     dependsOn:
       - "02"
       - "03"
-    status: planned
+    status: merged
+    commit: 1591707283419b7a97380ab62114acaea6a9b695
+    mergeMode: local
+    filesTouched:
+      - .zekoder/features/008-plugin-source-consolidation/packages/04-kb-docs.md
+      - .zekoder/kb/discovery/plugins.md
+      - .zekoder/kb/discovery/zekoder-plugin.md
+      - .zekoder/kb/goals.md
+      - .zekoder/kb/guardrails.md
+      - .zekoder/this.md
+      - CLAUDE.md
+      - docs/plugins.md
+      - docs/release.md
+      - docs/zekoder-plugin.md
+      - plan.md
+    verifiedBaseSha: 9f2afec4f0459a8d377eb3353106830db914b61d
 contracts:
   - id: zekoder-plugin-version-source
     type: internal
@@ -56,6 +202,7 @@ contracts:
     externalDependency: 1
     owner: "02"
     consumers: []
+mergeMode: local
 relatedFeatures:
   - 001-builtin-zekoder-plugin
   - 003-desktop-gcs-release-pipeline
@@ -65,7 +212,13 @@ relatedFeatures:
 relatedBugs: []
 relatedFollowups:
   - 002-plugin-signing-key-rotation
-statusHistory: []
+statusHistory:
+  - from: planned
+    to: in-progress
+    at: 2026-10-15T15:00:55.940Z
+  - from: in-progress
+    to: merged
+    at: 2026-10-15T15:35:04.399Z
 ---
 # Consolidate Zekoder plugin source and independent releases into Studio — Overview
 

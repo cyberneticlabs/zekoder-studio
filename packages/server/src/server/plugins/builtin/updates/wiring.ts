@@ -11,12 +11,12 @@ import { MANIFEST_URL, TRUSTED_KEYS } from "./trusted-keys.js";
 export const UPDATED_BUILTIN_PLUGIN_ID = "zekoder";
 export const PLUGIN_UPDATES_ENV = "ZEKODER_PLUGIN_UPDATES";
 const PACKAGED_ROOT_NAME = "builtin-plugins";
-const LOCK_FILE = "zekoder.lock.json";
 
-/** The pinned version recorded in `<root>/zekoder.lock.json`, or null when absent or invalid. */
-function readLockVersion(root: string): string | null {
+/** The bundled plugin version in `<root>/zekoder/package.json`, or null when absent or invalid. */
+function readBundledVersion(root: string): string | null {
   try {
-    const parsed: unknown = JSON.parse(readFileSync(path.join(root, LOCK_FILE), "utf8"));
+    const manifestPath = path.join(root, UPDATED_BUILTIN_PLUGIN_ID, "package.json");
+    const parsed: unknown = JSON.parse(readFileSync(manifestPath, "utf8"));
     const version = (parsed as { version?: unknown } | null)?.version;
     return typeof version === "string" && semver.valid(version) ? version : null;
   } catch {
@@ -44,19 +44,19 @@ export function createBuiltinUpdateWiring(input: {
   injectedStatus?: BuiltinPluginUpdateStatusProvider;
 }): BuiltinUpdateWiring {
   const { loader } = input;
-  const lockVersion = loader.ids.has(UPDATED_BUILTIN_PLUGIN_ID)
-    ? readLockVersion(loader.root)
+  const bundledVersion = loader.ids.has(UPDATED_BUILTIN_PLUGIN_ID)
+    ? readBundledVersion(loader.root)
     : null;
   const eligible =
     input.desktopManaged &&
     input.env[PLUGIN_UPDATES_ENV] !== "off" &&
     path.basename(loader.root) === PACKAGED_ROOT_NAME &&
-    lockVersion !== null;
+    bundledVersion !== null;
   const updater = eligible
     ? new BuiltinPluginUpdater({
         pluginId: UPDATED_BUILTIN_PLUGIN_ID,
         paseoHome: input.paseoHome,
-        bundledVersion: lockVersion,
+        bundledVersion,
         daemonVersion: input.daemonVersion,
         manifestUrl: MANIFEST_URL,
         trustedKeys: TRUSTED_KEYS,
@@ -68,7 +68,7 @@ export function createBuiltinUpdateWiring(input: {
     updater,
     status: {
       list(pluginId) {
-        const statuses = updater ? [updater.getStatus()] : disabledStatuses(lockVersion);
+        const statuses = updater ? [updater.getStatus()] : disabledStatuses(bundledVersion);
         return pluginId === undefined
           ? statuses
           : statuses.filter((status) => status.pluginId === pluginId);
@@ -77,14 +77,14 @@ export function createBuiltinUpdateWiring(input: {
   };
 }
 
-function disabledStatuses(lockVersion: string | null): BuiltinPluginUpdateStatus[] {
-  if (lockVersion === null) return [];
+function disabledStatuses(bundledVersion: string | null): BuiltinPluginUpdateStatus[] {
+  if (bundledVersion === null) return [];
   return [
     {
       pluginId: UPDATED_BUILTIN_PLUGIN_ID,
-      runningVersion: lockVersion,
+      runningVersion: bundledVersion,
       source: "bundled",
-      bundledVersion: lockVersion,
+      bundledVersion,
       enabled: false,
     },
   ];

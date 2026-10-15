@@ -10,8 +10,9 @@ export interface TrustedKey {
 }
 
 /**
- * Entries are copied verbatim from zekoder-plugins `scripts/plugin-release-keys.json` (`keys`
- * list). Only public keys belong here. An empty list keeps the updater disabled (no network calls).
+ * Must equal the `keys` list in `scripts/plugin-release-keys.json` (pinned by
+ * `scripts/plugin-release.test.mjs`). Only public keys belong here. An empty list keeps the updater
+ * disabled (no network calls).
  */
 export const TRUSTED_KEYS: readonly TrustedKey[] = [
   {

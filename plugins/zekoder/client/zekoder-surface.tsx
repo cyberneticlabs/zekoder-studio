@@ -35,7 +35,9 @@ export function ZekoderSurface({ theme, layout }: PluginSurfaceProps) {
           onPress={() => setTab("defaults")}
           style={{ padding: 10, backgroundColor: theme.colors.surface1 }}
         >
-          <Text style={{ color: theme.colors.foreground, fontWeight: "600" }}>Set up providers</Text>
+          <Text style={{ color: theme.colors.foreground, fontWeight: "600" }}>
+            Set up providers
+          </Text>
           <Text style={{ fontSize: 12, color: theme.colors.foregroundMuted }}>
             Pick the planning and coding providers agents start with.
           </Text>

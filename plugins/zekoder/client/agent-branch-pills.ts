@@ -37,7 +37,12 @@ export function trackAgentBranchPills(client: PluginClientContext): () => void {
     }
   }
 
-  function upsert(agent: { id: string; cwd: string; workspaceId?: string; archivedAt?: string | null }): void {
+  function upsert(agent: {
+    id: string;
+    cwd: string;
+    workspaceId?: string;
+    archivedAt?: string | null;
+  }): void {
     if (disposed || !agent.workspaceId) return;
     const known = tracked.get(agent.id);
     if (agent.archivedAt) return remove(agent.id);

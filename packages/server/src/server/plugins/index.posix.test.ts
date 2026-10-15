@@ -1800,12 +1800,15 @@ describe("built-in plugin updates", () => {
   });
 
   describe("daemon wiring", () => {
-    async function packagedRoot(withLock: boolean, name = "builtin-plugins"): Promise<string> {
+    async function packagedRoot(withManifest: boolean, name = "builtin-plugins"): Promise<string> {
       const base = await mkdtemp(path.join(tmpdir(), "paseo-builtin-root-"));
       roots.push(base);
       const root = path.join(base, name);
       await mkdir(root);
-      if (withLock) await writeFile(path.join(root, "zekoder.lock.json"), '{"version":"1.2.3"}');
+      if (withManifest) {
+        await mkdir(path.join(root, "zekoder"));
+        await writeFile(path.join(root, "zekoder", "package.json"), '{"version":"1.2.3"}');
+      }
       return root;
     }
 
@@ -1853,14 +1856,14 @@ describe("built-in plugin updates", () => {
       expect(wiring.status.list()).toEqual([disabledStatus]);
     });
 
-    it("does not build the updater outside a builtin-plugins root or without a lock", async () => {
+    it("does not build the updater outside a builtin-plugins root or without a package manifest", async () => {
       const repoLike = wire({ root: await packagedRoot(true, "plugins") });
-      const unlocked = wire({ root: await packagedRoot(false) });
+      const unversioned = wire({ root: await packagedRoot(false) });
 
       expect(repoLike.updater).toBeNull();
       expect(repoLike.status.list()).toEqual([disabledStatus]);
-      expect(unlocked.updater).toBeNull();
-      expect(unlocked.status.list()).toEqual([]);
+      expect(unversioned.updater).toBeNull();
+      expect(unversioned.status.list()).toEqual([]);
     });
 
     it("reports nothing when the loader does not include zekoder", async () => {

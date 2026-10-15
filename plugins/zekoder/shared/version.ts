@@ -19,7 +19,7 @@ export const versionSettings = defineSettings({
   schema: versionSettingsSchema,
 });
 
-export const UPDATE_STATUSES = ["queued", "running", "succeeded", "failed"] as const;
+const UPDATE_STATUSES = ["queued", "running", "succeeded", "failed"] as const;
 
 /** One background `scripts/install.sh <dir>` run. Runs go one at a time, since they share the zekoder-skills cache. */
 export const updateJobSchema = z.object({
@@ -85,4 +85,44 @@ export const updateProjectRpc = defineRpc({
   name: "zekoder.version.update",
   input: z.object({ root: z.string() }),
   output: versionStatusSchema,
+});
+
+/**
+ * Host-owned plugin update status (Studio `BuiltinPluginUpdateStatus`). Tolerant: codes are open
+ * strings, unknown fields pass through, and only the three identity fields are required.
+ */
+export const builtinPluginUpdateStatusSchema = z
+  .object({
+    pluginId: z.string(),
+    runningVersion: z.string(),
+    source: z.string(),
+    stagedVersion: z.string().nullish(),
+    restartRequired: z.boolean().nullish(),
+    fallbackReason: z.string().nullish(),
+    lastCheckAt: z.string().nullish(),
+    lastError: z.object({ code: z.string(), message: z.string(), at: z.string() }).nullish(),
+    bundledVersion: z.string().nullish(),
+    latestAvailable: z.string().nullish(),
+    channel: z.string().nullish(),
+    enabled: z.boolean().nullish(),
+  })
+  .passthrough();
+type BuiltinPluginUpdateStatus = z.infer<typeof builtinPluginUpdateStatusSchema>;
+
+export const pluginVersionViewSchema = z.object({
+  /** The version compiled into this plugin copy. */
+  pluginVersion: z.string(),
+  /** `absent`: the host has no plugin update API (or reports nothing). */
+  host: z.enum(["reports", "absent", "error"]),
+  status: builtinPluginUpdateStatusSchema.nullable(),
+  /** The next daemon start runs a different version than this one. The plugin never restarts anything. */
+  restartRequired: z.boolean(),
+  error: z.string().nullable(),
+});
+export type PluginVersionView = z.infer<typeof pluginVersionViewSchema>;
+
+export const pluginVersionRpc = defineRpc({
+  name: "zekoder.version.plugin",
+  input: z.object({}),
+  output: pluginVersionViewSchema,
 });

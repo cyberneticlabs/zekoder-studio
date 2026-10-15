@@ -29,10 +29,24 @@ export interface Aggregate {
   byRepo: Map<number, Bucket>;
 }
 
-export const blank = (): Bucket => ({ commits: 0, add: 0, del: 0, merged: 0, closed: 0, prAdd: 0, prDel: 0 });
+const blank = (): Bucket => ({
+  commits: 0,
+  add: 0,
+  del: 0,
+  merged: 0,
+  closed: 0,
+  prAdd: 0,
+  prDel: 0,
+});
 
 export function defaultFilters(report: CodingHealthReport): HealthFilters {
-  return { from: 0, to: Math.max(0, report.window.days.length - 1), repo: -1, user: -1, bots: false };
+  return {
+    from: 0,
+    to: Math.max(0, report.window.days.length - 1),
+    repo: -1,
+    user: -1,
+    bots: false,
+  };
 }
 
 /** Same rule as the web page's `keep`: a picked contributor stays visible even if it is a bot. */

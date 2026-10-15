@@ -12,21 +12,26 @@ const MAX_BUFFER = 16 * 1024 * 1024;
 const SEP = "\x1f";
 
 async function git(cwd: string, args: string[]): Promise<string> {
-  const { stdout } = await run("git", ["-C", cwd, ...args], { timeout: GIT_TIMEOUT_MS, maxBuffer: MAX_BUFFER });
+  const { stdout } = await run("git", ["-C", cwd, ...args], {
+    timeout: GIT_TIMEOUT_MS,
+    maxBuffer: MAX_BUFFER,
+  });
   return stdout;
 }
 
 /** Absolute, symlink-free common git dir, shared by a repository and all its worktrees; null outside git. */
 async function commonDir(dir: string): Promise<string | null> {
   try {
-    const out = (await git(dir, ["rev-parse", "--path-format=absolute", "--git-common-dir"])).trim();
+    const out = (
+      await git(dir, ["rev-parse", "--path-format=absolute", "--git-common-dir"])
+    ).trim();
     return realpathSync(out);
   } catch {
     return null;
   }
 }
 
-/** The client's directory is a hint: accept it only when it is a checkout of a known Paseo project. */
+/** The client's directory is a hint: accept it only when it is a checkout of a known Zekoder project. */
 async function assertProjectCheckout(paseo: PluginHandlerContext["paseo"], directory: string) {
   const own = await commonDir(directory);
   if (own) {
@@ -34,7 +39,7 @@ async function assertProjectCheckout(paseo: PluginHandlerContext["paseo"], direc
     const roots = [...new Set(projects.map((project) => project.projectRootPath))];
     for (const root of roots) if ((await commonDir(root)) === own) return;
   }
-  throw new Error(`Not a git checkout of a Paseo project: ${directory}`);
+  throw new Error(`Not a git checkout of a Zekoder project: ${directory}`);
 }
 
 export async function gitOverview(
@@ -91,24 +96,32 @@ async function listBranches(directory: string): Promise<GitBranch[]> {
     "%(committerdate:unix)",
     "%(contents:subject)",
   ].join(SEP);
-  const out = await git(directory, ["for-each-ref", "--sort=-committerdate", `--format=${format}`, "refs/heads", "refs/remotes"]);
-  return out
-    .split("\n")
-    .filter(Boolean)
-    .map((line) => line.split(SEP))
-    // `origin/HEAD` is a symbolic alias of a remote branch, not a branch of its own.
-    .filter(([ref]) => !ref.endsWith("/HEAD"))
-    .map(([ref, name, head, sha, upstream, track, date, subject]) => ({
-      name,
-      remote: ref.startsWith("refs/remotes/"),
-      current: head === "*",
-      sha,
-      upstream: upstream || null,
-      ahead: Number(/ahead (\d+)/.exec(track)?.[1] ?? 0),
-      behind: Number(/behind (\d+)/.exec(track)?.[1] ?? 0),
-      date: Number(date) || 0,
-      subject: subject ?? "",
-    }));
+  const out = await git(directory, [
+    "for-each-ref",
+    "--sort=-committerdate",
+    `--format=${format}`,
+    "refs/heads",
+    "refs/remotes",
+  ]);
+  return (
+    out
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => line.split(SEP))
+      // `origin/HEAD` is a symbolic alias of a remote branch, not a branch of its own.
+      .filter(([ref]) => !ref.endsWith("/HEAD"))
+      .map(([ref, name, head, sha, upstream, track, date, subject]) => ({
+        name,
+        remote: ref.startsWith("refs/remotes/"),
+        current: head === "*",
+        sha,
+        upstream: upstream || null,
+        ahead: Number(/ahead (\d+)/.exec(track)?.[1] ?? 0),
+        behind: Number(/behind (\d+)/.exec(track)?.[1] ?? 0),
+        date: Number(date) || 0,
+        subject: subject ?? "",
+      }))
+  );
 }
 
 async function readLog(directory: string, scope: "current" | "all", limit: number) {
@@ -116,7 +129,14 @@ async function readLog(directory: string, scope: "current" | "all", limit: numbe
   const revs = scope === "all" ? ["HEAD", "--branches"] : ["HEAD"];
   let out: string;
   try {
-    out = await git(directory, ["log", "--topo-order", `--max-count=${limit + 1}`, `--format=${format}`, ...revs, "--"]);
+    out = await git(directory, [
+      "log",
+      "--topo-order",
+      `--max-count=${limit + 1}`,
+      `--format=${format}`,
+      ...revs,
+      "--",
+    ]);
   } catch {
     // A repository with no commits yet has no HEAD to log.
     return { commits: [], more: false };
@@ -144,7 +164,7 @@ async function readLog(directory: string, scope: "current" | "all", limit: numbe
  * waits for; a commit takes the lane that waits for it, its first parent keeps that lane, and every
  * other parent gets a free lane linked across at mid-row.
  */
-export function layoutGraph(commits: Omit<GitCommit, "lane" | "top" | "bottom" | "links">[]): GitCommit[] {
+function layoutGraph(commits: Omit<GitCommit, "lane" | "top" | "bottom" | "links">[]): GitCommit[] {
   const lanes: (string | null)[] = [];
   const active = () => lanes.flatMap((sha, index) => (sha ? [index] : []));
   const freeLane = (skip: number) => {

@@ -13,7 +13,14 @@ import {
   type setMachineDefaultsRpc,
 } from "../shared/config.js";
 import { errorText } from "../shared/errors.js";
-import { assertZekoderProject, callTool, fetchConfig, zekoderProjects } from "./zekoder.js";
+import {
+  assertZekoderProject,
+  callMachineTool,
+  callTool,
+  fetchConfig,
+  toAgentDefaultsState,
+  zekoderProjects,
+} from "./zekoder.js";
 
 type ProviderModel = {
   id: string;
@@ -23,13 +30,17 @@ type ProviderModel = {
   thinkingOptions?: { id: string; label: string; isDefault?: boolean }[];
 };
 
-/** Paseo model definition to the plugin's `HarnessModel`. */
-export function toHarnessModel(model: ProviderModel): HarnessModel {
+/** Zekoder model definition to the plugin's `HarnessModel`. */
+function toHarnessModel(model: ProviderModel): HarnessModel {
   return {
     id: model.id,
     label: model.label,
     isDefault: model.isDefault,
-    efforts: (model.thinkingOptions ?? []).map(({ id, label, isDefault }) => ({ id, label, isDefault })),
+    efforts: (model.thinkingOptions ?? []).map(({ id, label, isDefault }) => ({
+      id,
+      label,
+      isDefault,
+    })),
   };
 }
 
@@ -58,7 +69,7 @@ export async function listHarnessModels(
   }
 }
 
-/** Ready providers (Paseo enabled + ready) with their models and modes. Callers intersect with the roster. */
+/** Ready providers (Zekoder enabled + ready) with their models and modes. Callers intersect with the roster. */
 export async function listProviders(
   input: RpcInput<typeof listProvidersRpc>,
   { paseo }: PluginHandlerContext,
@@ -72,7 +83,9 @@ export async function listProviders(
         .map((entry) => ({
           id: entry.provider,
           label: entry.label ?? entry.provider,
-          models: (entry.models ?? []).filter((model) => model.isSelectable !== false).map(toHarnessModel),
+          models: (entry.models ?? [])
+            .filter((model) => model.isSelectable !== false)
+            .map(toHarnessModel),
           modes: (entry.modes ?? []).map(({ id, label }) => ({ id, label })),
           defaultModeId: entry.defaultModeId ?? null,
         })),
@@ -87,7 +100,7 @@ export async function listProviders(
  * Maps one editor patch to the `zekoder_set_config` args: `set` becomes a nested `agentDefaults`
  * object, `clear` becomes `agentDefaults.<path>` entries, both under `scope`.
  */
-export function toSetConfigArgs(patch: AgentDefaultsPatch, scope: "repo" | "machine") {
+function toSetConfigArgs(patch: AgentDefaultsPatch, scope: "repo" | "machine") {
   const agentDefaults: Record<string, unknown> = {};
   for (const [path, value] of Object.entries(patch.set)) {
     const keys = path.split(".");
@@ -100,23 +113,32 @@ export function toSetConfigArgs(patch: AgentDefaultsPatch, scope: "repo" | "mach
   return {
     scope,
     ...(Object.keys(patch.set).length > 0 ? { agentDefaults } : {}),
-    ...(patch.clear.length > 0 ? { clear: patch.clear.map((path) => `agentDefaults.${path}`) } : {}),
+    ...(patch.clear.length > 0
+      ? { clear: patch.clear.map((path) => `agentDefaults.${path}`) }
+      : {}),
   };
 }
 
 /** Role fields in a patch (`roles.<provider>.<role>.model|effort`) must be runnable on that provider/role. */
 function agentDefaultsProblem(patch: AgentDefaultsPatch): string | null {
-  const byRole = new Map<string, { provider: string; role: string; model?: string; effort?: string }>();
+  const byRole = new Map<
+    string,
+    { provider: string; role: string; model?: string; effort?: string }
+  >();
   for (const [path, value] of Object.entries(patch.set)) {
     const [head, provider, role, field] = path.split(".");
-    if (head !== "roles" || !provider || !role || (field !== "model" && field !== "effort")) continue;
+    if (head !== "roles" || !provider || !role || (field !== "model" && field !== "effort"))
+      continue;
     const entry = byRole.get(`${provider}.${role}`) ?? { provider, role };
     entry[field] = value;
     byRole.set(`${provider}.${role}`, entry);
   }
   for (const { provider, role, model, effort } of byRole.values()) {
     // A model absent from this patch: check the effort alone (the stored model is not re-read here).
-    const problem = roleBindingProblem(provider, role, { model: model ?? "inherit", ...(effort ? { effort } : {}) });
+    const problem = roleBindingProblem(provider, role, {
+      model: model ?? "inherit",
+      ...(effort ? { effort } : {}),
+    });
     if (problem && (model !== undefined || effort)) return problem;
   }
   return null;
@@ -130,7 +152,8 @@ export async function setConfig(
   const { agentDefaults } = input;
   let extra = {};
   if (agentDefaults) {
-    if (!(await fetchConfig(input.root)).agentDefaults.supported) throw new Error("Needs a newer zekoder-mcp.");
+    if (!(await fetchConfig(input.root)).agentDefaults.supported)
+      throw new Error("Needs a newer zekoder-mcp.");
     const problem = agentDefaultsProblem(agentDefaults);
     if (problem) throw new Error(problem);
     extra = toSetConfigArgs(agentDefaults, "repo");
@@ -147,18 +170,42 @@ export async function setConfig(
 type MachineOutput = RpcOutput<typeof getMachineDefaultsRpc>;
 type Paseo = PluginHandlerContext["paseo"];
 
+/** One tool call on the chosen machine transport: a project's zekoder-mcp, or the project-less one. */
+function machineCall(
+  root: string | null,
+  name: string,
+  args: Record<string, unknown>,
+): Promise<unknown> {
+  return root ? callTool(root, name, { ...args, cwd: root }) : callMachineTool(name, args);
+}
+
 /**
  * Picks the project whose zekoder-mcp carries machine-tier calls: `root` first (when it is a Zekoder
  * project), then the others. Stops at the first whose plain read has the machine-scope capability;
  * with none, the first candidate and its plain state (disabled, so the tab shows the hint).
+ * With no Zekoder project at all, `root` is null: the project-less machine transport carries the calls.
  */
 async function machineTransportRoot(
   paseo: Paseo,
   root: string | undefined,
-): Promise<{ root: string; plain: AgentDefaultsState } | { root: null; error: string | null }> {
+): Promise<
+  | { root: string | null; plain: AgentDefaultsState }
+  | { root: null; plain?: undefined; error: string | null }
+> {
   const projects = await zekoderProjects(paseo);
   const roots = projects.map((project) => project.root);
-  const candidates = root && roots.includes(root) ? [root, ...roots.filter((r) => r !== root)] : roots;
+  const candidates =
+    root && roots.includes(root) ? [root, ...roots.filter((r) => r !== root)] : roots;
+  if (candidates.length === 0) {
+    try {
+      return {
+        root: null,
+        plain: toAgentDefaultsState(await callMachineTool("zekoder_get_config", {})),
+      };
+    } catch (err) {
+      return { root: null, error: errorText(err) };
+    }
+  }
   let first: { root: string; plain: AgentDefaultsState } | null = null;
   let error: string | null = null;
   for (const candidate of candidates) {
@@ -190,12 +237,15 @@ async function readMachineDefaults(paseo: Paseo, root: string | undefined): Prom
   } catch (err) {
     return { state: null, transportRoot: null, error: errorText(err) };
   }
-  if (transport.root === null) return { state: null, transportRoot: null, error: transport.error };
+  if (!transport.plain) return { state: null, transportRoot: null, error: transport.error };
   const { plain } = transport;
-  if (!plain.supported || !plain.machineScope) return { state: plain, transportRoot: transport.root, error: null };
+  if (!plain.supported || !plain.machineScope)
+    return { state: plain, transportRoot: transport.root, error: null };
   try {
     // Loose parse: 050 and 022 payloads differ; only these three fields are read.
-    const payload = (await callTool(transport.root, "zekoder_get_config", { cwd: transport.root, scope: "machine" })) as {
+    const payload = (await machineCall(transport.root, "zekoder_get_config", {
+      scope: "machine",
+    })) as {
       agentDefaults?: AgentDefaultsState["values"] | null;
       warnings?: unknown;
     } | null;
@@ -233,13 +283,15 @@ export async function setMachineDefaults(
   { paseo }: PluginHandlerContext,
 ): Promise<MachineOutput> {
   const transport = await machineTransportRoot(paseo, input.root);
-  if (transport.root === null) throw new Error("Open a Zekoder project in Paseo first.");
-  if (!transport.plain.supported || !transport.plain.machineScope) throw new Error("Needs a newer zekoder-mcp.");
+  if (!transport.plain) throw new Error(transport.error ?? "No zekoder MCP server available.");
+  if (!transport.plain.supported || !transport.plain.machineScope)
+    throw new Error("Needs a newer zekoder-mcp.");
   const problem = agentDefaultsProblem(input.agentDefaults);
   if (problem) throw new Error(problem);
-  await callTool(transport.root, "zekoder_set_config", {
-    ...toSetConfigArgs(input.agentDefaults, "machine"),
-    cwd: transport.root,
-  });
-  return readMachineDefaults(paseo, transport.root);
+  await machineCall(
+    transport.root,
+    "zekoder_set_config",
+    toSetConfigArgs(input.agentDefaults, "machine"),
+  );
+  return readMachineDefaults(paseo, transport.root ?? undefined);
 }

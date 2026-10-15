@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   ZEKODER_PLUGIN_SOURCE,
@@ -83,12 +81,10 @@ describe("shouldShowZekoderPlaceholders", () => {
 });
 
 describe("the pinned plugin version", () => {
-  it("equals the lock file version and is exact semver", () => {
-    const lock = JSON.parse(
-      readFileSync(join(__dirname, "../../../../plugins/zekoder.lock.json"), "utf8"),
-    ) as { version: string };
-    expect(ZEKODER_PLUGIN_VERSION).toBe(lock.version);
+  it("is exact semver and names the npm package", () => {
     expect(ZEKODER_PLUGIN_VERSION).toMatch(/^\d+\.\d+\.\d+$/);
-    expect(ZEKODER_PLUGIN_SOURCE).toBe(`npm:@cyberneticlabs/paseo-zekoder@${lock.version}`);
+    expect(ZEKODER_PLUGIN_SOURCE).toBe(
+      `npm:@cyberneticlabs/paseo-zekoder@${ZEKODER_PLUGIN_VERSION}`,
+    );
   });
 });

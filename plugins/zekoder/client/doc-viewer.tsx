@@ -37,11 +37,7 @@ export function DocViewer({ theme, root, path }: DocViewerProps) {
 
   if (doc.isPending) return <Text style={{ color: theme.colors.foregroundMuted }}>Loading…</Text>;
   if (doc.isError) {
-    return (
-      <Text style={{ color: theme.colors.statusDanger }}>
-        {errorText(doc.error)}
-      </Text>
-    );
+    return <Text style={{ color: theme.colors.statusDanger }}>{errorText(doc.error)}</Text>;
   }
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 10, paddingBottom: 24 }}>

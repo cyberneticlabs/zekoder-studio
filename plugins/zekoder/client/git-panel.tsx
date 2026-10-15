@@ -5,7 +5,13 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 import { errorText } from "../shared/errors.js";
-import { gitOverviewRpc, type GitBranch, type GitCommit, type GitWorktree, type HistoryScope } from "../shared/git.js";
+import {
+  gitOverviewRpc,
+  type GitBranch,
+  type GitCommit,
+  type GitWorktree,
+  type HistoryScope,
+} from "../shared/git.js";
 
 type Theme = PluginSurfaceProps["theme"];
 
@@ -42,18 +48,37 @@ export function GitPanel({ theme, workspaceId }: PluginWorkspacePanelProps) {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.surface0 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, paddingVertical: 8 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 4,
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+        }}
+      >
         <Text style={{ flex: 1, fontWeight: "600", color: theme.colors.foreground }}>Git</Text>
         <IconButton
           theme={theme}
           icon={scope === "all" ? "GitFork" : "GitCommitVertical"}
-          label={scope === "all" ? "Showing all branches; show current branch only" : "Showing current branch; show all branches"}
+          label={
+            scope === "all"
+              ? "Showing all branches; show current branch only"
+              : "Showing current branch; show all branches"
+          }
           onPress={() => setScope(scope === "all" ? "current" : "all")}
         />
-        <IconButton theme={theme} icon="RefreshCw" label="Refresh" onPress={() => void overview.refetch()} />
+        <IconButton
+          theme={theme}
+          icon="RefreshCw"
+          label="Refresh"
+          onPress={() => void overview.refetch()}
+        />
       </View>
       {overview.error ? (
-        <Text style={{ ...muted, color: theme.colors.statusDanger }}>{errorText(overview.error)}</Text>
+        <Text style={{ ...muted, color: theme.colors.statusDanger }}>
+          {errorText(overview.error)}
+        </Text>
       ) : !data ? (
         <Text style={muted}>Loading…</Text>
       ) : (
@@ -66,16 +91,30 @@ export function GitPanel({ theme, workspaceId }: PluginWorkspacePanelProps) {
           <Divider theme={theme} />
           <Section theme={theme} title="Branches" count={data.branches.length}>
             <Section theme={theme} title="Local" count={local.length} depth={1}>
-              {local.map((branch) => <BranchRow key={branch.name} theme={theme} branch={branch} />)}
+              {local.map((branch) => (
+                <BranchRow key={branch.name} theme={theme} branch={branch} />
+              ))}
             </Section>
             {remote.length > 0 && (
-              <Section theme={theme} title="Remote" count={remote.length} depth={1} initiallyOpen={false}>
-                {remote.map((branch) => <BranchRow key={branch.name} theme={theme} branch={branch} />)}
+              <Section
+                theme={theme}
+                title="Remote"
+                count={remote.length}
+                depth={1}
+                initiallyOpen={false}
+              >
+                {remote.map((branch) => (
+                  <BranchRow key={branch.name} theme={theme} branch={branch} />
+                ))}
               </Section>
             )}
           </Section>
           <Divider theme={theme} />
-          <Section theme={theme} title={scope === "all" ? "History · all branches" : "History"} count={data.commits.length}>
+          <Section
+            theme={theme}
+            title={scope === "all" ? "History · all branches" : "History"}
+            count={data.commits.length}
+          >
             <CommitGraph theme={theme} commits={data.commits} />
             {data.more && (
               <Pressable
@@ -96,9 +135,24 @@ export function GitPanel({ theme, workspaceId }: PluginWorkspacePanelProps) {
   );
 }
 
-function IconButton({ theme, icon, label, onPress }: { theme: Theme; icon: string; label: string; onPress(): void }) {
+function IconButton({
+  theme,
+  icon,
+  label,
+  onPress,
+}: {
+  theme: Theme;
+  icon: string;
+  label: string;
+  onPress(): void;
+}) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={{ padding: 4, borderRadius: 4 }}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={{ padding: 4, borderRadius: 4 }}
+    >
       <Icon name={icon} size={14} color={theme.colors.foregroundMuted} />
     </Pressable>
   );
@@ -126,9 +180,20 @@ function Section({ theme, title, count, depth = 0, initiallyOpen = true, childre
         accessibilityState={{ expanded: open }}
         accessibilityLabel={`${title}, ${count}`}
         onPress={() => setOpen(!open)}
-        style={{ flexDirection: "row", alignItems: "center", gap: 4, height: ROW_HEIGHT, paddingLeft: 8 + depth * 12, paddingRight: 12 }}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 4,
+          height: ROW_HEIGHT,
+          paddingLeft: 8 + depth * 12,
+          paddingRight: 12,
+        }}
       >
-        <Icon name={open ? "ChevronDown" : "ChevronRight"} size={14} color={theme.colors.foregroundMuted} />
+        <Icon
+          name={open ? "ChevronDown" : "ChevronRight"}
+          size={14}
+          color={theme.colors.foregroundMuted}
+        />
         <Text
           numberOfLines={1}
           style={{
@@ -160,25 +225,58 @@ interface TreeRowProps {
   accessibilityLabel: string;
 }
 
-function TreeRow({ theme, icon, label, detail, trailing, current, depth, accessibilityLabel }: TreeRowProps) {
+function TreeRow({
+  theme,
+  icon,
+  label,
+  detail,
+  trailing,
+  current,
+  depth,
+  accessibilityLabel,
+}: TreeRowProps) {
   return (
     <View
       accessible
       accessibilityLabel={accessibilityLabel}
-      style={{ flexDirection: "row", alignItems: "center", gap: 6, height: ROW_HEIGHT, paddingLeft: 26 + depth * 12, paddingRight: 12 }}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        height: ROW_HEIGHT,
+        paddingLeft: 26 + depth * 12,
+        paddingRight: 12,
+      }}
     >
-      <Icon name={icon} size={14} color={current ? theme.colors.accent : theme.colors.foregroundMuted} />
-      <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 12, color: theme.colors.foreground, fontWeight: current ? "600" : "400" }}>
+      <Icon
+        name={icon}
+        size={14}
+        color={current ? theme.colors.accent : theme.colors.foregroundMuted}
+      />
+      <Text
+        numberOfLines={1}
+        style={{
+          flexShrink: 1,
+          fontSize: 12,
+          color: theme.colors.foreground,
+          fontWeight: current ? "600" : "400",
+        }}
+      >
         {label}
       </Text>
       {detail ? (
-        <Text numberOfLines={1} style={{ flex: 1, fontSize: 11, color: theme.colors.foregroundMuted }}>
+        <Text
+          numberOfLines={1}
+          style={{ flex: 1, fontSize: 11, color: theme.colors.foregroundMuted }}
+        >
           {detail}
         </Text>
       ) : (
         <View style={{ flex: 1 }} />
       )}
-      {trailing ? <Text style={{ fontSize: 11, color: theme.colors.foregroundMuted }}>{trailing}</Text> : null}
+      {trailing ? (
+        <Text style={{ fontSize: 11, color: theme.colors.foregroundMuted }}>{trailing}</Text>
+      ) : null}
     </View>
   );
 }
@@ -186,7 +284,11 @@ function TreeRow({ theme, icon, label, detail, trailing, current, depth, accessi
 function WorktreeRow({ theme, worktree }: { theme: Theme; worktree: GitWorktree }) {
   const folder = worktree.path.split("/").filter(Boolean).pop() ?? worktree.path;
   const label = worktree.branch ?? `detached @ ${worktree.sha}`;
-  const flags = [worktree.main && "main", worktree.locked && "locked", worktree.prunable && "prunable"].filter(Boolean);
+  const flags = [
+    worktree.main && "main",
+    worktree.locked && "locked",
+    worktree.prunable && "prunable",
+  ].filter(Boolean);
   return (
     <TreeRow
       theme={theme}
@@ -202,7 +304,9 @@ function WorktreeRow({ theme, worktree }: { theme: Theme; worktree: GitWorktree 
 }
 
 function BranchRow({ theme, branch }: { theme: Theme; branch: GitBranch }) {
-  const track = [branch.ahead && `↑${branch.ahead}`, branch.behind && `↓${branch.behind}`].filter(Boolean).join(" ");
+  const track = [branch.ahead && `↑${branch.ahead}`, branch.behind && `↓${branch.behind}`]
+    .filter(Boolean)
+    .join(" ");
   return (
     <TreeRow
       theme={theme}
@@ -220,7 +324,11 @@ function BranchRow({ theme, branch }: { theme: Theme; branch: GitBranch }) {
 function CommitGraph({ theme, commits }: { theme: Theme; commits: GitCommit[] }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   if (commits.length === 0) {
-    return <Text style={{ fontSize: 12, color: theme.colors.foregroundMuted, paddingLeft: 26 }}>No commits yet.</Text>;
+    return (
+      <Text style={{ fontSize: 12, color: theme.colors.foregroundMuted, paddingLeft: 26 }}>
+        No commits yet.
+      </Text>
+    );
   }
   const widest = Math.max(...commits.flatMap((c) => [c.lane, ...c.top, ...c.bottom, ...c.links]));
   const width = (Math.min(widest, MAX_LANES - 1) + 1) * LANE_WIDTH;
@@ -233,26 +341,47 @@ function CommitGraph({ theme, commits }: { theme: Theme; commits: GitCommit[] })
             accessibilityState={{ expanded: expanded === commit.sha }}
             accessibilityLabel={`Commit ${commit.sha.slice(0, 7)}: ${commit.subject}`}
             onPress={() => setExpanded(expanded === commit.sha ? null : commit.sha)}
-            style={{ flexDirection: "row", alignItems: "center", height: ROW_HEIGHT, paddingLeft: 12, paddingRight: 12, gap: 6 }}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              height: ROW_HEIGHT,
+              paddingLeft: 12,
+              paddingRight: 12,
+              gap: 6,
+            }}
           >
             <GraphCell theme={theme} commit={commit} width={width} />
             {commit.refs.map((ref) => (
               <RefPill key={ref} theme={theme} label={ref} />
             ))}
-            <Text numberOfLines={1} style={{ flex: 1, fontSize: 12, color: theme.colors.foreground }}>
+            <Text
+              numberOfLines={1}
+              style={{ flex: 1, fontSize: 12, color: theme.colors.foreground }}
+            >
               {commit.subject}
             </Text>
-            <Text style={{ fontSize: 11, color: theme.colors.foregroundMuted }}>{relativeTime(commit.date)}</Text>
+            <Text style={{ fontSize: 11, color: theme.colors.foregroundMuted }}>
+              {relativeTime(commit.date)}
+            </Text>
           </Pressable>
           {expanded === commit.sha && (
             <View style={{ flexDirection: "row", paddingHorizontal: 12, gap: 6 }}>
-              <GraphCell theme={theme} commit={{ ...commit, top: commit.bottom, links: [], lane: -1 }} width={width} fill />
+              <GraphCell
+                theme={theme}
+                commit={{ ...commit, top: commit.bottom, links: [], lane: -1 }}
+                width={width}
+                fill
+              />
               <View style={{ flex: 1, paddingVertical: 4, gap: 2 }}>
-                <Text selectable style={{ fontSize: 11, color: theme.colors.foregroundMuted }}>{commit.sha}</Text>
+                <Text selectable style={{ fontSize: 11, color: theme.colors.foregroundMuted }}>
+                  {commit.sha}
+                </Text>
                 <Text style={{ fontSize: 11, color: theme.colors.foregroundMuted }}>
                   {commit.author} · {new Date(commit.date * 1000).toLocaleString()}
                 </Text>
-                <Text selectable style={{ fontSize: 12, color: theme.colors.foreground }}>{commit.subject}</Text>
+                <Text selectable style={{ fontSize: 12, color: theme.colors.foreground }}>
+                  {commit.subject}
+                </Text>
               </View>
             </View>
           )}
@@ -290,7 +419,14 @@ function GraphCell({ theme, commit, width, fill }: GraphCellProps) {
   const dot = 8;
   const mid = ROW_HEIGHT / 2;
   return (
-    <View style={{ width, height: fill ? undefined : ROW_HEIGHT, alignSelf: "stretch", overflow: "hidden" }}>
+    <View
+      style={{
+        width,
+        height: fill ? undefined : ROW_HEIGHT,
+        alignSelf: "stretch",
+        overflow: "hidden",
+      }}
+    >
       {commit.top.filter(visible).map((lane) => (
         <View
           key={`t${lane}`}
@@ -308,7 +444,14 @@ function GraphCell({ theme, commit, width, fill }: GraphCellProps) {
         commit.bottom.filter(visible).map((lane) => (
           <View
             key={`b${lane}`}
-            style={{ position: "absolute", left: x(lane) - line / 2, width: line, top: mid, bottom: 0, backgroundColor: laneColor(theme, lane) }}
+            style={{
+              position: "absolute",
+              left: x(lane) - line / 2,
+              width: line,
+              top: mid,
+              bottom: 0,
+              backgroundColor: laneColor(theme, lane),
+            }}
           />
         ))}
       {commit.links.filter(visible).map((lane) => (
@@ -356,7 +499,13 @@ function RefPill({ theme, label }: { theme: Theme; label: string }) {
         maxWidth: 120,
       }}
     >
-      <Text numberOfLines={1} style={{ fontSize: 10, color: head ? theme.colors.accentForeground : theme.colors.foreground }}>
+      <Text
+        numberOfLines={1}
+        style={{
+          fontSize: 10,
+          color: head ? theme.colors.accentForeground : theme.colors.foreground,
+        }}
+      >
         {label.replace(/^HEAD -> /, "")}
       </Text>
     </View>

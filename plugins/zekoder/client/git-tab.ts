@@ -8,7 +8,7 @@ type WorkspaceLike = { id: string; projectKind: string; archivingAt?: string | n
 
 /**
  * Puts a Git button in every git workspace's header that opens the Git tab in the right panel (or in
- * the main pane on compact layouts). Paseo never adds plugin tabs to the right panel by itself, and
+ * the main pane on compact layouts). Zekoder never adds plugin tabs to the right panel by itself, and
  * its "Open in" menu (editors, GitHub, Finder) takes no plugin entries, so the header is the visible
  * way in.
  */
@@ -26,7 +26,7 @@ export function trackGitTab(client: PluginClientContext): () => void {
     buttons.set(
       workspace.id,
       client.addHeaderButton({
-        // Paseo button ids must match /^[a-z][a-z0-9-]*$/; workspace ids look like `wks_9e00…`.
+        // Zekoder button ids must match /^[a-z][a-z0-9-]*$/; workspace ids look like `wks_9e00…`.
         id: `git-${workspace.id.toLowerCase().replace(/[^a-z0-9-]/g, "-")}`,
         workspaceId: workspace.id,
         button: {
@@ -70,7 +70,9 @@ export function trackGitTab(client: PluginClientContext): () => void {
       upsertAll(entries);
       // The subscription only reports changes; later pages must be fetched to cover every workspace.
       for (let cursor = pageInfo.hasMore ? pageInfo.nextCursor : null; cursor && !disposed; ) {
-        const page = await client.paseo.workspaces.list({ page: { limit: WORKSPACE_PAGE_SIZE, cursor } });
+        const page = await client.paseo.workspaces.list({
+          page: { limit: WORKSPACE_PAGE_SIZE, cursor },
+        });
         upsertAll(page.entries);
         cursor = page.pageInfo.hasMore ? page.pageInfo.nextCursor : null;
       }

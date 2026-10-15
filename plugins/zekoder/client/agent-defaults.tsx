@@ -28,7 +28,10 @@ type State = ConfigStatus["agentDefaults"];
 const INHERIT = "inherit";
 /** Dropdown value for "no value at this tier": picking it clears this tier's field. */
 const UNSET = "__unset__";
-const TAB_LABELS: Record<AgentTab, string> = { planning: "Planning session", coding: "Coding session" };
+const TAB_LABELS: Record<AgentTab, string> = {
+  planning: "Planning session",
+  coding: "Coding session",
+};
 const HINT_UNSUPPORTED = "Needs a newer zekoder-mcp";
 
 /** Roles edited on the Planning tab; every other role (incl. any added later) goes to Coding. */
@@ -46,7 +49,7 @@ const PLANNING_ROLES: ReadonlySet<string> = new Set([
 ]);
 
 /** The session tab a role's defaults are edited on. */
-export function roleTab(role: string): AgentTab {
+function roleTab(role: string): AgentTab {
   return PLANNING_ROLES.has(role) ? "planning" : "coding";
 }
 
@@ -56,20 +59,31 @@ type TabField = (typeof TAB_FIELDS)[number];
 type SaveFn = (patch: { set?: Record<string, string>; clear?: string[] }) => void;
 
 /** Appends a stored value the options don't list, so the dropdown can still show it. */
-function withCurrent(options: DropdownOption[], current: string | undefined, note = "not listed"): DropdownOption[] {
+function withCurrent(
+  options: DropdownOption[],
+  current: string | undefined,
+  note = "not listed",
+): DropdownOption[] {
   if (current === undefined || options.some((option) => option.value === current)) return options;
   return [...options, { value: current, label: `${current} (${note})` }];
 }
 
 /** Family choices for a provider, shown before `inherit` and the exact IDs. */
 function familyOptions(provider: string | undefined): DropdownOption[] {
-  return (provider ? (MODEL_FAMILIES[provider] ?? []) : []).map((family) => ({ value: family, label: `${family} (newest at launch)` }));
+  return (provider ? (MODEL_FAMILIES[provider] ?? []) : []).map((family) => ({
+    value: family,
+    label: `${family} (newest at launch)`,
+  }));
 }
 
 type Effort = HarnessModel["efforts"][number];
 
 /** Efforts a model offers. For a family: the union over that family's own models (checked again at launch). */
-function effortsFor(provider: string | undefined, model: string | undefined, models: readonly HarnessModel[]): Effort[] | null {
+function effortsFor(
+  provider: string | undefined,
+  model: string | undefined,
+  models: readonly HarnessModel[],
+): Effort[] | null {
   if (!provider || !isModelFamily(provider, model)) return null;
   const seen = new Map<string, Effort>();
   for (const entry of models) {
@@ -79,10 +93,20 @@ function effortsFor(provider: string | undefined, model: string | undefined, mod
   return [...seen.values()];
 }
 
-export function Section({ theme, title, children }: { theme: Theme; title: string; children: React.ReactNode }) {
+export function Section({
+  theme,
+  title,
+  children,
+}: {
+  theme: Theme;
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <Raise style={{ gap: 12 }}>
-      <Text style={{ fontSize: 13, fontWeight: "600", color: theme.colors.foregroundMuted }}>{title.toUpperCase()}</Text>
+      <Text style={{ fontSize: 13, fontWeight: "600", color: theme.colors.foregroundMuted }}>
+        {title.toUpperCase()}
+      </Text>
       <Raise style={{ gap: 14 }}>{children}</Raise>
     </Raise>
   );
@@ -104,9 +128,22 @@ interface EditorProps {
 }
 
 /** Provider/model/effort/mode per session tab and native model/effort per role, with per-field sources. */
-export function AgentDefaultsEditor({ theme, scope, tabs, showRoles, state, providers, saving, error, onSave }: EditorProps) {
+export function AgentDefaultsEditor({
+  theme,
+  scope,
+  tabs,
+  showRoles,
+  state,
+  providers,
+  saving,
+  error,
+  onSave,
+}: EditorProps) {
   const enabled = state.supported && (scope !== "machine" || state.machineScope);
-  const available = state.roster.providers.length > 0 ? providers.filter((p) => state.roster.providers.includes(p.id)) : providers;
+  const available =
+    state.roster.providers.length > 0
+      ? providers.filter((p) => state.roster.providers.includes(p.id))
+      : providers;
   const save: SaveFn = (patch) => {
     if (!enabled || saving) return;
     onSave({ set: patch.set ?? {}, clear: patch.clear ?? [] });
@@ -118,7 +155,9 @@ export function AgentDefaultsEditor({ theme, scope, tabs, showRoles, state, prov
       {!enabled && <Text style={muted}>{HINT_UNSUPPORTED}</Text>}
       {error && <Text style={{ fontSize: 12, color: theme.colors.statusDanger }}>{error}</Text>}
       {state.activeProfile && (
-        <Text style={muted}>Active execution profile: {state.activeProfile}. It overrides the fields it pins.</Text>
+        <Text style={muted}>
+          Active execution profile: {state.activeProfile}. It overrides the fields it pins.
+        </Text>
       )}
       {state.warnings.map((warning) => (
         <Text key={warning} style={muted}>
@@ -143,8 +182,15 @@ export function AgentDefaultsEditor({ theme, scope, tabs, showRoles, state, prov
 }
 
 /** Leaf paths this tier set for a tab: its session fields and the given roles under every provider. */
-function ownedPaths(state: State, scope: "repo" | "machine", tab: AgentTab, roles: readonly string[]): string[] {
-  const paths = TAB_FIELDS.filter((field) => state.sources[tab]?.[field] === scope).map((field) => `${tab}.${field}`);
+function ownedPaths(
+  state: State,
+  scope: "repo" | "machine",
+  tab: AgentTab,
+  roles: readonly string[],
+): string[] {
+  const paths = TAB_FIELDS.filter((field) => state.sources[tab]?.[field] === scope).map(
+    (field) => `${tab}.${field}`,
+  );
   for (const [provider, byRole] of Object.entries(state.sources.roles ?? {})) {
     for (const role of roles) {
       for (const field of ["model", "effort"] as const) {
@@ -189,7 +235,11 @@ function TabBlock({
         <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
           <Chip
             theme={theme}
-            label={confirming ? `Confirm: clear ${owned.length} ${scope} field${owned.length === 1 ? "" : "s"}` : `Reset ${name} defaults`}
+            label={
+              confirming
+                ? `Confirm: clear ${owned.length} ${scope} field${owned.length === 1 ? "" : "s"}`
+                : `Reset ${name} defaults`
+            }
             selected={confirming}
             onPress={() => {
               if (disabled) return;
@@ -198,10 +248,24 @@ function TabBlock({
               onSave({ clear: owned });
             }}
           />
-          {confirming && <Chip theme={theme} label="Cancel" selected={false} onPress={() => setConfirming(false)} />}
+          {confirming && (
+            <Chip
+              theme={theme}
+              label="Cancel"
+              selected={false}
+              onPress={() => setConfirming(false)}
+            />
+          )}
         </View>
       )}
-      <SessionBlock theme={theme} tab={tab} state={state} providers={providers} disabled={disabled} onSave={onSave} />
+      <SessionBlock
+        theme={theme}
+        tab={tab}
+        state={state}
+        providers={providers}
+        disabled={disabled}
+        onSave={onSave}
+      />
       {roles.length > 0 && (
         <RolesBlock
           theme={theme}
@@ -240,10 +304,14 @@ function SourceLine({
         {value} · {label}
       </Text>
       {source === "profile" && (
-        <Text style={{ fontSize: 11, color: theme.colors.foregroundMuted }}>The execution profile overrides this field.</Text>
+        <Text style={{ fontSize: 11, color: theme.colors.foregroundMuted }}>
+          The execution profile overrides this field.
+        </Text>
       )}
       {ignored && (
-        <Text style={{ fontSize: 11, color: theme.colors.statusDanger }}>ignored: set for another provider</Text>
+        <Text style={{ fontSize: 11, color: theme.colors.statusDanger }}>
+          ignored: set for another provider
+        </Text>
       )}
     </View>
   );
@@ -268,9 +336,13 @@ function SessionBlock({
   const sources = state.sources[tab] ?? {};
   const provider = providers.find((entry) => entry.id === values.provider);
   const models = provider?.models ?? [];
-  const model = values.model && values.model !== INHERIT ? models.find((entry) => entry.id === values.model) : undefined;
+  const model =
+    values.model && values.model !== INHERIT
+      ? models.find((entry) => entry.id === values.model)
+      : undefined;
   const defaultModel = models.find((entry) => entry.isDefault);
-  const effortModel = model ?? (!values.model || values.model === INHERIT ? defaultModel : undefined);
+  const effortModel =
+    model ?? (!values.model || values.model === INHERIT ? defaultModel : undefined);
   const familyEfforts = effortsFor(values.provider, values.model, models);
   const efforts = familyEfforts ?? effortModel?.efforts ?? [];
   const modes = provider?.modes ?? [];
@@ -317,8 +389,12 @@ function SessionBlock({
   const onModel = (next: string) => {
     if (next === UNSET) return onSave({ clear: [path("model")] });
     const pickedEfforts =
-      effortsFor(values.provider, next, models) ?? (next === INHERIT ? defaultModel : models.find((entry) => entry.id === next))?.efforts;
-    const dropEffort = values.effort !== undefined && pickedEfforts !== undefined && !pickedEfforts.some((entry) => entry.id === values.effort);
+      effortsFor(values.provider, next, models) ??
+      (next === INHERIT ? defaultModel : models.find((entry) => entry.id === next))?.efforts;
+    const dropEffort =
+      values.effort !== undefined &&
+      pickedEfforts !== undefined &&
+      !pickedEfforts.some((entry) => entry.id === values.effort);
     onSave({ set: { [path("model")]: next }, ...(dropEffort ? { clear: [path("effort")] } : {}) });
   };
 
@@ -335,7 +411,10 @@ function SessionBlock({
           disabled={disabled}
           onChange={(next) =>
             // Leaf clear paths only: set and clear may not overlap at any level.
-            onSave({ set: { [path("provider")]: next }, clear: [path("model"), path("effort"), path("mode")] })
+            onSave({
+              set: { [path("provider")]: next },
+              clear: [path("model"), path("effort"), path("mode")],
+            })
           }
         />
         {line("provider")}
@@ -347,7 +426,11 @@ function SessionBlock({
           value={values.model ?? null}
           options={withUnset(
             "Provider default",
-            [...familyOptions(values.provider), { value: INHERIT, label: "inherit (provider default)" }, ...models.map((entry) => ({ value: entry.id, label: entry.label }))],
+            [
+              ...familyOptions(values.provider),
+              { value: INHERIT, label: "inherit (provider default)" },
+              ...models.map((entry) => ({ value: entry.id, label: entry.label })),
+            ],
             values.model,
           )}
           placeholder="Provider default"
@@ -373,7 +456,9 @@ function SessionBlock({
           onChange={pick("effort")}
         />
         {familyEfforts && (
-          <Text style={{ fontSize: 11, color: theme.colors.foregroundMuted }}>checked at launch</Text>
+          <Text style={{ fontSize: 11, color: theme.colors.foregroundMuted }}>
+            checked at launch
+          </Text>
         )}
         {line("effort")}
       </FieldColumn>
@@ -398,7 +483,15 @@ function SessionBlock({
   );
 }
 
-function FieldColumn({ theme, label, children }: { theme: Theme; label: string; children: React.ReactNode }) {
+function FieldColumn({
+  theme,
+  label,
+  children,
+}: {
+  theme: Theme;
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <Raise style={{ gap: 4 }}>
       <Text style={{ fontSize: 12, color: theme.colors.foreground }}>{label}</Text>
@@ -434,14 +527,22 @@ function RolesBlock({
 
   return (
     <Raise style={{ gap: 14 }}>
-      <Text style={{ fontSize: 13, fontWeight: "600", color: theme.colors.foreground }}>Role defaults</Text>
+      <Text style={{ fontSize: 13, fontWeight: "600", color: theme.colors.foreground }}>
+        Role defaults
+      </Text>
       <Text style={{ fontSize: 11, color: theme.colors.foregroundMuted }}>
-        Native model/effort per provider and built-in role. Unset = the agent's own default; "inherit" = explicitly keep the
-        session model. Each field saves on its own.
+        Native model/effort per provider and built-in role. Unset = the agent's own default;
+        "inherit" = explicitly keep the session model. Each field saves on its own.
       </Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
         {roleProviders.map((id) => (
-          <Chip key={id} theme={theme} label={id} selected={id === activeProvider} onPress={() => setPicked(id)} />
+          <Chip
+            key={id}
+            theme={theme}
+            label={id}
+            selected={id === activeProvider}
+            onPress={() => setPicked(id)}
+          />
         ))}
       </View>
       {roles.map((role) => (
@@ -479,30 +580,37 @@ interface RoleRowProps {
 }
 
 function RoleRow(props: RoleRowProps) {
-  const { theme, scope, provider, role, fields, sources, profile, models, disabled, onSave } = props;
+  const { theme, scope, provider, role, fields, sources, profile, models, disabled, onSave } =
+    props;
   const controls = roleControls(provider, role);
   const base = `roles.${provider}.${role}`;
   const hasFields = fields.model !== undefined || fields.effort !== undefined;
   // A stored binding the host can't run. Without a model only the effort is checked.
-  const problem = hasFields ? roleBindingProblem(provider, role, { model: fields.model ?? INHERIT, effort: fields.effort }) : null;
-  const fixModel = fields.model && (controls.model ? (acceptedModelFor(provider, role, fields.model) ?? INHERIT) : INHERIT);
+  const problem = hasFields
+    ? roleBindingProblem(provider, role, { model: fields.model ?? INHERIT, effort: fields.effort })
+    : null;
+  const fixModel =
+    fields.model &&
+    (controls.model ? (acceptedModelFor(provider, role, fields.model) ?? INHERIT) : INHERIT);
   const ownsFix = sources.model === scope || sources.effort === scope;
-  const fix =
-    problem && ownsFix && (
-      <Chip
-        theme={theme}
-        label={fixModel && fixModel !== fields.model ? `Use ${fixModel}` : "Remove effort"}
-        selected={false}
-        onPress={() =>
-          !disabled &&
-          onSave(
-            fixModel && fixModel !== fields.model
-              ? { set: { [`${base}.model`]: fixModel }, clear: fields.effort && !controls.effort ? [`${base}.effort`] : [] }
-              : { clear: [`${base}.effort`] },
-          )
-        }
-      />
-    );
+  const fix = problem && ownsFix && (
+    <Chip
+      theme={theme}
+      label={fixModel && fixModel !== fields.model ? `Use ${fixModel}` : "Remove effort"}
+      selected={false}
+      onPress={() =>
+        !disabled &&
+        onSave(
+          fixModel && fixModel !== fields.model
+            ? {
+                set: { [`${base}.model`]: fixModel },
+                clear: fields.effort && !controls.effort ? [`${base}.effort`] : [],
+              }
+            : { clear: [`${base}.effort`] },
+        )
+      }
+    />
+  );
   const limit = !controls.model
     ? `${provider} can't set a model or effort for ${role}; only inherit works.`
     : !controls.effort
@@ -521,7 +629,14 @@ function RoleRow(props: RoleRowProps) {
         {fix}
       </Raise>
       {(["model", "effort"] as const).map((field) => (
-        <SourceLine key={field} theme={theme} value={fields[field]} source={sources[field]} profile={profile} ignored={false} />
+        <SourceLine
+          key={field}
+          theme={theme}
+          value={fields[field]}
+          source={sources[field]}
+          profile={profile}
+          ignored={false}
+        />
       ))}
       {problem ? (
         <Text style={{ fontSize: 11, color: theme.colors.statusDanger }}>{problem}</Text>
@@ -535,13 +650,22 @@ function RoleRow(props: RoleRowProps) {
 type RoleSubProps = RoleRowProps & { controls: ReturnType<typeof roleControls> };
 
 /** A choice saves one field; changing the model drops the effort only if the new model doesn't offer it. */
-function RoleDropdowns({ theme, provider, role, fields, models, disabled, onSave, controls }: RoleSubProps) {
+function RoleDropdowns({
+  theme,
+  provider,
+  role,
+  fields,
+  models,
+  disabled,
+  onSave,
+  controls,
+}: RoleSubProps) {
   const base = `roles.${provider}.${role}`;
   const { model, effort } = fields;
   const familyEfforts = effortsFor(provider, model, models);
   const current = models.find((entry) => entry.id === model);
 
-  // A closed host list (Claude task roles) replaces Paseo's native IDs, which that host rejects.
+  // A closed host list (Claude task roles) replaces Zekoder's native IDs, which that host rejects.
   const choices = !controls.model
     ? []
     : controls.models
@@ -550,11 +674,22 @@ function RoleDropdowns({ theme, provider, role, fields, models, disabled, onSave
   // Families come first; Claude task roles already list only families.
   const families = controls.model && !controls.models ? familyOptions(provider) : [];
   const modelOptions = withCurrent(
-    [{ value: UNSET, label: "Agent default (unset)" }, ...families, { value: INHERIT, label: "Inherit session model" }, ...choices],
+    [
+      { value: UNSET, label: "Agent default (unset)" },
+      ...families,
+      { value: INHERIT, label: "Inherit session model" },
+      ...choices,
+    ],
     model,
   );
   const effortOptions = withCurrent(
-    [{ value: UNSET, label: "Default effort" }, ...(familyEfforts ?? current?.efforts ?? []).map((entry) => ({ value: entry.id, label: entry.label }))],
+    [
+      { value: UNSET, label: "Default effort" },
+      ...(familyEfforts ?? current?.efforts ?? []).map((entry) => ({
+        value: entry.id,
+        label: entry.label,
+      })),
+    ],
     effort,
   );
 
@@ -570,9 +705,17 @@ function RoleDropdowns({ theme, provider, role, fields, models, disabled, onSave
         disabled={disabled}
         onChange={(next) => {
           if (next === UNSET) return onSave({ clear: [`${base}.model`] });
-          const pickedEfforts = effortsFor(provider, next, models) ?? models.find((entry) => entry.id === next)?.efforts;
-          const drop = effort !== undefined && (!controls.effort || (pickedEfforts !== undefined && !pickedEfforts.some((e) => e.id === effort)));
-          onSave({ set: { [`${base}.model`]: next }, ...(drop ? { clear: [`${base}.effort`] } : {}) });
+          const pickedEfforts =
+            effortsFor(provider, next, models) ??
+            models.find((entry) => entry.id === next)?.efforts;
+          const drop =
+            effort !== undefined &&
+            (!controls.effort ||
+              (pickedEfforts !== undefined && !pickedEfforts.some((e) => e.id === effort)));
+          onSave({
+            set: { [`${base}.model`]: next },
+            ...(drop ? { clear: [`${base}.effort`] } : {}),
+          });
         }}
       />
       <Dropdown
@@ -582,16 +725,36 @@ function RoleDropdowns({ theme, provider, role, fields, models, disabled, onSave
         options={effortOptions}
         placeholder="Effort"
         width={150}
-        disabled={disabled || !controls.effort || model === undefined || model === INHERIT || effortOptions.length === 1}
-        onChange={(next) => onSave(next === UNSET ? { clear: [`${base}.effort`] } : { set: { [`${base}.effort`]: next } })}
+        disabled={
+          disabled ||
+          !controls.effort ||
+          model === undefined ||
+          model === INHERIT ||
+          effortOptions.length === 1
+        }
+        onChange={(next) =>
+          onSave(
+            next === UNSET ? { clear: [`${base}.effort`] } : { set: { [`${base}.effort`]: next } },
+          )
+        }
       />
-      {familyEfforts && <Text style={{ fontSize: 11, color: theme.colors.foregroundMuted }}>checked at launch</Text>}
+      {familyEfforts && (
+        <Text style={{ fontSize: 11, color: theme.colors.foregroundMuted }}>checked at launch</Text>
+      )}
     </>
   );
 }
 
-/** Fallback when Paseo cannot list this provider's models: free-text entry. */
-function RoleTextInputs({ theme, provider, role, fields, disabled, onSave, controls }: RoleSubProps) {
+/** Fallback when Zekoder cannot list this provider's models: free-text entry. */
+function RoleTextInputs({
+  theme,
+  provider,
+  role,
+  fields,
+  disabled,
+  onSave,
+  controls,
+}: RoleSubProps) {
   const base = `roles.${provider}.${role}`;
   const [model, setModel] = useState(fields.model ?? "");
   const [effort, setEffort] = useState(fields.effort ?? "");
@@ -634,9 +797,19 @@ function RoleTextInputs({ theme, provider, role, fields, disabled, onSave, contr
         />
       )}
       {controls.model && (
-        <Chip theme={theme} label="Save" selected={false} onPress={() => dirty && !disabled && commit(model, effort)} />
+        <Chip
+          theme={theme}
+          label="Save"
+          selected={false}
+          onPress={() => dirty && !disabled && commit(model, effort)}
+        />
       )}
-      <Chip theme={theme} label="Inherit" selected={false} onPress={() => !disabled && commit(INHERIT, effort)} />
+      <Chip
+        theme={theme}
+        label="Inherit"
+        selected={false}
+        onPress={() => !disabled && commit(INHERIT, effort)}
+      />
     </>
   );
 }

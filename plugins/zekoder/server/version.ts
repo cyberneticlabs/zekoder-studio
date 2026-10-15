@@ -1,10 +1,9 @@
-import { execFile, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { promisify } from "node:util";
 import type {
   PluginBeforeRequests,
   PluginHandlerContext,
@@ -13,26 +12,29 @@ import type {
   PluginSettings,
 } from "@getpaseo/plugin/server";
 import type { RpcInput, RpcOutput } from "@getpaseo/plugin";
+import { PLUGIN_VERSION } from "../shared/plugin-version.js";
+import { builtinPluginUpdateStatusSchema } from "../shared/version.js";
 import type {
   ReleaseChannel,
   TargetVersion,
   UpdateJob,
   VersionStatus,
   checkVersionRpc,
+  pluginVersionRpc,
   updateProjectRpc,
   versionSettingsSchema,
   versionStatusRpc,
 } from "../shared/version.js";
 import { errorText } from "../shared/errors.js";
+import { extractZip } from "./unzip.js";
 import { DEFAULT_BUNDLE, ZEKODER_CACHE_DIR, disposeClient } from "./zekoder.js";
-
-const run = promisify(execFile);
 
 type Paseo = PluginHandlerContext["paseo"];
 
-/** Unpacked zekoder-skills release that `scripts/install.sh` installs from. */
+/** Unpacked zekoder-skills release that `scripts/install.mjs` (or older `install.sh`) installs from. */
 const CACHE_DIR = ZEKODER_CACHE_DIR;
-const INSTALL_SCRIPT = join(CACHE_DIR, "scripts/install.sh");
+const INSTALL_MJS = join(CACHE_DIR, "scripts/install.mjs");
+const INSTALL_SH = join(CACHE_DIR, "scripts/install.sh");
 /** Where install.sh keeps each harness's install state, relative to the install directory. */
 const HARNESS_STATE: Record<string, string> = {
   claude: ".zekoder/harness-install/claude/state.json",
@@ -43,12 +45,12 @@ const HARNESS_STATE: Record<string, string> = {
 /** Written next to the unpacked release, so an unchanged release is not downloaded again. */
 const RELEASE_MARKER = join(CACHE_DIR, ".zekoder-release.json");
 const MANIFEST_URL =
-  process.env.ZEKODER_RELEASE_MANIFEST || "https://storage.googleapis.com/zekoder-releases/releases/manifest.json";
+  process.env.ZEKODER_RELEASE_MANIFEST ||
+  "https://storage.googleapis.com/zekoder-releases/releases/manifest.json";
 const CHECK_INTERVAL_MS = 6 * 60 * 60_000;
 const FIRST_CHECK_DELAY_MS = 10_000;
 const MANIFEST_TIMEOUT_MS = 30_000;
 const DOWNLOAD_TIMEOUT_MS = 5 * 60_000;
-const UNZIP_TIMEOUT_MS = 2 * 60_000;
 const INSTALL_TIMEOUT_MS = 10 * 60_000;
 /** How long a new agent in a never-installed directory waits for its install before starting anyway. */
 const AGENT_WAIT_MS = 2 * 60_000;
@@ -89,6 +91,46 @@ export async function versionStatus(
   return buildStatus(await reconcile(paseo));
 }
 
+/** Reads the host's plugin update status for this plugin. Read-only; never restarts anything and never throws. */
+export async function pluginVersionStatus(
+  _input: RpcInput<typeof pluginVersionRpc>,
+  { paseo }: PluginHandlerContext,
+): Promise<RpcOutput<typeof pluginVersionRpc>> {
+  const view = (
+    partial: Partial<RpcOutput<typeof pluginVersionRpc>>,
+  ): RpcOutput<typeof pluginVersionRpc> => ({
+    pluginVersion: PLUGIN_VERSION,
+    host: "absent",
+    status: null,
+    restartRequired: false,
+    error: null,
+    ...partial,
+  });
+  // `PaseoApi` of the pinned @getpaseo/plugin has no `pluginUpdates`: detect it at runtime.
+  const api = (
+    paseo as unknown as { pluginUpdates?: { status?: (pluginId: string) => Promise<unknown> } }
+  ).pluginUpdates;
+  if (typeof api?.status !== "function") return view({});
+  try {
+    const raw = await api.status("zekoder");
+    if (raw === null || raw === undefined) return view({});
+    const entry = Array.isArray(raw)
+      ? raw.find((item) => (item as { pluginId?: unknown } | null)?.pluginId === "zekoder")
+      : raw;
+    if (entry === undefined) return view({});
+    const parsed = builtinPluginUpdateStatusSchema.safeParse(entry);
+    if (!parsed.success) return view({ host: "error", error: errorText(parsed.error) });
+    const status = parsed.data;
+    const restartRequired =
+      typeof status.restartRequired === "boolean"
+        ? status.restartRequired
+        : !!status.stagedVersion && status.stagedVersion !== status.runningVersion;
+    return view({ host: "reports", status, restartRequired });
+  } catch (error) {
+    return view({ host: "error", error: errorText(error) });
+  }
+}
+
 export async function checkVersion(
   _input: RpcInput<typeof checkVersionRpc>,
   { paseo }: PluginHandlerContext,
@@ -104,8 +146,10 @@ export async function updateProject(
 ): Promise<RpcOutput<typeof updateProjectRpc>> {
   host = paseo;
   const projects = await installTargets(paseo);
-  const known = projects.some((project) => project.root === input.root || project.worktrees.includes(input.root));
-  if (!known) throw new Error(`Not a Paseo project or workspace directory: ${input.root}`);
+  const known = projects.some(
+    (project) => project.root === input.root || project.worktrees.includes(input.root),
+  );
+  if (!known) throw new Error(`Not a Zekoder project or workspace directory: ${input.root}`);
   enqueueInstall(input.root);
   return buildStatus(projects);
 }
@@ -151,11 +195,16 @@ export async function installBeforeAgent(
  * Checks now-ish, then every CHECK_INTERVAL_MS, installing wherever zekoder is missing or behind.
  * A channel change checks again at once. Returns the cleanup.
  */
-export function scheduleVersionChecks(store: PluginSettings<typeof versionSettingsSchema>): () => void {
+export function scheduleVersionChecks(
+  store: PluginSettings<typeof versionSettingsSchema>,
+): () => void {
   settings = store;
   const tick = () =>
     void checkLatest().then(() => {
-      if (host) reconcile(host).catch((error) => console.warn("[zekoder] scheduled install check failed:", error));
+      if (host)
+        reconcile(host).catch((error) =>
+          console.warn("[zekoder] scheduled install check failed:", error),
+        );
     });
   const first = setTimeout(tick, FIRST_CHECK_DELAY_MS);
   const interval = setInterval(tick, CHECK_INTERVAL_MS);
@@ -182,9 +231,14 @@ function checkLatest(): Promise<void> {
   inFlight ??= inCacheQueue(async () => {
     try {
       channel = await readChannel();
-      const manifest = await fetchWithTimeout(MANIFEST_URL, MANIFEST_TIMEOUT_MS, (response) => response.json());
+      const manifest = await fetchWithTimeout(MANIFEST_URL, MANIFEST_TIMEOUT_MS, (response) =>
+        response.json(),
+      );
       const picked = pickRelease(manifest, channel);
-      if (!picked) throw new Error(`release manifest has no ${channel === "stable" ? "stable or dev" : "dev"} release`);
+      if (!picked)
+        throw new Error(
+          `release manifest has no ${channel === "stable" ? "stable or dev" : "dev"} release`,
+        );
       ({ release, source } = picked);
       latest = picked.release.version;
       checkError = null;
@@ -199,7 +253,11 @@ function checkLatest(): Promise<void> {
 }
 
 /** GETs `url` and reads its body with `read`; the timeout covers the body too. */
-async function fetchWithTimeout<T>(url: string, timeoutMs: number, read: (response: Response) => Promise<T>): Promise<T> {
+async function fetchWithTimeout<T>(
+  url: string,
+  timeoutMs: number,
+  read: (response: Response) => Promise<T>,
+): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -222,10 +280,15 @@ async function readChannel(): Promise<ReleaseChannel> {
 }
 
 /** `stable` uses `dev` while stable has no release. */
-function pickRelease(manifest: unknown, wanted: ReleaseChannel): { release: Release; source: ReleaseChannel } | null {
+function pickRelease(
+  manifest: unknown,
+  wanted: ReleaseChannel,
+): { release: Release; source: ReleaseChannel } | null {
   const order: ReleaseChannel[] = wanted === "stable" ? ["stable", "dev"] : ["dev"];
   for (const name of order) {
-    const entry = (manifest as { channels?: Record<string, { latest?: unknown }> })?.channels?.[name]?.latest;
+    const entry = (manifest as { channels?: Record<string, { latest?: unknown }> })?.channels?.[
+      name
+    ]?.latest;
     if (isRelease(entry)) return { release: entry, source: name };
   }
   return null;
@@ -254,19 +317,26 @@ async function ensureRelease(target: Release, log: (line: string) => void): Prom
     // No marker: a first run, or a cache from the old git installer. Replace it.
   }
   const staging = `${CACHE_DIR}.new-${randomBytes(4).toString("hex")}`;
-  const zip = `${staging}.zip`;
   const old = `${CACHE_DIR}.old-${randomBytes(4).toString("hex")}`;
   try {
     log(`== downloading zekoder ${target.version} from ${target.zipUrl} ==\n`);
     await mkdir(dirname(CACHE_DIR), { recursive: true });
-    const bytes = Buffer.from(await fetchWithTimeout(target.zipUrl, DOWNLOAD_TIMEOUT_MS, (response) => response.arrayBuffer()));
+    const bytes = Buffer.from(
+      await fetchWithTimeout(target.zipUrl, DOWNLOAD_TIMEOUT_MS, (response) =>
+        response.arrayBuffer(),
+      ),
+    );
     const digest = createHash("sha256").update(bytes).digest("hex");
     if (digest !== target.sha256.toLowerCase()) {
       throw new Error(`sha256 mismatch: expected ${target.sha256}, got ${digest}`);
     }
-    await writeFile(zip, bytes);
-    await run("unzip", ["-q", zip, "-d", staging], { timeout: UNZIP_TIMEOUT_MS });
-    if (!existsSync(join(staging, "scripts/install.sh"))) throw new Error("release zip has no scripts/install.sh");
+    await extractZip(bytes, staging);
+    if (
+      !existsSync(join(staging, "scripts/install.mjs")) &&
+      !existsSync(join(staging, "scripts/install.sh"))
+    ) {
+      throw new Error("release zip has no scripts/install.mjs or scripts/install.sh");
+    }
     await writeFile(join(staging, ".zekoder-release.json"), JSON.stringify(target, null, 2) + "\n");
     const hadCache = existsSync(CACHE_DIR);
     if (hadCache) await rename(CACHE_DIR, old);
@@ -281,18 +351,21 @@ async function ensureRelease(target: Release, log: (line: string) => void): Prom
   } catch (error) {
     throw new Error(`Could not update the zekoder-skills cache: ${errorText(error)}`);
   } finally {
-    await Promise.all([zip, staging].map((path) => rm(path, { recursive: true, force: true })));
+    await rm(staging, { recursive: true, force: true });
   }
 }
 
 type InstallProject = { id: string; name: string; root: string; worktrees: string[] };
 
 /**
- * Every Paseo project root, plus each open workspace directory that is not its project's root.
+ * Every Zekoder project root, plus each open workspace directory that is not its project's root.
  * The home directory and `/` are skipped: an install there would land in every repo below it.
  */
 async function installTargets(paseo: Paseo): Promise<InstallProject[]> {
-  const [{ projects }, entries] = await Promise.all([paseo.projects.list(), listAllWorkspaces(paseo)]);
+  const [{ projects }, entries] = await Promise.all([
+    paseo.projects.list(),
+    listAllWorkspaces(paseo),
+  ]);
   const skip = new Set([homedir(), "/"]);
   const byId = new Map<string, InstallProject>();
   const roots = new Set<string>();
@@ -351,7 +424,10 @@ function wantsInstall(dir: string): boolean {
   if (job.version !== latest) return true;
   // The cache was wiped after a good run: every project's MCP bundle is gone, so heal now.
   if (job.status === "succeeded") return cacheMissing();
-  return job.status === "failed" && Date.now() - Date.parse(job.finishedAt ?? job.startedAt) >= CHECK_INTERVAL_MS;
+  return (
+    job.status === "failed" &&
+    Date.now() - Date.parse(job.finishedAt ?? job.startedAt) >= CHECK_INTERVAL_MS
+  );
 }
 
 function enqueueInstall(dir: string): void {
@@ -393,7 +469,11 @@ async function runInstall(dir: string, job: UpdateJob): Promise<void> {
   const harnesses = installHarnesses(dir);
   const args = harnesses ? ["--harnesses", harnesses.join(","), dir] : [dir];
   await new Promise<void>((done) => {
-    const child = spawn("bash", [INSTALL_SCRIPT, ...args], {
+    // Node installer works on Windows. Older releases only ship the bash one.
+    const [command, script] = existsSync(INSTALL_MJS)
+      ? ["node", INSTALL_MJS]
+      : ["bash", INSTALL_SH];
+    const child = spawn(command, [script, ...args], {
       cwd: dir,
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -432,14 +512,18 @@ function installHarnesses(dir: string): string[] | null {
 }
 
 function diskHarnesses(dir: string): string[] {
-  return Object.keys(HARNESS_STATE).filter((harness) => existsSync(join(dir, HARNESS_STATE[harness])));
+  return Object.keys(HARNESS_STATE).filter((harness) =>
+    existsSync(join(dir, HARNESS_STATE[harness])),
+  );
 }
 
 /** `.zekoder/config.json` → `supportedHarnessAgents`, known names only (`coex` = codex). */
 function configHarnesses(dir: string): string[] | null {
   const list = readConfig(dir)?.supportedHarnessAgents;
   if (!Array.isArray(list)) return null;
-  const known = list.map((name) => (name === "coex" ? "codex" : name)).filter((name) => name in HARNESS_STATE);
+  const known = list
+    .map((name) => (name === "coex" ? "codex" : name))
+    .filter((name) => name in HARNESS_STATE);
   return known.length > 0 ? [...new Set(known)] : null;
 }
 
@@ -464,7 +548,12 @@ function buildStatus(projects: InstallProject[]): VersionStatus {
 
 function targetStatus(dir: string): TargetVersion {
   const installed = installedVersion(dir);
-  return { dir, installed, outdated: latest !== null && needsInstall(dir), job: jobs.get(dir) ?? null };
+  return {
+    dir,
+    installed,
+    outdated: latest !== null && needsInstall(dir),
+    job: jobs.get(dir) ?? null,
+  };
 }
 
 function isOutdated(installed: string | null): boolean {
@@ -473,7 +562,7 @@ function isOutdated(installed: string | null): boolean {
 
 /** The shared cache lost its installer or MCP bundle (for example, someone deleted ~/.cache). */
 function cacheMissing(): boolean {
-  return !existsSync(INSTALL_SCRIPT) || !existsSync(DEFAULT_BUNDLE);
+  return !(existsSync(INSTALL_MJS) || existsSync(INSTALL_SH)) || !existsSync(DEFAULT_BUNDLE);
 }
 
 /** The marker the zekoder-skills installer writes. */

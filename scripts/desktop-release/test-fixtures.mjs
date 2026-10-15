@@ -8,6 +8,7 @@ import http from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { dump } from "js-yaml";
+import { computeAllowlistChecksum } from "../zekoder-plugin-tree.mjs";
 import { DESKTOP_TARGETS, feedFilename, requiredPayloads } from "./release-data.mjs";
 
 export function makeTempDir(prefix = "zekoder-desktop-release-") {
@@ -79,23 +80,41 @@ export function git(cwd, ...args) {
   ).trim();
 }
 
-export const FIXTURE_LOCK = {
-  repo: "git@github.com:cyberneticlabs/zekoder-plugins.git",
-  ref: "v0.11.1",
-  commit: "380f37b044eb5591ae551773256c5a915d7bc5f0",
-  version: "0.11.1",
-  checksum: "1b15aeccbfd8c9eb7381b9c651b5b5958bbb342e78bc0a6b66a75ca52ff43c97",
-};
+export const FIXTURE_REPO = "git@github.com:cyberneticlabs/zekoder-studio.git";
+export const FIXTURE_PLUGIN_VERSION = "0.12.0-beta.1";
+
+// The plugin provenance a release of `commit` must record: the working tree is clean in these
+// fixtures, so the allowlist checksum of plugins/zekoder equals the commit's.
+export function fixturePlugins(dir, commit) {
+  return {
+    repo: FIXTURE_REPO,
+    ref: "plugins/zekoder",
+    commit,
+    version: FIXTURE_PLUGIN_VERSION,
+    checksum: computeAllowlistChecksum(path.join(dir, "plugins", "zekoder")),
+  };
+}
 
 // main: base -> [upstream branch commit merged by a conventional sync merge] -> later work.
 // Returns the commits so tests can assert provenance.
-export function makeSourceRepo({ syncMerge = true, lock = FIXTURE_LOCK } = {}) {
+export function makeSourceRepo({ syncMerge = true, pluginVersion = FIXTURE_PLUGIN_VERSION } = {}) {
   const dir = makeTempDir("zekoder-desktop-source-");
   git(dir, "init", "-q", "-b", "main");
-  mkdirSync(path.join(dir, "plugins"));
+  git(dir, "remote", "add", "origin", FIXTURE_REPO);
+  const pluginDir = path.join(dir, "plugins", "zekoder");
+  mkdirSync(path.join(pluginDir, "shared"), { recursive: true });
+  writeFileSync(path.join(pluginDir, "paseo-plugin.json"), '{"id":"zekoder"}\n');
+  writeFileSync(path.join(pluginDir, "shared", "value.ts"), "export const value = 1;\n");
+  writeFileSync(path.join(pluginDir, "README.md"), "outside the allowlist\n");
   writeFileSync(
-    path.join(dir, "plugins", "zekoder.lock.json"),
-    `${JSON.stringify(lock, null, 2)}\n`,
+    path.join(pluginDir, "package.json"),
+    `${JSON.stringify({
+      name: "paseo-zekoder",
+      version: pluginVersion,
+      private: true,
+      type: "module",
+      files: ["paseo-plugin.json", "shared/"],
+    })}\n`,
   );
   writeFileSync(path.join(dir, "a.txt"), "a");
   git(dir, "add", "-A");

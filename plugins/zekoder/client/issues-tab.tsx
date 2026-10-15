@@ -59,7 +59,10 @@ export function IssuesTab({
   navigation,
   lockedRoot,
   workspaceId,
-}: Pick<PluginSurfaceProps, "theme" | "layout" | "navigation"> & { lockedRoot?: string; workspaceId?: string }) {
+}: Pick<PluginSurfaceProps, "theme" | "layout" | "navigation"> & {
+  lockedRoot?: string;
+  workspaceId?: string;
+}) {
   const fetchProjects = useRpc(listProjectsRpc);
   const fetchIssues = useRpc(listIssuesRpc);
   const migrate = useRpc(migrateWorkspaceRpc);
@@ -200,7 +203,7 @@ export function IssuesTab({
 
         {projects.isError && <Text style={styles.error}>{errorText(projects.error)}</Text>}
         {projects.isSuccess && projectList.length === 0 && (
-          <Text style={styles.muted}>No Paseo project has a .zekoder/ workspace yet.</Text>
+          <Text style={styles.muted}>No Zekoder project has a .zekoder/ workspace yet.</Text>
         )}
         {issues.isError && <Text style={styles.error}>{errorText(issues.error)}</Text>}
         {issues.data?.warnings.map((warning) => (

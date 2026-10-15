@@ -20,6 +20,8 @@ statusHistory: []
 ---
 # Feature 005-dev-zekoder-plugin-path-override: Dev-only local path override for the built-in Zekoder plugin
 
+> Superseded by feature 008-plugin-source-consolidation: the plugin source now lives in plugins/zekoder/. Do not execute this plan.
+
 > **Light-tier plan.** One branch (`feature-005-dev-zekoder-plugin-path-override`), one document.
 > No protocol change, no new RPC, no cross-package contract. The app reuses the existing
 > `plugin.list` and `plugin.reload` RPCs.

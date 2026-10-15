@@ -20,11 +20,11 @@ export const reportDaysSchema = z.number().int().min(1).max(MAX_REPORT_DAYS);
 export const REPORT_DAYS_ERROR = `Days must be a whole number from 1 to ${MAX_REPORT_DAYS}.`;
 
 /** Report parameters. `org` is saved after `validateOrgRpc` confirms it, or picked from `listOrgsRpc`. */
-export const reportSettingsSchema = z.object({
+const reportSettingsSchema = z.object({
   org: z.string().nullable().default(null),
   days: reportDaysSchema.default(DEFAULT_REPORT_DAYS),
 });
-export type ReportSettings = z.infer<typeof reportSettingsSchema>;
+type ReportSettings = z.infer<typeof reportSettingsSchema>;
 export const reportSettings = defineSettings({
   id: "zekoder-report-settings",
   scope: "host",
@@ -46,7 +46,9 @@ export const codingHealthReportSchema = z.object({
   generatedAt: z.string(),
   complete: z.boolean(),
   pendingCommitDetails: z.number(),
-  users: z.array(z.object({ key: z.string(), label: z.string(), bot: z.boolean(), unlinked: z.boolean() })),
+  users: z.array(
+    z.object({ key: z.string(), label: z.string(), bot: z.boolean(), unlinked: z.boolean() }),
+  ),
   repos: z.array(z.string()),
   /** `[dayIndex, repoIndex, userIndex, commits, additions, deletions]` */
   commits: z.array(z.array(z.number())),

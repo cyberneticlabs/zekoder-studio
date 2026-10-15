@@ -1,9 +1,22 @@
 import type { PluginServerContext } from "@getpaseo/plugin/server";
 import { agentBranch } from "./server/branch.js";
-import { getConfig, getMachineDefaults, listHarnessModels, listProviders, setConfig, setMachineDefaults } from "./server/config.js";
+import {
+  getConfig,
+  getMachineDefaults,
+  listHarnessModels,
+  listProviders,
+  setConfig,
+  setMachineDefaults,
+} from "./server/config.js";
 import { gitOverview } from "./server/git.js";
 import { disposeReportServer } from "./server/report-server.js";
-import { collectReport, getCodingHealth, listOrgs, openReport, validateOrg } from "./server/reports.js";
+import {
+  collectReport,
+  getCodingHealth,
+  listOrgs,
+  openReport,
+  validateOrg,
+} from "./server/reports.js";
 import { cleanupRoleVariants } from "./server/role-variants.js";
 import { getTelemetry, setTelemetry } from "./server/telemetry.js";
 import {
@@ -12,9 +25,19 @@ import {
   installForWorkspace,
   scheduleVersionChecks,
   updateProject,
+  pluginVersionStatus,
   versionStatus,
 } from "./server/version.js";
-import { disposeClients, getIssue, implementIssue, listIssues, listProjects, migrateWorkspace, promoteIdea, readDoc } from "./server/zekoder.js";
+import {
+  disposeClients,
+  getIssue,
+  implementIssue,
+  listIssues,
+  listProjects,
+  migrateWorkspace,
+  promoteIdea,
+  readDoc,
+} from "./server/zekoder.js";
 import { agentBranchRpc } from "./shared/branch.js";
 import {
   getConfigRpc,
@@ -35,9 +58,22 @@ import {
   promoteIdeaRpc,
   readDocRpc,
 } from "./shared/issues.js";
-import { codingHealthRpc, collectReportRpc, listOrgsRpc, openReportRpc, reportSettings, validateOrgRpc } from "./shared/reports.js";
+import {
+  codingHealthRpc,
+  collectReportRpc,
+  listOrgsRpc,
+  openReportRpc,
+  reportSettings,
+  validateOrgRpc,
+} from "./shared/reports.js";
 import { getTelemetryRpc, setTelemetryRpc } from "./shared/telemetry.js";
-import { checkVersionRpc, updateProjectRpc, versionSettings, versionStatusRpc } from "./shared/version.js";
+import {
+  checkVersionRpc,
+  pluginVersionRpc,
+  updateProjectRpc,
+  versionSettings,
+  versionStatusRpc,
+} from "./shared/version.js";
 
 export default function contribute(server: PluginServerContext) {
   server.handle(listProjectsRpc, listProjects);
@@ -49,6 +85,7 @@ export default function contribute(server: PluginServerContext) {
   server.handle(migrateWorkspaceRpc, migrateWorkspace);
   server.handle(versionStatusRpc, versionStatus);
   server.handle(checkVersionRpc, checkVersion);
+  server.handle(pluginVersionRpc, pluginVersionStatus);
   server.handle(updateProjectRpc, updateProject);
   server.handle(getConfigRpc, getConfig);
   server.handle(setConfigRpc, setConfig);

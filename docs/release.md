@@ -1,9 +1,10 @@
 # Release
 
-This repository has two release processes. **Zekoder desktop releases** (next section) are the only
-release process agents run here. Everything after [Upstream Paseo release flow](#upstream-paseo-release-flow)
-is the inherited upstream process (npm, Docker, mobile, GitHub-hosted desktop assets). It is kept so
-upstream syncs merge cleanly and does not apply to Zekoder desktop.
+This repository has two Zekoder release processes: **Zekoder desktop releases** and **Zekoder plugin
+releases**. They are independent and are the only release processes agents run here. Everything after
+[Upstream Paseo release flow](#upstream-paseo-release-flow) is the inherited upstream process (npm,
+Docker, mobile, GitHub-hosted desktop assets). It is kept so upstream syncs merge cleanly and does not
+apply to Zekoder.
 
 ## Zekoder desktop releases
 
@@ -82,7 +83,7 @@ conventional-commit bullets; the pipeline rejects those and GitHub's generated "
 `.github/workflows/desktop-release.yml` documents each job in its header. In short:
 
 1. `preflight` validates the tag, resolves the upstream Paseo commit (second parent of the latest
-   `chore(sync): merge upstream paseo` merge) and the pinned plugin lock, and skips straight to
+   `chore(sync): merge upstream paseo` merge) and the Zekoder plugin provenance at the tag commit, and skips straight to
    finalization when the catalog already lists the tag.
 2. `release-notes` copies the draft into an artifact. It is the only job that reads the private draft.
 3. `build` runs the five targets in parallel with `--publish never` and uploads each target's files and
@@ -216,6 +217,113 @@ npm run build:desktop -- --publish never --linux --x64     # Linux host
 ```
 
 Local packaging never publishes. Only the tag workflow does.
+
+## Zekoder plugin releases
+
+Pushing an annotated plugin tag publishes the Zekoder plugin (`plugins/zekoder/`) to
+`gs://zekoder-releases/plugins/zekoder/`, so a desktop-launched daemon can update it without a desktop
+release. Plugin and desktop releases do not depend on each other: a plugin tag never starts a desktop
+build and a desktop tag never publishes the plugin. Agents follow the same rules as
+[Agent-only tagging](#agent-only-tagging): only after the user's explicit go-ahead, annotated tags,
+never moved or reused, and never a dispatch of the workflow without the user. The updater side is
+described in [plugins.md](plugins.md#the-zekoder-plugin). The publishing design is Studio feature
+`013-plugin-auto-update-publishing`.
+
+| Tag                            | Channel | Who receives it                                      |
+| ------------------------------ | ------- | ---------------------------------------------------- |
+| `zekoder-plugin-vX.Y.Z`        | stable  | stable and beta users                                |
+| `zekoder-plugin-vX.Y.Z-beta.N` | beta    | beta users, until a newer final stable supersedes it |
+
+Anything else fails `check-tag`. The version is the tag without the `zekoder-plugin-v` prefix. It must
+equal `plugins/zekoder/package.json` `version` and `PLUGIN_VERSION` in
+`plugins/zekoder/shared/plugin-version.ts`, and the tagged commit must be on `main`. GitHub's `v*` tag
+filters (desktop release, Android, deploy-app, release notes) never match `zekoder-plugin-v*`;
+`scripts/ci-workflow.test.mjs` pins both directions.
+
+### Steps
+
+1. Bump the version in `plugins/zekoder/package.json` and `plugins/zekoder/shared/plugin-version.ts`.
+   The plugin has no lockfile of its own; the root `package-lock.json` does not carry its version.
+2. Merge to `main` and confirm CI is green on that commit.
+3. Tag the merged commit and push the tag:
+
+   ```bash
+   git tag -a zekoder-plugin-vX.Y.Z "$SOURCE_SHA" -m "Zekoder plugin X.Y.Z"
+   git push origin zekoder-plugin-vX.Y.Z
+   ```
+
+4. `.github/workflows/plugin-release.yml` checks the tag, checks the commit is on `main`, builds the
+   tarball, uploads it (never overwritten), then writes the signed manifest last. The workflow does
+   not typecheck or install anything: the `main` ancestry check already requires the commit to have
+   passed CI, and `scripts/plugin-release.mjs` is plain Node.
+
+Local checks, with no credentials and no uploads:
+
+```bash
+node scripts/plugin-release.mjs check-tag zekoder-plugin-vX.Y.Z
+node scripts/plugin-release.mjs build X.Y.Z /tmp/zekoder-plugin
+```
+
+`build` stages exactly the `files` allowlist from `package.json` and prints a `treeChecksum` that
+equals `computeAllowlistChecksum` in `scripts/zekoder-plugin-tree.mjs`, the same value a desktop
+release records as the bundled plugin's checksum.
+
+### Storage
+
+Bucket `zekoder-releases`, prefix `plugins/zekoder/`:
+
+- `manifest.json` is the signed envelope (`Cache-Control: public, max-age=60`), written with a
+  generation-match compare-and-swap and retried up to five times.
+- `releases/vX.Y.Z/zekoder-plugin-vX.Y.Z.tar.gz` is immutable and never deleted, also after a revoke.
+
+The workflow never writes `releases/` or `desktop/` at the bucket root. Those belong to other
+publishers.
+
+### Revoke a version
+
+Run `plugin-release` from `main` with `version` and `reason` (Actions, `workflow_dispatch`; a human
+does this, agents do not). It adds the version to `revoked`, recomputes `channels` and bumps
+`sequence`. The artifact stays in the bucket.
+
+### Re-run a cancelled or failed tag run
+
+A newer pending run in the concurrency group cancels an older pending one. Re-run the older one from
+the Actions tab. Re-runs are idempotent: identical content reports `unchanged`, different content
+aborts. After pushing several tags, check that every version is in `releases` of the manifest.
+
+### Key custody
+
+- The Ed25519 private key (PKCS8 PEM) lives only in the `plugin-release` environment secret
+  `ZEKODER_PLUGIN_SIGNING_KEY`; its id is the environment variable `ZEKODER_PLUGIN_SIGNING_KEY_ID`.
+  The environment also holds `ZEKODER_RELEASE_BUCKET`, `GCP_WORKLOAD_IDENTITY_PROVIDER` and
+  `GCP_SERVICE_ACCOUNT`. Environment variables shadow the repository variables of the same name,
+  which belong to the desktop release.
+- Deployment refs for the environment are `zekoder-plugin-v*` tags and `main`. There are no required
+  reviewers.
+- An encrypted offline backup sits in the company password vault with two named holders. Nobody reads
+  the key back from the secret.
+- The public keys are in `scripts/plugin-release-keys.json` (raw 32-byte keys, base64). The daemon
+  trusts the same list from `TRUSTED_KEYS` in
+  `packages/server/src/server/plugins/builtin/updates/trusted-keys.ts`, and
+  `scripts/plugin-release.test.mjs` fails when the two differ. Create a key with
+  `node scripts/plugin-release.mjs keygen zk-plugin-YYYY-MM <path outside the repo>` and commit only
+  the printed entry, in both files. Never commit a private key.
+- A GitHub tag ruleset restricts creating, updating and deleting `zekoder-plugin-v*` tags to the named
+  maintainers.
+
+Signing is automatic on a tag, with no reviewer gate. Whoever can push a `zekoder-plugin-v*` tag or
+change the workflow on `main` gets a signature. The ancestor-of-`main` check is a safety check, not
+security.
+
+### Compromise
+
+1. Delete the secret and disable the `plugin-release` environment.
+2. Remove the key id from `scripts/plugin-release-keys.json` and `TRUSTED_KEYS`, and ship a desktop
+   release with the new list.
+3. Once a new key exists, revoke every version published since the suspected leak.
+
+Rotation is not built (followup `002-plugin-signing-key-rotation`). The envelope format already allows
+several `signatures[]` and keyring entries.
 
 ## Upstream Paseo release flow
 

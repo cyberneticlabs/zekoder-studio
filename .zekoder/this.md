@@ -10,10 +10,10 @@ belong here — query the item registry (`zekoder_list_items`, `zekoder_search`)
 
 ## About this repo
 
-Cybernetic Labs fork of Paseo (`cyberneticlabs/zekoder-studio`, npm workspace monorepo): the branded Zekoder Suite desktop, mobile and web distribution. It bundles Zekoder plugins and theme and adds product login (Cybernetic Labs Spine, OIDC), while staying upgradeable from upstream Paseo (`getpaseo/paseo`).
+Cybernetic Labs fork of Paseo (`cyberneticlabs/zekoder-studio`, npm workspace monorepo): the branded Zekoder Suite desktop, mobile and web distribution. It bundles the Zekoder plugin (source in `plugins/zekoder/`) and theme and adds product login (Cybernetic Labs Spine, OIDC), while staying upgradeable from upstream Paseo (`getpaseo/paseo`).
 Serves Zekoder end users (humans running coding agents from desktop, mobile and web) and Cybernetic Labs maintainers who ship releases.
-Not a permanent divergent rewrite of Paseo. Not the owner of agent execution, protocol or pairing (upstream's). Not the product backend (orgs, subscriptions, entitlements live in Spine). Not the zekoder-plugins repo.
-Doing its job: branded desktop installs beside upstream Paseo, bundled plugins load at pinned versions, branding works before any daemon connects, login matches the agreed access policy, pairing and execution still work, one upstream upgrade completes, the release manifest identifies all bundled revisions.
+Not a permanent divergent rewrite of Paseo. Not the owner of agent execution, protocol or pairing (upstream's). Not the product backend (orgs, subscriptions, entitlements live in Spine). Not a separate plugin repo: it owns the Zekoder plugin source.
+Doing its job: branded desktop installs beside upstream Paseo, the desktop bundles the Zekoder plugin as a baseline and signed plugin releases update it without a desktop rebuild, branding works before any daemon connects, login matches the agreed access policy, pairing and execution still work, one upstream upgrade completes, the release manifest identifies all bundled revisions.
 Goals, dates and non-goals: kb/goals.md. Source: plan.md.
 
 ## Guidelines & hard boundaries
@@ -29,7 +29,7 @@ Goals, dates and non-goals: kb/goals.md. Source: plan.md.
 - Gate paid features on Spine tier/org_capabilities. Never call Stripe directly. Never run a separate shared Supabase Auth project.
 - Never commit secrets, signing certificates or tokens. Keep provider credentials separately managed.
 - Use distinct bundle IDs, URL schemes, app data, ports and `PASEO_HOME` from upstream. Never let a branded update install upstream binaries.
-- Pin plugins to exact tested versions (no floating git branches). Preserve user-installed plugins and config.
+- Version the Zekoder plugin by `plugins/zekoder/package.json` and ship it by signed independent releases. Pin every other bundled plugin to an exact tested version (no floating git branches). Preserve user-installed plugins and config.
 - Audit inherited CI publishing, relay and download endpoints before enabling. Preserve license and attribution. Keep previous signed artifacts for rollback.
 - Never restart the main daemon on :6767. Never run the full test suite locally (changed file only, `--bail=1`).
 - Run typecheck and lint after every change and format before commit, via npm scripts only. Use npm only.
@@ -65,7 +65,8 @@ Run after every change (npm scripts only, never raw npx eslint/oxlint/oxfmt):
 - `kb/discovery/branding.md` — Zekoder branding: BRAND module, asset generator, ids, i18n rewrite
 - `kb/discovery/desktop-releases.md` — Desktop release pipeline (tag-only, GCS catalog), updater boundaries, inherited publisher guards
 - `kb/discovery/desktop-signing.md` — Desktop code signing: electron-builder fallbacks, signing policy wiring, updater behavior on unsigned macOS
-- `kb/discovery/plugins.md` — Plugin system: built-in registry, packaging, vendored zekoder plugin and its lock consumers, update module, start seams, dev env/signal, app plugin UI, RPC/feature-flag templates, plugin PaseoApi, CI checks
+- `kb/discovery/plugins.md` — Plugin system: built-in registry, packaging, Zekoder plugin identity (version source, allowlist checksum, provenance) and its release pipeline, update module, start seams, dev env/signal, app plugin UI, RPC/feature-flag templates, plugin PaseoApi, CI checks
+- `kb/discovery/zekoder-plugin.md` — Zekoder plugin source (plugins/zekoder/): layout, conventions, zekoder-mcp bundle lookup, agent defaults and launch, panels and project scope
 - `kb/goals.md` — Repo purpose, users, goals with dated success signals, and explicit non-goals
 - `kb/guardrails.md` — Hard boundaries: each rule, why it exists, and how to check compliance
 - `kb/preflight.md` — Pre-flight caveats

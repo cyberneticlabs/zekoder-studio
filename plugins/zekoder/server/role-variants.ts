@@ -21,19 +21,29 @@ export class ResolverMissingError extends Error {
 }
 
 /** Asks zekoder-skills for the newest native model ID of a family. Never picks a version itself. */
-export async function resolveModelFamily(root: string, provider: string, family: string, source: string): Promise<string> {
+export async function resolveModelFamily(
+  root: string,
+  provider: string,
+  family: string,
+  source: string,
+): Promise<string> {
   const script = join(root, ".zekoder-execution-profiles", "materialize-execution-profile.mjs");
   if (!existsSync(script)) throw new ResolverMissingError(family, source);
   let stdout: string;
   try {
-    ({ stdout } = await run("node", [script, "--resolve-model", provider, family], { cwd: root, timeout: MATERIALIZE_TIMEOUT_MS }));
+    ({ stdout } = await run("node", [script, "--resolve-model", provider, family], {
+      cwd: root,
+      timeout: MATERIALIZE_TIMEOUT_MS,
+    }));
   } catch (err) {
     const stderr = (err as { stderr?: string }).stderr?.trim();
-    if (stderr?.includes("unknown flag: --resolve-model")) throw new ResolverMissingError(family, source);
+    if (stderr?.includes("unknown flag: --resolve-model"))
+      throw new ResolverMissingError(family, source);
     throw new Error(stderr || errorText(err));
   }
   const id = stdout.trim();
-  if (!id || id === family) throw new Error(`the resolver returned ${id ? "the bare family" : "no model"}`);
+  if (!id || id === family)
+    throw new Error(`the resolver returned ${id ? "the bare family" : "no model"}`);
   return id;
 }
 
@@ -55,30 +65,46 @@ export async function materializeRoleDefaults(
   const script = join(toolDir, "materialize-execution-profile.mjs");
 
   // Each role writes its own file, so the spawns run in parallel.
-  await Promise.all(AGENT_ROLES.filter((role) => bindings[role]?.model || bindings[role]?.effort).map(async (role) => {
-    const binding = bindings[role] ?? {};
-    // A family is resolved first, so the variant file name hashes the same ID skills hashes in-session.
-    const model = isModelFamily(provider, binding.model)
-      ? await resolveModelFamily(root, provider, binding.model as string, sources?.[role]?.model ?? "machine")
-      : (binding.model ?? "inherit");
-    const source = join(toolDir, "agents", `${role}.md`);
-    if (!existsSync(script) || !existsSync(source)) {
-      throw new Error(`Role default for ${role} is set, but ${toolDir} is missing — re-run the zekoder install (Zekoder page → Version tab).`);
-    }
-    const args = [script, provider, source, role, "role-default", root, model];
-    if (binding.effort) args.push("--effort", binding.effort);
-    let stdout: string;
-    try {
-      ({ stdout } = await run("node", args, { cwd: root, timeout: MATERIALIZE_TIMEOUT_MS }));
-    } catch (err) {
-      const stderr = (err as { stderr?: string }).stderr?.trim();
-      throw new Error(`Could not prepare the ${role} role-default agent: ${stderr || errorText(err)}`);
-    }
-    const written = stdout.trim();
-    if (!written.startsWith(".claude/agents/") || !VARIANT_FILE.test(written.slice(".claude/agents/".length))) {
-      throw new Error(`Unexpected materializer output for ${role}: ${written || "(empty)"}`);
-    }
-  }));
+  await Promise.all(
+    AGENT_ROLES.filter((role) => bindings[role]?.model || bindings[role]?.effort).map(
+      async (role) => {
+        const binding = bindings[role] ?? {};
+        // A family is resolved first, so the variant file name hashes the same ID skills hashes in-session.
+        const model = isModelFamily(provider, binding.model)
+          ? await resolveModelFamily(
+              root,
+              provider,
+              binding.model as string,
+              sources?.[role]?.model ?? "machine",
+            )
+          : (binding.model ?? "inherit");
+        const source = join(toolDir, "agents", `${role}.md`);
+        if (!existsSync(script) || !existsSync(source)) {
+          throw new Error(
+            `Role default for ${role} is set, but ${toolDir} is missing — re-run the zekoder install (Zekoder page → Version tab).`,
+          );
+        }
+        const args = [script, provider, source, role, "role-default", root, model];
+        if (binding.effort) args.push("--effort", binding.effort);
+        let stdout: string;
+        try {
+          ({ stdout } = await run("node", args, { cwd: root, timeout: MATERIALIZE_TIMEOUT_MS }));
+        } catch (err) {
+          const stderr = (err as { stderr?: string }).stderr?.trim();
+          throw new Error(
+            `Could not prepare the ${role} role-default agent: ${stderr || errorText(err)}`,
+          );
+        }
+        const written = stdout.trim();
+        if (
+          !written.startsWith(".claude/agents/") ||
+          !VARIANT_FILE.test(written.slice(".claude/agents/".length))
+        ) {
+          throw new Error(`Unexpected materializer output for ${role}: ${written || "(empty)"}`);
+        }
+      },
+    ),
+  );
 }
 
 /**
@@ -94,9 +120,15 @@ export async function cleanupRoleVariants(
   try {
     const agentsDir = join(workspace.cwd, ".claude", "agents");
     if (!existsSync(agentsDir)) return;
-    const { entries } = await paseo.workspaces.list({ filter: { projectId: workspace.projectId }, page: { limit: 200 } });
+    const { entries } = await paseo.workspaces.list({
+      filter: { projectId: workspace.projectId },
+      page: { limit: 200 },
+    });
     const shared = entries.some(
-      (entry) => entry.id !== workspace.id && !entry.archivingAt && entry.workspaceDirectory === workspace.cwd,
+      (entry) =>
+        entry.id !== workspace.id &&
+        !entry.archivingAt &&
+        entry.workspaceDirectory === workspace.cwd,
     );
     if (shared) return;
     for (const name of await readdir(agentsDir)) {

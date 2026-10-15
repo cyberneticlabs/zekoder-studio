@@ -4,7 +4,14 @@ import { ScrollView, TextInput } from "@getpaseo/plugin/client/react-native";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Text, View } from "react-native";
-import { DEFAULT_REPORT_DAYS, MAX_REPORT_DAYS, REPORT_DAYS_ERROR, reportDaysSchema, reportSettings, validateOrgRpc } from "../shared/reports.js";
+import {
+  DEFAULT_REPORT_DAYS,
+  MAX_REPORT_DAYS,
+  REPORT_DAYS_ERROR,
+  reportDaysSchema,
+  reportSettings,
+  validateOrgRpc,
+} from "../shared/reports.js";
 import { errorText } from "../shared/errors.js";
 import { Button } from "./button.js";
 import { inputStyle } from "./styles.js";
@@ -30,7 +37,8 @@ export function ReportSettingsPanel({ theme }: { theme: Theme }) {
 
   const save = useMutation({
     mutationFn: async () => {
-      if (settings.status !== "ready" && settings.status !== "invalid") throw new Error("Settings are still loading.");
+      if (settings.status !== "ready" && settings.status !== "invalid")
+        throw new Error("Settings are still loading.");
       const parsedDays = Number(days.trim());
       if (!reportDaysSchema.safeParse(parsedDays).success) throw new Error(REPORT_DAYS_ERROR);
       const trimmed = org.trim();
@@ -48,10 +56,12 @@ export function ReportSettingsPanel({ theme }: { theme: Theme }) {
   const muted = { color: theme.colors.foregroundMuted };
   const saved = settings.status === "ready" ? settings.values : null;
   // Invalid stored settings can always be overwritten.
-  const dirty = saved === null || org.trim() !== (saved.org ?? "") || days.trim() !== String(saved.days);
+  const dirty =
+    saved === null || org.trim() !== (saved.org ?? "") || days.trim() !== String(saved.days);
 
   if (settings.status === "loading") return <Text style={muted}>Loading…</Text>;
-  if (settings.status === "error") return <Text style={{ color: theme.colors.statusDanger }}>{settings.error}</Text>;
+  if (settings.status === "error")
+    return <Text style={{ color: theme.colors.statusDanger }}>{settings.error}</Text>;
 
   return (
     <ScrollView contentContainerStyle={{ gap: 20 }}>
@@ -69,7 +79,7 @@ export function ReportSettingsPanel({ theme }: { theme: Theme }) {
             style={{ ...inputStyle(theme), maxWidth: 320 }}
           />
           <Text style={{ fontSize: 11, ...muted }}>
-            Checked with the gh login on the Paseo host before saving.
+            Checked with the gh login on the Zekoder host before saving.
           </Text>
         </View>
         <View style={{ gap: 6 }}>
@@ -94,12 +104,18 @@ export function ReportSettingsPanel({ theme }: { theme: Theme }) {
             onPress={() => save.mutate()}
           />
           {save.isSuccess && !dirty && (
-            <Text style={{ fontSize: 12, color: theme.colors.statusSuccess }}>Saved ({save.data}).</Text>
+            <Text style={{ fontSize: 12, color: theme.colors.statusSuccess }}>
+              Saved ({save.data}).
+            </Text>
           )}
         </View>
-        {save.isError && <Text style={{ color: theme.colors.statusDanger }}>{errorText(save.error)}</Text>}
+        {save.isError && (
+          <Text style={{ color: theme.colors.statusDanger }}>{errorText(save.error)}</Text>
+        )}
         {settings.status === "invalid" && (
-          <Text style={{ color: theme.colors.statusWarning }}>Stored settings were invalid: {settings.error}</Text>
+          <Text style={{ color: theme.colors.statusWarning }}>
+            Stored settings were invalid: {settings.error}
+          </Text>
         )}
       </View>
     </ScrollView>
