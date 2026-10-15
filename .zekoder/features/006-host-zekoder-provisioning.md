@@ -41,7 +41,6 @@ verifiedBaseSha: 32bd9c2764fd33c8a0db0ab7422af8e22edf0772
 relatedFeatures:
   - 001-builtin-zekoder-plugin
   - 004-plugin-auto-update
-  - 005-dev-zekoder-plugin-path-override
 relatedBugs: []
 relatedFollowups: []
 statusHistory:

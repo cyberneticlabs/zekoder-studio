@@ -22,7 +22,6 @@ filesTouched:
 verifiedBaseSha: 08e19dccbdcf81ebe2409e87adee53592b833b68
 relatedFeatures:
   - 001-builtin-zekoder-plugin
-  - 005-dev-zekoder-plugin-path-override
 relatedBugs:
   - 001-e2e-paseo-branding-assertions
   - 003-agent-timeline-e2e-deterministic-failures

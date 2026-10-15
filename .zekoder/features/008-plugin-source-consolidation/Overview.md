@@ -207,7 +207,6 @@ relatedFeatures:
   - 001-builtin-zekoder-plugin
   - 003-desktop-gcs-release-pipeline
   - 004-plugin-auto-update
-  - 005-dev-zekoder-plugin-path-override
   - 006-host-zekoder-provisioning
 relatedBugs: []
 relatedFollowups:
