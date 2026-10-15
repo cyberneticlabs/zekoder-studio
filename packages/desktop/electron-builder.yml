@@ -2,6 +2,7 @@ npmRebuild: false
 appId: net.zekoder.desktop
 productName: Zekoder
 executableName: Zekoder
+copyright: "Copyright © 2024-2026 Cybernetic Labs Ltd · zekoder.com · cyberneticlabs.io"
 protocols:
   - name: Zekoder agent link
     schemes:
