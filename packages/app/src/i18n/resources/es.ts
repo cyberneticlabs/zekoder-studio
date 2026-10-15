@@ -2266,6 +2266,7 @@ export const es: TranslationResources = {
       title: "Acerca de",
       appVersion: "Versión de la aplicación",
       whatsNewHint: "Notas de versión de cada release",
+      forkCredit: "Este software es un fork de {{name}}",
       thisDevice: "este dispositivo",
       connectedHosts: "Anfitriones conectados",
       offline: "Desconectado",

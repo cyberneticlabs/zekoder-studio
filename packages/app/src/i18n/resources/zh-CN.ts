@@ -2189,6 +2189,7 @@ export const zhCN: TranslationResources = {
       title: "关于",
       appVersion: "应用版本",
       whatsNewHint: "每个版本的发布说明",
+      forkCredit: "本软件是 {{name}} 的分支",
       thisDevice: "此设备",
       connectedHosts: "已连接的 Host",
       offline: "离线",

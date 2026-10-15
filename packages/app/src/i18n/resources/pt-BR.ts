@@ -2249,6 +2249,7 @@ export const ptBR: TranslationResources = {
       title: "Sobre",
       appVersion: "Versão do app",
       whatsNewHint: "Notas de versão de cada release",
+      forkCredit: "Este software é um fork do {{name}}",
       thisDevice: "Este dispositivo",
       connectedHosts: "Hosts conectados",
       offline: "Offline",

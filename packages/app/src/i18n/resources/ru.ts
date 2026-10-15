@@ -2251,6 +2251,7 @@ export const ru: TranslationResources = {
       title: "О приложении",
       appVersion: "Версия приложения",
       whatsNewHint: "Заметки о выпуске для каждой версии",
+      forkCredit: "Это программное обеспечение — форк {{name}}",
       thisDevice: "Это устройство",
       connectedHosts: "Подключенные хосты",
       offline: "Оффлайн",

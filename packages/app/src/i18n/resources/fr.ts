@@ -2263,6 +2263,7 @@ export const fr: TranslationResources = {
       title: "À propos",
       appVersion: "Version de l’application",
       whatsNewHint: "Les nouveautés de chaque version",
+      forkCredit: "Ce logiciel est un fork de {{name}}",
       thisDevice: "Cet appareil",
       connectedHosts: "Hôtes connectés",
       offline: "Hors ligne",

@@ -40,6 +40,7 @@ import {
   Globe,
   PanelLeft,
   MessageSquare,
+  ArrowUpRight,
   ChevronRight,
 } from "lucide-react-native";
 import { DropdownTrigger } from "@/components/ui/dropdown-trigger";
@@ -81,6 +82,7 @@ import { EditorSection } from "@/screens/settings/editor-section";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { CommunityLinks } from "@/components/community-links";
+import { openExternalUrl } from "@/utils/open-external-url";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { DesktopPermissionsSection } from "@/desktop/components/desktop-permissions-section";
@@ -464,6 +466,7 @@ function AboutSection({ appVersion, appVersionText, isDesktopApp }: AboutSection
             <Text style={styles.aboutValue}>{appVersionText}</Text>
           </View>
           <WhatsNewRow />
+          <ForkCreditRow />
           {isDesktopApp ? <DesktopAppUpdateRow /> : null}
         </View>
       </SettingsSection>
@@ -493,6 +496,41 @@ function WhatsNewRow() {
             <Text style={settingsStyles.rowHint}>{t("settings.about.whatsNewHint")}</Text>
           </View>
           <ChevronRight
+            size={theme.iconSize.sm}
+            color={hovered ? theme.colors.foreground : theme.colors.foregroundMuted}
+          />
+        </>
+      )}
+    </Pressable>
+  );
+}
+
+const PASEO_REPOSITORY_URL = "https://github.com/getpaseo/paseo";
+
+function ForkCreditRow() {
+  const { t } = useTranslation();
+  const { theme } = useUnistyles();
+  const handlePress = useCallback(() => {
+    void openExternalUrl(PASEO_REPOSITORY_URL);
+  }, []);
+
+  return (
+    <Pressable
+      style={[settingsStyles.row, settingsStyles.rowBorder]}
+      onPress={handlePress}
+      accessibilityRole="link"
+      testID="settings-fork-credit"
+    >
+      {({ hovered }: PressableStateCallbackType & { hovered?: boolean }) => (
+        <>
+          <View style={settingsStyles.rowContent}>
+            {/* The name is interpolated so the translation rebrand pass cannot rewrite it. */}
+            <Text style={settingsStyles.rowTitle}>
+              {t("settings.about.forkCredit", { name: "Paseo" })}
+            </Text>
+            <Text style={settingsStyles.rowHint}>github.com/getpaseo/paseo</Text>
+          </View>
+          <ArrowUpRight
             size={theme.iconSize.sm}
             color={hovered ? theme.colors.foreground : theme.colors.foregroundMuted}
           />

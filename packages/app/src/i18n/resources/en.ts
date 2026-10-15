@@ -2338,6 +2338,7 @@ export const en = {
       title: "About",
       appVersion: "App version",
       whatsNewHint: "Release notes for every version",
+      forkCredit: "This software is a fork of {{name}}",
       thisDevice: "This device",
       connectedHosts: "Connected hosts",
       offline: "Offline",
