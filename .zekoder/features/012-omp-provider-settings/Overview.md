@@ -45,7 +45,8 @@ Placement was confirmed on the global Zekoder page, rather than the project Conf
 Add Providers after Telemetry on the global Zekoder surface. A harness dropdown lists registered adapters (OMP only); the OMP editor manages provider names, baseUrl, api, apiKey and model ids on the connected daemon machine. No workspace or zekoder-mcp call is required.
 Keep comments, ordering, discovery, unknown api values, unknown fields and model metadata through YAML Document edits. Preserve existing keys when the user leaves the key field blank; an explicit Remove key action deletes apiKey. Read responses never disclose literal keys.
 Test/import makes a bounded GET to the explicitly configured baseUrl plus /models, imports selected ids without duplicates, and never executes command keys. Stored secrets may be used only for the unchanged stored URL, with redirects rejected.
-Writes retain permissions and symlinks, make a backup, detect external changes and show conflicts without silently discarding unsaved edits.
+Writes retain permissions and symlinks, make a backup, detect external changes and show conflicts without silently discarding unsaved edits. A read-only sanitized Preview precedes explicit Save: show the daemon-resolved target, provider/model changes and key action only. Reads/preview never create files, directories, backups or temps; edits invalidate preview, and Save uses the exact reviewed operations/revision then re-reads state.
+Show source/authority notes: this edits the connected daemon's selected OMP models config, not a verified effective profile or running session. Documented daemon-visible home/profile overrides may resolve the OMP target; ambiguous custom launchers/profiles are reported without silently claiming this default file belongs to them. Editing the default config needs no installed/enabled/authenticated OMP.
 
 ## Out of scope
 
@@ -68,4 +69,5 @@ Dependency graph: 01-providers only. External service availability affects optio
 - Decision 002-three-tier-agent-defaults — binding: machine defaults go through zekoder-mcp. Followed; this edits OMP's own models.yml only.
 - Bug 012-machine-settings-need-project — resolved history, separate; current machine telemetry/defaults have a no-project transport. Retain relation, no fold.
 - Feature 008-plugin-source-consolidation — completed import provenance; no execution dependency.
+- Remote agentshome plan025-harness-access-permissions — inspected uncommitted source, not imported/merged or an execution dependency. Adopt only daemon-resolved targets, source/authority labels, sanitized preview, stale-draft/query isolation and preservation tests. Its four-harness permissions editor, policy formats, new parsers and project scopes stay separate. No dangling local feature025 relation is registered.
 - No open bugs or followups overlap. Open followups 002-plugin-signing-key-rotation, 005-distinct-desktop-updater-cache-dir and 010-publish-paseo-zekoder-to-npm stay separate.
