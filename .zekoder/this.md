@@ -67,6 +67,7 @@ Run after every change (npm scripts only, never raw npx eslint/oxlint/oxfmt):
 - `kb/discovery/desktop-signing.md` — Desktop code signing: electron-builder fallbacks, signing policy wiring, updater behavior on unsigned macOS
 - `kb/discovery/docs-site.md` — Docs site (packages/docs): theme and i18n sources, workspace/CI wiring, GCS publisher reuse, Cloud Run hosting, desktop-release contract-test constraints
 - `kb/discovery/plugins.md` — Plugin system: built-in registry, packaging, Zekoder plugin identity (version source, allowlist checksum, provenance) and its release pipeline, update module, start seams, dev env/signal, app plugin UI, RPC/feature-flag templates, plugin PaseoApi, CI checks
+- `kb/discovery/release-channel.md` — Release channels and update/restart signals: desktop app channel, built-in plugin updater channel file, skills channel, daemon config field path, restart status and flow
 - `kb/discovery/zekoder-plugin.md` — Zekoder plugin source, host dependency boundary and machine settings
 - `kb/goals.md` — Repo purpose, users, goals with dated success signals, and explicit non-goals
 - `kb/guardrails.md` — Hard boundaries: each rule, why it exists, and how to check compliance
