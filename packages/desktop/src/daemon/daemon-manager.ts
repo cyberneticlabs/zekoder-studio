@@ -278,8 +278,9 @@ function assertBuiltInDaemonManagementEnabled(settings: DesktopSettings): void {
 }
 
 // The daemon reads this file at every built-in plugin update check (contract
-// builtin-plugin-updater); it has no other way to learn the desktop's release channel, and a
-// CLI restart or a reused daemon never passes through the launch environment.
+// builtin-plugin-updater) and checks promptly when it changes; it has no other way to learn the
+// desktop's release channel, and a CLI restart or a reused daemon never passes through the launch
+// environment. Written on every channel change and on every start or restart.
 async function writeBuiltinPluginUpdateChannel(channel: AppReleaseChannel): Promise<void> {
   const directory = path.join(getPaseoHome(), "builtin-plugin-updates");
   const file = path.join(directory, "desktop-channel.json");
@@ -382,6 +383,7 @@ export async function stopDesktopDaemon(
 }
 
 async function restartDaemon(): Promise<DesktopDaemonStatus> {
+  await writeBuiltinPluginUpdateChannel((await getDesktopSettingsStore().get()).releaseChannel);
   await runExternalCliJsonCommand(["daemon", "restart", "--home", getPaseoHome(), "--json"]);
   return resolveDesktopDaemonStatus();
 }
@@ -421,7 +423,10 @@ async function resolveRequestedReleaseChannel(
 
 export function createDaemonCommandHandlers(): Record<string, DesktopCommandHandler> {
   return {
-    ...createDesktopSettingsCommandHandlers({ settingsStore: getDesktopSettingsStore() }),
+    ...createDesktopSettingsCommandHandlers({
+      settingsStore: getDesktopSettingsStore(),
+      onReleaseChannelChanged: writeBuiltinPluginUpdateChannel,
+    }),
     desktop_get_runtime_info: () => ({
       appVersion: resolveDesktopAppVersion(),
       runningUnderARM64Translation: isRunningUnderARM64Translation(),

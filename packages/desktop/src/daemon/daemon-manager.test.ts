@@ -60,7 +60,10 @@ vi.mock("@getpaseo/server/daemon-control", async (importOriginal) => ({
 vi.mock("../settings/desktop-settings-electron.js", () => ({
   getDesktopSettingsStore: () => ({
     get: async () => mocks.settings,
-    patch: vi.fn(),
+    patch: async (patch: Record<string, unknown>) => {
+      mocks.settings = { ...mocks.settings, ...patch };
+      return mocks.settings;
+    },
     migrateLegacyRendererSettings: vi.fn(),
   }),
 }));
@@ -221,5 +224,37 @@ describe("daemon-manager commands", () => {
 
     expect(JSON.parse(readFileSync(channelFile(), "utf8"))).toEqual({ channel: "stable" });
     expect(existsSync(`${channelFile()}.${process.pid}.tmp`)).toBe(false);
+  });
+
+  it("writes the release channel immediately when the setting changes", async () => {
+    const handlers = createDaemonCommandHandlers();
+
+    await handlers.patch_desktop_settings({ releaseChannel: "beta" });
+    expect(JSON.parse(readFileSync(channelFile(), "utf8"))).toEqual({ channel: "beta" });
+
+    await handlers.patch_desktop_settings({ releaseChannel: "stable" });
+    expect(JSON.parse(readFileSync(channelFile(), "utf8"))).toEqual({ channel: "stable" });
+  });
+
+  it("leaves the channel file alone when a patch does not touch the release channel", async () => {
+    await createDaemonCommandHandlers().patch_desktop_settings({
+      daemon: { keepRunningAfterQuit: false },
+    });
+
+    expect(existsSync(channelFile())).toBe(false);
+  });
+
+  it("rewrites a stale channel file when the daemon is restarted from settings", async () => {
+    mocks.settings = { ...DEFAULT_DESKTOP_SETTINGS, releaseChannel: "beta" };
+    mkdirSync(path.dirname(channelFile()), { recursive: true });
+    writeFileSync(channelFile(), `${JSON.stringify({ channel: "stable" })}\n`);
+    mocks.runExternalCliJsonCommand.mockResolvedValue({});
+
+    await createDaemonCommandHandlers().restart_desktop_daemon();
+
+    expect(mocks.runExternalCliJsonCommand).toHaveBeenCalledWith(
+      expect.arrayContaining(["daemon", "restart"]),
+    );
+    expect(JSON.parse(readFileSync(channelFile(), "utf8"))).toEqual({ channel: "beta" });
   });
 });

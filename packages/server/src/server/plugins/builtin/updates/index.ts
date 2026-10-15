@@ -42,6 +42,7 @@ const MANIFEST_TIMEOUT_MS = 30_000;
 const DOWNLOAD_TIMEOUT_MS = 5 * 60_000;
 const FIRST_CHECK_DELAY_MS = 60_000;
 const DEFAULT_INTERVAL_MS = 6 * 60 * 60_000;
+const DEFAULT_CHANNEL_POLL_MS = 5_000;
 const KEEP_INSTALLED = 3;
 const MAX_START_FAILURES = 2;
 const ARCHIVE_ROOT = "zekoder";
@@ -57,6 +58,7 @@ export interface BuiltinPluginUpdaterOptions {
   fetch?: typeof fetch;
   now?: () => Date;
   intervalMs?: number;
+  channelPollMs?: number;
 }
 
 export type ActiveBuiltinPluginUpdate =
@@ -145,6 +147,7 @@ export class BuiltinPluginUpdater {
   private readonly fetchImpl: typeof fetch;
   private readonly now: () => Date;
   private readonly intervalMs: number;
+  private readonly channelPollMs: number;
   private readonly logger: Logger;
 
   private state: UpdateState | null = null;
@@ -152,6 +155,7 @@ export class BuiltinPluginUpdater {
   private writeQueue: Promise<unknown> = Promise.resolve();
   private checking: Promise<void> | null = null;
   private timer: NodeJS.Timeout | null = null;
+  private channelPoll: NodeJS.Timeout | null = null;
   private started = false;
   private lastCheckChannel: BuiltinPluginUpdateChannel | null = null;
   private candidateVersion: string | null = null;
@@ -171,6 +175,7 @@ export class BuiltinPluginUpdater {
     this.fetchImpl = options.fetch ?? fetch;
     this.now = options.now ?? (() => new Date());
     this.intervalMs = options.intervalMs ?? DEFAULT_INTERVAL_MS;
+    this.channelPollMs = options.channelPollMs ?? DEFAULT_CHANNEL_POLL_MS;
     this.logger = options.logger.child({ module: "builtin-plugin-updater", plugin: this.pluginId });
   }
 
@@ -182,12 +187,32 @@ export class BuiltinPluginUpdater {
     if (!this.enabled || this.started) return;
     this.started = true;
     this.schedule(FIRST_CHECK_DELAY_MS);
+    this.pollChannel();
   }
 
   stop(): void {
     this.started = false;
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
+    if (this.channelPoll) clearTimeout(this.channelPoll);
+    this.channelPoll = null;
+  }
+
+  // The desktop rewrites the channel file when the user changes the release channel. A cheap
+  // poll beats fs.watch here (atomic rename-over breaks watchers on some platforms) and lets a
+  // channel change check promptly instead of waiting out the 6h interval. Before the first
+  // check there is nothing to compare against; that check reads the file itself.
+  private pollChannel(): void {
+    this.channelPoll = setTimeout(() => {
+      if (
+        this.lastCheckChannel !== null &&
+        readChannelFile(this.channelFile) !== this.lastCheckChannel
+      ) {
+        void this.checkNow();
+      }
+      if (this.started) this.pollChannel();
+    }, this.channelPollMs);
+    this.channelPoll.unref();
   }
 
   private schedule(delayMs: number): void {

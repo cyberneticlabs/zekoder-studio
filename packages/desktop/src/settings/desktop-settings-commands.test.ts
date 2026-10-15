@@ -64,4 +64,22 @@ describe("desktop-settings-commands", () => {
       manageBuiltInDaemon: false,
     });
   });
+
+  it("reports the stored release channel only when a patch or migration may change it", async () => {
+    const store = createStoreMock();
+    const onReleaseChannelChanged = vi.fn(async () => {});
+    const handlers = createDesktopSettingsCommandHandlers({
+      settingsStore: store,
+      onReleaseChannelChanged,
+    });
+
+    await handlers.patch_desktop_settings({ daemon: { keepRunningAfterQuit: false } });
+    expect(onReleaseChannelChanged).not.toHaveBeenCalled();
+
+    await handlers.patch_desktop_settings({ releaseChannel: "beta" });
+    expect(onReleaseChannelChanged).toHaveBeenLastCalledWith("beta");
+
+    await handlers.migrate_legacy_desktop_settings({ releaseChannel: "beta" });
+    expect(onReleaseChannelChanged).toHaveBeenCalledTimes(2);
+  });
 });

@@ -146,14 +146,14 @@ signed `zekoder` releases and runs the newest valid one at its next start.
   (`PASEO_DESKTOP_MANAGED=1`, set only when the desktop launches the daemon), the daemon runs from
   a `builtin-plugins` root that holds `zekoder/package.json`, and `ZEKODER_PLUGIN_UPDATES` is not
   `off`. Headless npm and Docker daemons, dev checkouts, CI, and smoke runs keep the pinned
-  bundle. `paseo daemon restart` keeps the desktop launch mode, so Settings → Host → Restart
-  daemon stays opted in. `packages/server/src/server/plugins/builtin/updates/wiring.ts` owns the
-  decision.
+  bundle. `paseo daemon restart` keeps the desktop launch mode.
+  `packages/server/src/server/plugins/builtin/updates/wiring.ts` owns the decision.
 - **Where things live.** Downloaded copies and the updater state are under
   `$PASEO_HOME/builtin-plugin-updates/zekoder/<version>/` and `state.json`. The desktop writes its
-  release channel to `$PASEO_HOME/builtin-plugin-updates/desktop-channel.json` on every
-  `start_desktop_daemon`, reused daemon included. The daemon rereads it at each check, so a
-  channel change applies at the next check after the next app launch.
+  release channel to `$PASEO_HOME/builtin-plugin-updates/desktop-channel.json` when the channel
+  setting changes and on every `start_desktop_daemon` (reused daemon included) and
+  `restart_desktop_daemon`. The daemon rereads it at each check and polls it every few seconds, so
+  a channel change starts a check within seconds, with no daemon restart or app relaunch.
 - **Next start, not live.** A downloaded version replaces the bundled one only when the plugin
   starts. Restart through Settings → Host → Restart daemon to apply it.
 - **Failure handling.** A downloaded copy that fails to start falls back to the bundled copy in the

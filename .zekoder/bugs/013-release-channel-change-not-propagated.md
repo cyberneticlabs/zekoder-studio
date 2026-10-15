@@ -2,21 +2,42 @@
 id: 013-release-channel-change-not-propagated
 type: bug
 title: Release channel change does not reach the plugin updater until a full app relaunch
-status: planned
+status: merged
 createdAt: 2026-10-15
 openedAt: 2026-10-15T18:30:27.488Z
-updatedAt: 2026-10-15T18:31:22.367Z
+updatedAt: 2026-10-15T20:32:29.795Z
+completedAt: 2026-10-15T20:32:29.795Z
 severity: high
 branch: bug-013-release-channel-change-not-propagated
 promoted: false
 packages: []
+mergeMode: local
+commit: 375d2696df1f93b066835f8be2d1d04fdef00f15
+filesTouched:
+  - docs/plugins.md
+  - packages/desktop/src/daemon/daemon-manager.test.ts
+  - packages/desktop/src/daemon/daemon-manager.ts
+  - packages/desktop/src/settings/desktop-settings-commands.test.ts
+  - packages/desktop/src/settings/desktop-settings-commands.ts
+  - packages/server/src/server/plugins/builtin/updates/index.test.ts
+  - packages/server/src/server/plugins/builtin/updates/index.ts
+verifiedBaseSha: 5b90c1f84b49e8b4698f1d9ae5f45ba751c9e8d6
 relatedFeatures:
   - 008-plugin-source-consolidation
   - 004-plugin-auto-update
 relatedBugs: []
 relatedFollowups: []
 resolvedBy: null
-statusHistory: []
+statusHistory:
+  - from: planned
+    to: in-progress
+    at: 2026-10-15T20:23:56.865Z
+  - from: in-progress
+    to: ready
+    at: 2026-10-15T20:31:55.256Z
+  - from: ready
+    to: merged
+    at: 2026-10-15T20:32:29.795Z
 ---
 # Bug 013-release-channel-change-not-propagated: Release channel change does not reach the plugin updater until a full app relaunch
 

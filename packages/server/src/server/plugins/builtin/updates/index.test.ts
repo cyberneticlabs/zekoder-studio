@@ -6,7 +6,7 @@ import type { AddressInfo } from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { gzipSync } from "node:zlib";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createTestLogger } from "../../../../test-utils/test-logger.js";
 import { BuiltinPluginUpdater } from "./index.js";
 import { computeTreeChecksum } from "./tree-checksum.js";
@@ -686,6 +686,36 @@ describe("selection", () => {
     expect(updater.getStatus().channel).toBe("stable");
     await checkWith(updater, { releases: [], sequence: 2 });
     expect(updater.getStatus().channel).toBe("beta");
+  });
+});
+
+describe("channel change", () => {
+  test("a changed channel file triggers a check on the new channel without waiting", async () => {
+    const updater = makeUpdater({ channelPollMs: 10 });
+    const beta = await makeRelease({ version: "0.2.0-beta.1", channel: "beta" });
+    await checkWith(updater, { releases: [beta], sequence: 1 });
+    expect(readState().installed).toEqual([]);
+
+    updater.start();
+    try {
+      await writeChannel(JSON.stringify({ channel: "beta" }));
+      await vi.waitFor(() => expect(readState().installed).toEqual(["0.2.0-beta.1"]), {
+        timeout: 5_000,
+      });
+      expect(updater.getStatus().channel).toBe("beta");
+    } finally {
+      updater.stop();
+    }
+  });
+
+  test("an unchanged channel file does not trigger extra checks", async () => {
+    const updater = makeUpdater({ channelPollMs: 10 });
+    await checkWith(updater, { releases: [], sequence: 1 });
+    const before = fixture.requests.length;
+    updater.start();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    updater.stop();
+    expect(fixture.requests.length).toBe(before);
   });
 });
 
