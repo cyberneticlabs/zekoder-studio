@@ -173,6 +173,12 @@ signed `zekoder` releases and runs the newest valid one at its next start.
 This is the user-approved exception (2026-10-07) to exact plugin pinning. It holds because every
 update is signed, immutable and version-pinned, and the bundled copy is always the fallback.
 
+A provider registration with `requiresConfiguration: true` participates only while its ID exists
+under `agents.providers`. Hoplite uses this for catalog opt-in. Add writes `{ "enabled": true }`
+without `extends`, so it selects the bundled adapter. Remove deletes the config entry; setting
+`enabled: false` keeps the entry. The bundled JavaScript still loads at startup, but an absent
+provider does not enter executable resolution or catalog discovery.
+
 Provider plugins use separate installation and provider IDs. `muse-provider` registers the
 selectable `muse` provider (Muse Code) and a usage source. Its `status({ launch })` reports
 availability and a diagnostic after the daemon resolves the executable. Configure command,
