@@ -1,0 +1,30 @@
+{
+  "nav": {
+    "main": "Principale",
+    "home": "Accueil de la documentation ZeKoder",
+    "docs": "Documentation",
+    "website": "zekoder.com",
+    "language": "Langue",
+    "theme": "Changer le mode de couleur"
+  },
+  "version": {
+    "label": "Version de la documentation",
+    "current": "actuelle",
+    "latest": "dernière"
+  },
+  "footer": {
+    "tagline": "L'enregistreur de vol des logiciels conçus par l'IA.",
+    "company": "ZeKoder est un produit de Cybernetic Labs Ltd, Londres.",
+    "privacy": "Confidentialité",
+    "cookies": "Cookies",
+    "terms": "Conditions"
+  },
+  "page": {
+    "notTranslatedTitle": "Pas encore traduit",
+    "notTranslatedBody": "Cette page n'est pas encore disponible en français. La version anglaise est affichée à la place.",
+    "toc": "Sur cette page",
+    "notFoundTitle": "Page introuvable",
+    "notFoundBody": "Cette page n'existe pas dans cette version de la documentation.",
+    "backHome": "Retour à l'accueil de la documentation"
+  }
+}

@@ -60,6 +60,11 @@
       "project": ["src/**/*.{ts,tsx}"],
       "ignore": ["src/routeTree.gen.ts"]
     },
+    "packages/docs": {
+      "entry": ["app/**/*.{ts,vue}", "content.config.ts", "nuxt.config.ts"],
+      "project": ["app/**/*.{ts,vue}", "*.ts"],
+      "ignoreDependencies": ["@iconify-json/lucide", "vue-tsc"]
+    },
     "packages/desktop": {
       "entry": ["src/main.ts", "src/preload.ts", "src/**/*.test.ts"],
       "project": ["src/**/*.ts"]

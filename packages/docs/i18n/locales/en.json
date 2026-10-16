@@ -1,0 +1,30 @@
+{
+  "nav": {
+    "main": "Main",
+    "home": "ZeKoder documentation home",
+    "docs": "Docs",
+    "website": "zekoder.com",
+    "language": "Language",
+    "theme": "Toggle color mode"
+  },
+  "version": {
+    "label": "Documentation version",
+    "current": "current",
+    "latest": "latest"
+  },
+  "footer": {
+    "tagline": "The flight recorder for AI-built software.",
+    "company": "ZeKoder is a product of Cybernetic Labs Ltd, London.",
+    "privacy": "Privacy",
+    "cookies": "Cookies",
+    "terms": "Terms"
+  },
+  "page": {
+    "notTranslatedTitle": "Not translated yet",
+    "notTranslatedBody": "This page is not available in your language yet. The English version is shown instead.",
+    "toc": "On this page",
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "This page does not exist in this version of the documentation.",
+    "backHome": "Back to the documentation home"
+  }
+}

@@ -5,6 +5,10 @@ node_modules/
 build/
 dist/
 .next/
+.nuxt/
+.output/
+packages/docs/.data/
+packages/docs/dist
 out/
 result
 

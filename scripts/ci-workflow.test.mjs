@@ -189,7 +189,11 @@ test("PR routing declares stable behavior ownership", () => {
       "**/*.{cjs,css,html,js,json,jsonc,jsx,md,mjs,ts,tsx,yaml,yml}",
       "packages/expo-two-way-audio/**",
     ],
-    quality: ["**/*.{cjs,js,json,jsx,mjs,ts,tsx}", "packages/expo-two-way-audio/**"],
+    quality: [
+      "**/*.{cjs,js,json,jsx,mjs,ts,tsx}",
+      "packages/expo-two-way-audio/**",
+      "packages/docs/**",
+    ],
     hub: ["packages/cli/src/commands/hub/**", "packages/server/src/server/hub/**"],
     server: ["plugins/**", "packages/server/**", "packages/app/e2e/support/fixtures/recording.*"],
     desktop: [
@@ -375,15 +379,18 @@ test("desktop release starts only from a pushed version tag", () => {
 test("desktop release jobs hold the narrowest permissions", () => {
   const jobs = jobsOf(readFileSync(desktopReleasePath, "utf8"));
   const names = [...jobs.keys()];
-  assert.deepEqual(names, ["preflight", "release-notes", "build", "publish", "finalize"]);
+  assert.deepEqual(names, ["preflight", "release-notes", "build", "publish", "finalize", "docs"]);
 
   const permissions = new Map(
     names.map((name) => [name, jobPermissions(jobs.get(name).join("\n"))]),
   );
-  // Only the publication job can mint cloud credentials, and it cannot write to GitHub.
+  // Only the publication and docs jobs can mint cloud credentials, and neither can write to GitHub.
   assert.deepEqual(permissions.get("publish"), ["contents: read", "id-token: write"]);
+  assert.deepEqual(permissions.get("docs"), ["contents: read", "id-token: write"]);
   for (const [name, granted] of permissions) {
-    if (name !== "publish") assert.ok(!granted.includes("id-token: write"), name);
+    if (name !== "publish" && name !== "docs") {
+      assert.ok(!granted.includes("id-token: write"), name);
+    }
   }
   // Only the notes and finalization jobs can touch GitHub Releases.
   assert.deepEqual(permissions.get("release-notes"), ["contents: write"]);
@@ -408,6 +415,24 @@ test("desktop release publishes only after every target and finalizes after publ
   assert.doesNotMatch(jobs.get("build").join("\n"), /google-github-actions|publish-release/);
   assert.match(jobs.get("publish").join("\n"), /google-github-actions\/auth@[0-9a-f]{40}/);
   assert.match(jobs.get("publish").join("\n"), /verify-tag/);
+});
+
+test("desktop release deploys the docs site only for stable tags after publication", () => {
+  const docs = jobsOf(readFileSync(desktopReleasePath, "utf8")).get("docs").join("\n");
+
+  assert.match(docs, /needs: \[preflight, publish\]/);
+  const condition = /^ {4}if: \$\{\{ (.+) \}\}$/m.exec(docs)?.[1];
+  assert.equal(
+    condition,
+    "!cancelled() && needs.preflight.result == 'success' && needs.preflight.outputs.channel == 'stable' && (needs.publish.result == 'success' || needs.preflight.outputs.already_published == 'true')",
+  );
+  assert.match(condition, /!cancelled\(\)/);
+  assert.match(condition, /outputs\.channel == 'stable'/);
+  assert.match(docs, /google-github-actions\/auth@[0-9a-f]{40}/);
+  assert.match(docs, /google-github-actions\/setup-gcloud@[0-9a-f]{40}/);
+  assert.match(docs, /GCP_DOCS_SERVICE_ACCOUNT/);
+  assert.doesNotMatch(docs, /GCP_SERVICE_ACCOUNT/);
+  assert.match(docs, /--min-instances 0/);
 });
 
 test("desktop release ships macOS unsigned only when no Apple secrets exist", () => {

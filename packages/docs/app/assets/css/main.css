@@ -1,0 +1,211 @@
+/* 1. Self-hosted fonts (latin subset only) — must precede tailwindcss */
+@import "@fontsource/inter/latin-400.css";
+@import "@fontsource/inter/latin-500.css";
+@import "@fontsource/inter/latin-600.css";
+@import "@fontsource/inter-tight/latin-600.css";
+@import "@fontsource/inter-tight/latin-700.css";
+@import "@fontsource/jetbrains-mono/latin-400.css";
+@import "@fontsource/jetbrains-mono/latin-500.css";
+
+/* 2. Tailwind v4 + Nuxt UI */
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/* 3. Brand design tokens (docs/ZeKoder_Brand_Guide_v1.md, docs/home-page/SPEC.md §1) */
+@theme {
+  --font-sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Inter Tight", Inter, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+
+  /* Themeable (flip with .dark) */
+  --color-bg: var(--zk-bg);
+  --color-bg-alt: var(--zk-bg-alt);
+  --color-bg-tint: var(--zk-bg-tint);
+  --color-card: var(--zk-card);
+  --color-card-alt: var(--zk-card-alt);
+  --color-fg: var(--zk-text);
+  --color-fg-2: var(--zk-text-2);
+  --color-fg-3: var(--zk-text-3);
+  --color-line: var(--zk-border);
+  --color-line-strong: var(--zk-border-strong);
+  --color-accent: var(--zk-accent);
+  --color-accent-hover: var(--zk-accent-hover);
+  --color-ok: var(--zk-ok);
+  --color-warn: var(--zk-warn);
+  --color-node: var(--zk-node);
+  --color-band: var(--zk-band);
+  --color-band-card: var(--zk-band-card);
+  --color-band-line: var(--zk-band-border);
+  --color-band-fg: var(--zk-band-text);
+  --color-band-fg-2: var(--zk-band-text-2);
+  --color-band-eyebrow: var(--zk-band-eyebrow);
+  --color-bezel: var(--zk-bezel);
+  --color-shadow: var(--zk-shadow);
+
+  /* Fixed (never flip) */
+  --color-brand: #1461bd;
+  --color-brand-hover: #0e4a91;
+  --color-brand-light: #4c8fe0;
+  --color-brand-tint: #e8f0fb;
+  --color-ink-950: #0e1014;
+  --color-ink-900: #16181d;
+  --color-ink-850: #1a1d23;
+  --color-ink-800: #1e2128;
+  --color-ink-active: #22324a;
+  --color-ink-700: #2a2e36;
+  --color-ink-600: #3a3f4a;
+  --color-ink-muted: #8a92a0;
+  --color-ink-soft: #a9b0bc;
+  --color-ink-text-2: #c3c8d1;
+  --color-ink-text: #d7dbe2;
+  --color-ink-fg: #e6e9ee;
+  --color-ok-bright: #4ade80;
+  --color-warn-bright: #fbbf24;
+  --color-ok-ink: #1a7f4e;
+  --color-warn-ink: #9a5b00;
+  --color-paper: #ffffff;
+  --color-paper-ink: #333333;
+  --color-paper-ink-2: #4b5160;
+  --color-paper-alt: #f7f8fa;
+  --color-paper-border: #e5e7eb;
+  --color-paper-edge: #d5dae1;
+  --color-paper-dash: #b6bcc6;
+  --color-grey-500: #6b7280;
+
+  --radius-xs: 2px;
+  --radius-2xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 14px;
+  --radius-tablet: 22px;
+  --radius-phone: 32px;
+
+  --container-site: 1200px;
+}
+
+:root {
+  --zk-bg: #ffffff;
+  --zk-bg-alt: #f7f8fa;
+  --zk-bg-tint: #e8f0fb;
+  --zk-card: #ffffff;
+  --zk-card-alt: #f7f8fa;
+  --zk-text: #333333;
+  --zk-text-2: #4b5160;
+  --zk-text-3: #6b7280;
+  --zk-border: #e5e7eb;
+  --zk-border-strong: #c9cdd4;
+  --zk-accent: #1461bd;
+  --zk-accent-hover: #0e4a91;
+  --zk-ok: #1a7f4e;
+  --zk-warn: #9a5b00;
+  --zk-node: #333333;
+  --zk-band: #16181d;
+  --zk-band-card: #1e2128;
+  --zk-band-border: #2a2e36;
+  --zk-band-text: #ffffff;
+  --zk-band-text-2: #c3c8d1;
+  --zk-band-eyebrow: #a9b0bc;
+  --zk-dots: rgba(51, 51, 51, 0.07);
+  --zk-bezel: #333333;
+  --zk-shadow: rgba(22, 24, 29, 0.08);
+  --zk-focus: #1461bd;
+  color-scheme: light;
+}
+
+.dark {
+  --zk-bg: #16181d;
+  --zk-bg-alt: #1b1e24;
+  --zk-bg-tint: #16223a;
+  --zk-card: #1e2128;
+  --zk-card-alt: #1e2128;
+  --zk-text: #f2f4f7;
+  --zk-text-2: #c3c8d1;
+  --zk-text-3: #9ca3af;
+  --zk-border: #2a2e36;
+  --zk-border-strong: #3a3f4a;
+  --zk-accent: #4c8fe0;
+  --zk-accent-hover: #7fb0ee;
+  --zk-ok: #4ade80;
+  --zk-warn: #fbbf24;
+  --zk-node: #f2f4f7;
+  --zk-band: #0e1014;
+  --zk-band-card: #181b21;
+  --zk-dots: rgba(255, 255, 255, 0.05);
+  --zk-bezel: #3a3f4a;
+  --zk-shadow: rgba(0, 0, 0, 0.4);
+  --zk-focus: #4c8fe0;
+  color-scheme: dark;
+}
+
+/* 4. Base */
+@layer base {
+  html {
+    scroll-padding-top: 88px;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 24px;
+    color: var(--zk-text);
+    background: var(--zk-bg);
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.2s ease-out;
+  }
+
+  /* Match the commercial site: form controls keep the UA `line-height: normal`. */
+  button,
+  input,
+  select,
+  textarea {
+    line-height: normal;
+  }
+
+  /* :root raises specificity past Nuxt UI's `a:focus-visible { outline-offset: 0 }` */
+  :root :focus-visible {
+    outline: 2px solid var(--zk-focus);
+    outline-offset: 2px;
+  }
+}
+
+/* 5. Shared component classes (subset of the commercial site's) */
+@layer components {
+  .zk-wrap {
+    max-width: var(--container-site);
+    margin-inline: auto;
+    padding-inline: clamp(16px, 4vw, 48px);
+  }
+
+  .zk-navlink {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 4px;
+    color: var(--zk-text);
+    text-decoration: none;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+
+  .zk-navlink:hover {
+    color: var(--zk-accent);
+  }
+
+  .zk-footlink {
+    color: var(--zk-text-2);
+    text-decoration: none;
+    font-size: 14px;
+    line-height: 28px;
+  }
+
+  .zk-footlink:hover {
+    color: var(--zk-accent);
+  }
+}

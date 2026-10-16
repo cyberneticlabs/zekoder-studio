@@ -9,6 +9,8 @@ name: Desktop Release
 #   build           five matrix targets; build + packaged smoke only, never publishes
 #   publish         the only job with GCP OIDC (id-token: write) and no GitHub write access
 #   finalize        makes the GitHub Release visible after the catalog lists the tag
+#   docs            stable tags only: builds the versioned docs site, uploads it to the docs
+#                   bucket and deploys the Cloud Run docs server (own OIDC identity)
 #
 # Rerun failed jobs to retry the same tag: the same commit is rebuilt only for failed rows, and
 # the publisher reuses byte-identical objects already stored in GCS.
@@ -475,3 +477,132 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ZEKODER_RELEASE_BUCKET: ${{ vars.ZEKODER_RELEASE_BUCKET }}
         run: node scripts/desktop-release/release-ci.mjs finalize --tag "${{ needs.preflight.outputs.tag }}" --sha "${{ needs.preflight.outputs.source_sha }}" --repo "${{ github.repository }}"
+
+  # Stable tags only. Independent of finalize so a docs problem never blocks the GitHub Release;
+  # also runs for an already published tag so a failed docs run is fixed by rerunning the job.
+  docs:
+    needs: [preflight, publish]
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.preflight.outputs.channel == 'stable' && (needs.publish.result == 'success' || needs.preflight.outputs.already_published == 'true') }}
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RELEASE_TAG: ${{ needs.preflight.outputs.tag }}
+      RELEASE_VERSION: ${{ needs.preflight.outputs.version }}
+      PUBLISHED_AT: ${{ needs.preflight.outputs.published_at }}
+      ZEKODER_RELEASE_BUCKET: ${{ vars.ZEKODER_RELEASE_BUCKET }}
+      ZEKODER_DOCS_BUCKET: ${{ vars.ZEKODER_DOCS_BUCKET }}
+      DOCS_IMAGE_REPOSITORY: ${{ vars.DOCS_IMAGE_REPOSITORY }}
+      DOCS_CLOUD_RUN_SERVICE: ${{ vars.DOCS_CLOUD_RUN_SERVICE }}
+      DOCS_CLOUD_RUN_REGION: ${{ vars.DOCS_CLOUD_RUN_REGION }}
+    steps:
+      # All docs variables unset: the docs site is not provisioned yet, skip quietly. Partly set
+      # is a misconfiguration and fails.
+      - name: Check docs configuration
+        id: gate
+        env:
+          WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          SERVICE_ACCOUNT: ${{ vars.GCP_DOCS_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          names=(ZEKODER_DOCS_BUCKET GCP_DOCS_SERVICE_ACCOUNT DOCS_IMAGE_REPOSITORY DOCS_CLOUD_RUN_SERVICE DOCS_CLOUD_RUN_REGION)
+          values=("$ZEKODER_DOCS_BUCKET" "$SERVICE_ACCOUNT" "$DOCS_IMAGE_REPOSITORY" "$DOCS_CLOUD_RUN_SERVICE" "$DOCS_CLOUD_RUN_REGION")
+          missing=()
+          for i in "${!names[@]}"; do
+            [[ -n "${values[$i]}" ]] || missing+=("${names[$i]}")
+          done
+          if (( ${#missing[@]} == ${#names[@]} )); then
+            echo "::notice::Docs variables are not configured; skipping the docs publish. See docs/release.md."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          [[ -n "$WORKLOAD_IDENTITY_PROVIDER" ]] || missing+=(GCP_WORKLOAD_IDENTITY_PROVIDER)
+          [[ -n "$ZEKODER_RELEASE_BUCKET" ]] || missing+=(ZEKODER_RELEASE_BUCKET)
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error::Missing repository variables: ${missing[*]}. See docs/release.md."
+            exit 1
+          fi
+          echo "configured=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        if: ${{ steps.gate.outputs.configured == 'true' }}
+        with:
+          ref: ${{ needs.preflight.outputs.source_sha }}
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        if: ${{ steps.gate.outputs.configured == 'true' }}
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Install docs dependencies
+        if: ${{ steps.gate.outputs.configured == 'true' }}
+        run: node scripts/npm-retry.mjs ci --workspace=@cyberneticlabs/zekoder-docs --include-workspace-root
+
+      # The notes object exists on a fresh and on an already published run alike.
+      - name: Put the release notes on the What changed page
+        if: ${{ steps.gate.outputs.configured == 'true' }}
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://storage.googleapis.com/${ZEKODER_RELEASE_BUCKET}/desktop/releases/${RELEASE_TAG}/release-notes.md" -o "$RUNNER_TEMP/release-notes.md"
+          node scripts/docs-release/docs-release.mjs write-notes \
+            --notes "$RUNNER_TEMP/release-notes.md" \
+            --out packages/docs/content/en/whats-changed.md
+
+      - name: Generate the docs site
+        if: ${{ steps.gate.outputs.configured == 'true' }}
+        env:
+          NUXT_APP_BASE_URL: /${{ needs.preflight.outputs.tag }}/
+          NUXT_PUBLIC_DOCS_VERSION: ${{ needs.preflight.outputs.version }}
+        run: npm run generate --workspace=@cyberneticlabs/zekoder-docs
+
+      # create_credentials_file stays at its default (true) so gcloud and docker are authenticated.
+      - name: Authenticate to Google Cloud
+        id: auth
+        if: ${{ steps.gate.outputs.configured == 'true' }}
+        uses: google-github-actions/auth@b7593ed2efd1c1617e1b0254da33b86225adb2a5 # v2.1.12
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DOCS_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/cloud-platform
+
+      - uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
+        if: ${{ steps.gate.outputs.configured == 'true' }}
+
+      - name: Publish the site to the docs bucket
+        if: ${{ steps.gate.outputs.configured == 'true' }}
+        env:
+          GCS_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: |
+          node scripts/docs-release/docs-release.mjs publish \
+            --tag "$RELEASE_TAG" \
+            --root packages/docs/.output/public \
+            --bucket "$ZEKODER_DOCS_BUCKET" \
+            --published-at "$PUBLISHED_AT"
+
+      - name: Build and push the docs server image
+        if: ${{ steps.gate.outputs.configured == 'true' }}
+        run: |
+          set -euo pipefail
+          IMAGE="${DOCS_IMAGE_REPOSITORY}/docs-server:${RELEASE_TAG}"
+          gcloud auth configure-docker "${DOCS_CLOUD_RUN_REGION}-docker.pkg.dev" --quiet
+          docker build -t "$IMAGE" scripts/docs-release
+          docker push "$IMAGE"
+
+      - name: Deploy the docs server
+        if: ${{ steps.gate.outputs.configured == 'true' }}
+        run: |
+          set -euo pipefail
+          gcloud run deploy "$DOCS_CLOUD_RUN_SERVICE" \
+            --region "$DOCS_CLOUD_RUN_REGION" \
+            --image "${DOCS_IMAGE_REPOSITORY}/docs-server:${RELEASE_TAG}" \
+            --execution-environment gen2 \
+            --min-instances 0 \
+            --clear-volume-mounts \
+            --clear-volumes \
+            --add-volume name=docs,type=cloud-storage,bucket="$ZEKODER_DOCS_BUCKET",readonly=true \
+            --add-volume-mount volume=docs,mount-path=/srv/docs

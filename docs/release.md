@@ -96,6 +96,12 @@ conventional-commit bullets; the pipeline rejects those and GitHub's generated "
    and `manifest.json` updated last by compare-and-swap.
 5. `finalize` (the only job that can write GitHub Releases) turns the draft into the visible release
    after the catalog lists the tag. It is safe to rerun.
+6. `docs` runs for stable tags only, after `publish` succeeded or the tag was already published. It has
+   its own cloud identity (`GCP_DOCS_SERVICE_ACCOUNT`), so it can fail or be skipped without touching
+   the GitHub Release. It writes the release notes onto the "What changed" page, builds the site with
+   base path `/<tag>/`, uploads it with `scripts/docs-release/docs-release.mjs publish`, then builds and
+   deploys the docs server image. With none of the docs variables set it logs a notice and skips. See
+   [docs/docs-site.md](docs-site.md) for authoring.
 
 ### Storage and channels
 
@@ -109,16 +115,26 @@ conventional-commit bullets; the pipeline rejects those and GitHub's generated "
   admit immediately. The ramp is fixed in the published feeds. There is no rollout re-stamp: the old
   `desktop-rollout.yml` workflow is retired for this repository.
 - `scripts/desktop-release/release-data.mjs` owns the catalog schema and pointer-selection rules.
+- Docs bucket (`ZEKODER_DOCS_BUCKET`, private): `v<X.Y.Z>/` holds one frozen site per stable tag and
+  `versions.json` lists them newest first with `latest`. `versions.json` is merged by compare-and-swap
+  after the files upload, so a version is listed only when its files are complete; a rerun overwrites
+  a partial upload. A Cloud Run service mounts the bucket read-only at `/srv/docs` and serves it with
+  `scripts/docs-release/serve.mjs` (`/` redirects to the latest version, min instances 0). The image is
+  tagged with the release tag, but the content always comes from the bucket.
 
 ### Credentials and configuration
 
-| Name                                                    | Kind     | Purpose                                                                |
-| ------------------------------------------------------- | -------- | ---------------------------------------------------------------------- |
-| `ZEKODER_RELEASE_BUCKET`                                | variable | `zekoder-releases`                                                     |
-| `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_SERVICE_ACCOUNT` | variable | Dedicated desktop OIDC identity, writes limited to `desktop/releases/` |
-| `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`       | secret   | Fork-owned Developer ID certificate (base64 `.p12`)                    |
-| `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`           | secret   | Notarization (app-specific password)                                   |
-| `WINDOWS_CSC_LINK`, `WINDOWS_CSC_KEY_PASSWORD`          | secret   | Optional fork-owned Windows code-signing certificate                   |
+| Name                                                    | Kind     | Purpose                                                                        |
+| ------------------------------------------------------- | -------- | ------------------------------------------------------------------------------ |
+| `ZEKODER_RELEASE_BUCKET`                                | variable | `zekoder-releases`                                                             |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_SERVICE_ACCOUNT` | variable | Dedicated desktop OIDC identity, writes limited to `desktop/releases/`         |
+| `ZEKODER_DOCS_BUCKET`                                   | variable | Private bucket holding the versioned docs site and `versions.json`             |
+| `GCP_DOCS_SERVICE_ACCOUNT`                              | variable | Docs OIDC identity: writes the docs bucket, pushes images, deploys the service |
+| `DOCS_IMAGE_REPOSITORY`                                 | variable | Artifact Registry repository for `docs-server:<tag>`, in the service's region  |
+| `DOCS_CLOUD_RUN_SERVICE`, `DOCS_CLOUD_RUN_REGION`       | variable | The Cloud Run docs service and its region                                      |
+| `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`       | secret   | Fork-owned Developer ID certificate (base64 `.p12`)                            |
+| `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`           | secret   | Notarization (app-specific password)                                           |
+| `WINDOWS_CSC_LINK`, `WINDOWS_CSC_KEY_PASSWORD`          | secret   | Optional fork-owned Windows code-signing certificate                           |
 
 - **macOS signing is all or nothing.** With all five `APPLE_*` secrets the build is signed and
   notarized (provenance `notarized`) and fails after building unless the app is signed by
@@ -173,6 +189,8 @@ update itself. The beta pointer later moves to the first signed stable.
       way each macOS provenance record names `notarized` or `unsigned`. Windows policy line (`unsigned`
       or `signed`) in each Windows provenance record.
 - [ ] Each packaged version equals the tag version without the `v`.
+- [ ] Stable tags with docs configured: the `docs` job is green, `https://docs.zekoder.com/versions.json`
+      lists the tag as `latest`, and the site's "What changed" page shows the release notes.
 
 ### Failures and recovery
 
@@ -184,6 +202,9 @@ update itself. The beta pointer later moves to the first signed stable.
   the catalog untouched. Fix the source, review it, and release the next version; the abandoned tag
   stays unpublished and is never reused.
 - A failed `finalize` is retried alone; the catalog already lists the tag.
+- A failed `docs` job is retried by rerunning the same tag's run. A version already listed in
+  `versions.json` is a no-op, and a partial upload is overwritten. Deploy docs only from the tag
+  workflow, never by hand.
 
 ### Retained binaries and rollback
 

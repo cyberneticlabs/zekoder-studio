@@ -28,6 +28,7 @@ format:
 quality:
   - "**/*.{cjs,js,json,jsx,mjs,ts,tsx}"
   - "packages/expo-two-way-audio/**"
+  - "packages/docs/**"
 
 hub:
   - "packages/cli/src/commands/hub/**"

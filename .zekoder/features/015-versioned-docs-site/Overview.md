@@ -2,10 +2,11 @@
 id: 015-versioned-docs-site
 type: feature
 title: Multi-language versioned documentation site
-status: planned
+status: merged
 createdAt: 2026-10-15
 openedAt: 2026-10-15T17:19:57.986Z
-updatedAt: 2026-10-15T17:47:15.455Z
+updatedAt: 2026-10-16T10:50:13.277Z
+completedAt: 2026-10-16T10:50:13.277Z
 promoted: true
 dependsOn: []
 packages:
@@ -14,13 +15,75 @@ packages:
     file: packages/01-docs-site.md
     branch: 015-versioned-docs-site-01-docs-site
     dependsOn: []
-    status: planned
+    status: merged
+    mergeMode: local
+    commit: 324c246bab9d0b5c736f80dfdf8a4502e8d04c50
+    filesTouched:
+      - .github/ci-paths.yml
+      - .github/workflows/ci.yml
+      - .gitignore
+      - .oxfmtrc.json
+      - .oxlintrc.json
+      - .zekoder/features/015-versioned-docs-site/packages/01-docs-site.md
+      - CLAUDE.md
+      - docs/docs-site.md
+      - knip.json
+      - package-lock.json
+      - package.json
+      - packages/cli/package.json
+      - packages/docs/app/app.config.ts
+      - packages/docs/app/app.vue
+      - packages/docs/app/assets/css/main.css
+      - packages/docs/app/components/DocsFooter.vue
+      - packages/docs/app/components/DocsHeader.vue
+      - packages/docs/app/components/DocsLogo.vue
+      - packages/docs/app/components/VersionSelector.vue
+      - packages/docs/app/composables/useUiLocale.ts
+      - packages/docs/app/error.vue
+      - packages/docs/app/layouts/default.vue
+      - packages/docs/app/pages/[...slug].vue
+      - packages/docs/app/utils/navigation.ts
+      - packages/docs/content.config.ts
+      - packages/docs/content/ar/getting-started/.navigation.yml
+      - packages/docs/content/ar/getting-started/install.md
+      - packages/docs/content/ar/index.md
+      - packages/docs/content/en/getting-started/.navigation.yml
+      - packages/docs/content/en/getting-started/connect-a-host.md
+      - packages/docs/content/en/getting-started/install.md
+      - packages/docs/content/en/index.md
+      - packages/docs/content/en/whats-changed.md
+      - packages/docs/content/fr/getting-started/.navigation.yml
+      - packages/docs/content/fr/getting-started/install.md
+      - packages/docs/content/fr/index.md
+      - packages/docs/i18n/locales/ar.json
+      - packages/docs/i18n/locales/en.json
+      - packages/docs/i18n/locales/fr.json
+      - packages/docs/nuxt.config.ts
+      - packages/docs/package.json
+      - packages/docs/public/brand/logo-blue.png
+      - packages/docs/public/brand/logo-white.png
+      - packages/docs/tsconfig.json
+      - scripts/ci-workflow.test.mjs
+    verifiedBaseSha: 428657d9b2eeff9bfa458a967ad30913a752e875
   - id: "02"
     name: docs-publish
     file: packages/02-docs-publish.md
     branch: 015-versioned-docs-site-02-docs-publish
     dependsOn: []
-    status: planned
+    status: merged
+    mergeMode: local
+    commit: ba7a8469bd48ae455814bcf2c166206cd3b339a2
+    filesTouched:
+      - .github/workflows/ci.yml
+      - .github/workflows/desktop-release.yml
+      - .zekoder/features/015-versioned-docs-site/packages/02-docs-publish.md
+      - docs/release.md
+      - scripts/ci-workflow.test.mjs
+      - scripts/docs-release/Dockerfile
+      - scripts/docs-release/docs-release.mjs
+      - scripts/docs-release/docs-release.test.mjs
+      - scripts/docs-release/serve.mjs
+    verifiedBaseSha: 9773d60ae6384834e2326fde60b77fc11685fbe1
 contracts:
   - id: docs-build-interface
     type: internal
@@ -40,11 +103,18 @@ contracts:
     externalDependency: 1
     owner: "02"
     consumers: []
+mergeMode: local
 relatedFeatures:
   - 003-desktop-gcs-release-pipeline
 relatedBugs: []
 relatedFollowups: []
-statusHistory: []
+statusHistory:
+  - from: planned
+    to: in-progress
+    at: 2026-10-16T10:34:31.469Z
+  - from: in-progress
+    to: merged
+    at: 2026-10-16T10:50:13.277Z
 ---
 # Multi-language versioned documentation site — Overview
 
