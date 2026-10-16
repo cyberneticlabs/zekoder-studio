@@ -36,6 +36,9 @@ export interface ChangelogRelease {
 // from matching one level deeper.
 const RELEASE_HEADING = /^ {0,3}##(?:[ \t]+(.*?))?[ \t]*$/;
 const SECTION_HEADING = /^ {0,3}###(?:[ \t]+(.*?))?[ \t]*$/;
+// A hand-written release body has no enclosing document, so `#` to `###` all
+// start a section rather than a release.
+const BODY_SECTION_HEADING = /^ {0,3}#{1,3}(?:[ \t]+(.*?))?[ \t]*$/;
 const FENCE_OPEN = /^\s*(`{3,}|~{3,})/;
 const ATX_CLOSING = /[ \t]+#+[ \t]*$/;
 const MARKDOWN_LINK = /\[([^\]]*)\]\([^)]*\)/g;
@@ -61,14 +64,7 @@ export function parseChangelog(markdown: string): ChangelogRelease[] {
   let fence: string | null = null;
 
   for (const line of markdown.split(/\r?\n/)) {
-    const fenceEdge = line.match(FENCE_OPEN)?.[1];
-    if (fenceEdge) {
-      if (!fence) {
-        fence = fenceEdge;
-      } else if (fenceEdge[0] === fence[0] && fenceEdge.length >= fence.length) {
-        fence = null;
-      }
-    }
+    fence = nextFence(fence, line);
 
     if (!fence) {
       const releaseHeading = line.match(RELEASE_HEADING);
@@ -82,10 +78,7 @@ export function parseChangelog(markdown: string): ChangelogRelease[] {
 
       const sectionHeading = line.match(SECTION_HEADING);
       if (sectionHeading && releases.length > 0) {
-        releases[releases.length - 1].sections.push({
-          title: (sectionHeading[1] ?? "").replace(ATX_CLOSING, "").trim() || null,
-          lines: [],
-        });
+        releases[releases.length - 1].sections.push(newSection(sectionHeading[1]));
         continue;
       }
     }
@@ -97,13 +90,57 @@ export function parseChangelog(markdown: string): ChangelogRelease[] {
   return releases.map(materializeRelease);
 }
 
+/**
+ * Sections of a single release whose notes were authored on their own, such as
+ * the body of a GitHub Release. Same section rules as `parseChangelog`, minus
+ * the release heading.
+ */
+export function parseReleaseBody(markdown: string): ChangelogSection[] {
+  const sections: SectionDraft[] = [{ title: null, lines: [] }];
+  let fence: string | null = null;
+
+  for (const line of markdown.split(/\r?\n/)) {
+    fence = nextFence(fence, line);
+
+    const sectionHeading = fence ? null : line.match(BODY_SECTION_HEADING);
+    if (sectionHeading) {
+      sections.push(newSection(sectionHeading[1]));
+    } else {
+      sections[sections.length - 1].lines.push(line);
+    }
+  }
+
+  return materializeSections(sections);
+}
+
+function nextFence(fence: string | null, line: string): string | null {
+  const fenceEdge = line.match(FENCE_OPEN)?.[1];
+  if (!fenceEdge) return fence;
+  if (!fence) return fenceEdge;
+  if (fenceEdge[0] === fence[0] && fenceEdge.length >= fence.length) return null;
+  return fence;
+}
+
+function newSection(rawTitle: string | undefined): SectionDraft {
+  return { title: (rawTitle ?? "").replace(ATX_CLOSING, "").trim() || null, lines: [] };
+}
+
 function materializeRelease(draft: ReleaseDraft): ChangelogRelease {
-  const sections = draft.sections
-    .map((section) => ({ title: section.title, body: trimBlankLines(section.lines) }))
-    // A heading with an empty body still names something; an empty lead section
-    // is just the gap between the release heading and the first section.
-    .filter((section) => section.title !== null || section.body.length > 0);
-  return { version: draft.version, date: draft.date, sections };
+  return {
+    version: draft.version,
+    date: draft.date,
+    sections: materializeSections(draft.sections),
+  };
+}
+
+function materializeSections(drafts: SectionDraft[]): ChangelogSection[] {
+  return (
+    drafts
+      .map((section) => ({ title: section.title, body: trimBlankLines(section.lines) }))
+      // A heading with an empty body still names something; an empty lead section
+      // is just the gap between the release heading and the first section.
+      .filter((section) => section.title !== null || section.body.length > 0)
+  );
 }
 
 function trimBlankLines(lines: string[]): string {

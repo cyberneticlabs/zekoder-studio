@@ -1,4 +1,4 @@
-import { brandUrl } from "@getpaseo/protocol/branding";
+import { brandReleasesPageUrl } from "@getpaseo/protocol/branding";
 import { memo, useCallback, useMemo } from "react";
 import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import { ExternalLink, Gift } from "lucide-react-native";
@@ -26,7 +26,7 @@ import {
   type ChangelogSection,
 } from "./parse-changelog";
 
-const WEBSITE_CHANGELOG_URL = brandUrl("/changelog");
+const RELEASES_PAGE_URL = brandReleasesPageUrl();
 
 const ThemedGift = withUnistyles(Gift);
 const ThemedExternalLink = withUnistyles(ExternalLink);
@@ -47,7 +47,7 @@ export function ChangelogSheet({ visible, onClose }: ChangelogSheetProps) {
   const { count, showMore } = useRevealedReleases(visible && state.status === "ready");
 
   const handleOpenWebsite = useCallback(() => {
-    void openExternalUrl(WEBSITE_CHANGELOG_URL);
+    void openExternalUrl(RELEASES_PAGE_URL);
   }, []);
 
   const header: SheetHeader = useMemo(

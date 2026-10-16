@@ -72,7 +72,9 @@ Rules:
 
 The draft's body is the product notes. The pipeline copies it byte for byte to
 `release-notes.md` in the snapshot, stamps it into each updater feed for the existing update UI, and
-links it from the catalog. It must exist and be nonempty before the tag is pushed.
+links it from the catalog. It must exist and be nonempty before the tag is pushed. The app's "What's
+new" sheet reads the same body from the public GitHub Releases API once the release is published, so
+the root `CHANGELOG.md` (upstream Paseo's) is never shown to users.
 
 Write what a user would notice: new features, updates to existing features, and broad bug categories
 such as security or performance fixes. Never paste commit lists, hashes, PR numbers or

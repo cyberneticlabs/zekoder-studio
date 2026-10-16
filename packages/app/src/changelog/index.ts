@@ -1,6 +1,6 @@
 /**
- * What's new: the release notes, read from the repository's CHANGELOG.md and
- * rendered in the app instead of sending the reader to a browser.
+ * What's new: the release notes, read from the GitHub Releases of the Zekoder Studio
+ * repository and rendered in the app instead of sending the reader to a browser.
  *
  * Two things leave this module — the host the app shell mounts, and the command
  * every entry point calls. Where the document comes from, how it is parsed, and

@@ -3,6 +3,8 @@
 export const BRAND = {
   name: "Zekoder",
   websiteUrl: "https://zekoder.net",
+  // Public repository whose GitHub Releases carry the release notes.
+  releasesRepository: "cyberneticlabs/zekoder-studio",
   deepLinkScheme: "zekoder",
   defaultDaemonPort: 6777,
   defaultHomeDirName: ".zekoder",
@@ -17,4 +19,12 @@ export function brandUrl(path?: string): string {
     return `${BRAND.websiteUrl}${path}`;
   }
   return `${BRAND.websiteUrl}${path.startsWith("/") ? "" : "/"}${path}`;
+}
+
+export function brandReleasesPageUrl(): string {
+  return `https://github.com/${BRAND.releasesRepository}/releases`;
+}
+
+export function brandReleasesApiUrl(perPage: number): string {
+  return `https://api.github.com/repos/${BRAND.releasesRepository}/releases?per_page=${perPage}`;
 }

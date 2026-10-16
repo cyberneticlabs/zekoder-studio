@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { parseChangelog, type ChangelogRelease } from "./parse-changelog";
+import { brandReleasesApiUrl } from "@getpaseo/protocol/branding";
+import type { ChangelogRelease } from "./parse-changelog";
+import { mapGithubReleases } from "./zekoder-releases";
 
-const CHANGELOG_URL = "https://raw.githubusercontent.com/getpaseo/paseo/main/CHANGELOG.md";
+const RELEASES_PER_PAGE = 30;
+const RELEASES_URL = brandReleasesApiUrl(RELEASES_PER_PAGE);
 
 export type ChangelogState =
   | { status: "loading" }
@@ -9,9 +12,9 @@ export type ChangelogState =
   | { status: "error" };
 
 // Survives close/reopen so the second look paints without a spinner. The raw
-// text is kept alongside the releases so an unchanged revalidation can be
-// dropped: handing back an equal-but-new array would re-render every release.
-let cached: { markdown: string; releases: ChangelogRelease[] } | null = null;
+// response text is kept alongside the releases so an unchanged revalidation can
+// be dropped: handing back an equal-but-new array would re-render every release.
+let cached: { raw: string; releases: ChangelogRelease[] } | null = null;
 
 export interface Changelog {
   state: ChangelogState;
@@ -19,7 +22,14 @@ export interface Changelog {
 }
 
 /**
- * Reads the changelog from the repository the app was built from.
+ * Reads Zekoder's release notes: the hand-written bodies of the GitHub Releases
+ * on the public Zekoder Studio repository (see docs/release.md, "Release notes").
+ *
+ * This is deliberately not the repository's CHANGELOG.md. That file belongs to
+ * upstream Paseo, is kept for upstream tooling, and describes Paseo versions
+ * and sponsors, none of which an end user of this app should see. Prereleases
+ * are included because betas are shipped to users; draft releases are never
+ * returned by the unauthenticated API.
  *
  * The daemon is not involved: the changelog describes the app, a phone reaching
  * a relay already has internet, and going through a host would make the notes
@@ -41,13 +51,16 @@ export function useChangelog(enabled: boolean): Changelog {
 
     void (async () => {
       try {
-        const response = await fetch(CHANGELOG_URL, { signal: controller.signal });
+        const response = await fetch(RELEASES_URL, {
+          signal: controller.signal,
+          headers: { Accept: "application/vnd.github+json" },
+        });
         if (!response.ok) throw new Error(`Changelog request failed: ${response.status}`);
-        const markdown = await response.text();
-        if (cached?.markdown === markdown) return;
-        const releases = parseChangelog(markdown);
+        const raw = await response.text();
+        if (cached?.raw === raw) return;
+        const releases = mapGithubReleases(JSON.parse(raw));
         if (releases.length === 0) throw new Error("Changelog has no releases");
-        cached = { markdown, releases };
+        cached = { raw, releases };
         setState({ status: "ready", releases });
       } catch {
         if (controller.signal.aborted) return;

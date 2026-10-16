@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BRAND, brandUrl } from "./branding.js";
+import { BRAND, brandReleasesApiUrl, brandReleasesPageUrl, brandUrl } from "./branding.js";
 
 describe("brandUrl", () => {
   it("returns the website origin without a path", () => {
@@ -19,5 +19,16 @@ describe("brandUrl", () => {
   it("passes queries and fragments through", () => {
     expect(brandUrl("/docs/cli?x=1#top")).toBe("https://zekoder.net/docs/cli?x=1#top");
     expect(brandUrl("#download")).toBe("https://zekoder.net#download");
+  });
+});
+
+describe("brand releases", () => {
+  it("points at the public Zekoder Studio repository", () => {
+    expect(brandReleasesPageUrl()).toBe(
+      "https://github.com/cyberneticlabs/zekoder-studio/releases",
+    );
+    expect(brandReleasesApiUrl(30)).toBe(
+      "https://api.github.com/repos/cyberneticlabs/zekoder-studio/releases?per_page=30",
+    );
   });
 });
