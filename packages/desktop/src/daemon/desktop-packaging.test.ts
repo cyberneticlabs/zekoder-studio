@@ -119,6 +119,27 @@ describe("desktop packaging", () => {
     expect(runtimeTrace).toContain('"packages/server/dist/server/skills/**"');
   });
 
+  it("packages under a Zekoder-specific name so the updater cache dir is not upstream Paseo's", () => {
+    const config = readFileSync(join(packageRoot, "electron-builder.yml"), "utf8");
+    const packagedName = config.match(/^extraMetadata:\n {2}name: (\S+)$/m)?.[1];
+    expect(packagedName).toBeDefined();
+
+    // electron-builder: appInfo.updaterCacheDirName = sanitizeFileName(name).toLowerCase() + "-updater"
+    // where sanitizeFileName (sanitize-filename) strips illegal characters rather than replacing them.
+    const updaterCacheDirNameFor = (name: string) =>
+      `${name.replace(/[/\\?%*:|"<>]/g, "").toLowerCase()}-updater`;
+    expect(updaterCacheDirNameFor("@getpaseo/desktop")).toBe("@getpaseodesktop-updater");
+
+    const updaterCacheDirName = updaterCacheDirNameFor(packagedName ?? "");
+    expect(updaterCacheDirName).not.toBe("@getpaseodesktop-updater");
+    expect(updaterCacheDirName).toMatch(/^zekoder/);
+
+    // The old '@'-scoped name made electron-builder fall back to the product name for Linux
+    // package names; keep that so deb/rpm upgrades still replace the existing install.
+    expect(config).toMatch(/^deb:\n {2}packageName: Zekoder$/m);
+    expect(config).toMatch(/^rpm:\n {2}packageName: Zekoder$/m);
+  });
+
   it("registers Zekoder agent links with the operating system", () => {
     const config = readFileSync(join(packageRoot, "electron-builder.yml"), "utf8");
 

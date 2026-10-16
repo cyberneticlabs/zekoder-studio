@@ -2,6 +2,14 @@ npmRebuild: false
 appId: net.zekoder.desktop
 productName: Zekoder
 executableName: Zekoder
+# electron-builder derives app-update.yml's updaterCacheDirName from the packaged package.json
+# name, not productName. Without this override it is '@getpaseodesktop-updater', the same cache
+# directory as upstream Paseo, so both installs would share one electron-updater download cache.
+# Electron's default userData directory follows app.setName() (main.ts calls it before anything
+# reads userData) and the Linux CLI/desktop names are pinned explicitly, so this does not move
+# user data. The deb/rpm package name below is pinned to what the old '@'-scoped name resolved to.
+extraMetadata:
+  name: zekoder-desktop
 copyright: "Copyright © 2024-2026 Cybernetic Labs Ltd · zekoder.com · cyberneticlabs.io"
 protocols:
   - name: Zekoder agent link
@@ -76,8 +84,10 @@ linux:
     - rpm
     - tar.gz
 deb:
+  packageName: Zekoder
   afterInstall: scripts/linux-sandbox/after-install.tpl
 rpm:
+  packageName: Zekoder
   afterInstall: scripts/linux-sandbox/after-install.tpl
 appImage:
   # A nonempty argument list replaces builder's hardcoded --no-sandbox default.

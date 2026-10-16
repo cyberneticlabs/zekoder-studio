@@ -2,21 +2,32 @@
 id: 005-distinct-desktop-updater-cache-dir
 type: followup
 title: Use a Zekoder-specific electron-updater cache dir
-status: planned
+status: merged
 createdAt: 2026-10-11
 openedAt: 2026-10-11T20:22:24.583Z
-updatedAt: 2026-10-11T20:22:54.605Z
+updatedAt: 2026-10-16T10:26:33.504Z
+completedAt: 2026-10-16T10:26:33.504Z
 origin: zekoder-debt-agent
 filedFromTask: null
 branch: followup-005-distinct-desktop-updater-cache-dir
 promoted: false
 packages: []
+mergeMode: local
+commit: 1f628fd42ebc11d6c1aad7b60928b2aa5fa5dfe3
+filesTouched:
+  - .zekoder/followups/005-distinct-desktop-updater-cache-dir.md
+  - packages/desktop/electron-builder.yml
+  - packages/desktop/src/daemon/desktop-packaging.test.ts
+verifiedBaseSha: a7ad787d4b384eb1ace5084346bf290fbd014316
 relatedFeatures:
   - 003-desktop-gcs-release-pipeline
 relatedBugs: []
 relatedFollowups: []
 resolvedBy: null
-statusHistory: []
+statusHistory:
+  - from: planned
+    to: merged
+    at: 2026-10-16T10:26:33.504Z
 ---
 # Followup 005-distinct-desktop-updater-cache-dir: Use a Zekoder-specific electron-updater cache dir
 
@@ -36,10 +47,10 @@ Risks to check during implementation (approximate, confirm during planning): `ex
 
 ## Tasks
 
-- [ ] Verify how the packaged name is consumed: `packages/desktop/src/main.ts`, `packages/desktop/src/features/auto-updater.ts`, `packages/desktop/src/features/catalog-app-update-runtime.ts` (userData and cache path assumptions).
-- [ ] Set a Zekoder-specific packaged name (e.g. `extraMetadata.name`) in `packages/desktop/electron-builder.yml` so the generated `updaterCacheDirName` is not `@getpaseodesktop-updater`.
-- [ ] Add a test in `packages/desktop/src/daemon/desktop-packaging.test.ts` that reads `electron-builder.yml` and asserts the configured name yields a cache dir name that differs from upstream's `@getpaseodesktop-updater` and is Zekoder-branded.
-- [ ] Check `.github/workflows/desktop-packages.yml` does not override the name via `-c.extraMetadata`.
+- [x] Verify how the packaged name is consumed: `packages/desktop/src/main.ts`, `packages/desktop/src/features/auto-updater.ts`, `packages/desktop/src/features/catalog-app-update-runtime.ts` (userData and cache path assumptions).
+- [x] Set a Zekoder-specific packaged name (e.g. `extraMetadata.name`) in `packages/desktop/electron-builder.yml` so the generated `updaterCacheDirName` is not `@getpaseodesktop-updater`.
+- [x] Add a test in `packages/desktop/src/daemon/desktop-packaging.test.ts` that reads `electron-builder.yml` and asserts the configured name yields a cache dir name that differs from upstream's `@getpaseodesktop-updater` and is Zekoder-branded.
+- [x] Check `.github/workflows/desktop-packages.yml` does not override the name via `-c.extraMetadata`.
 
 ## Verification
 
