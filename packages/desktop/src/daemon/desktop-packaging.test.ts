@@ -120,7 +120,11 @@ describe("desktop packaging", () => {
   });
 
   it("packages under a Zekoder-specific name so the updater cache dir is not upstream Paseo's", () => {
-    const config = readFileSync(join(packageRoot, "electron-builder.yml"), "utf8");
+    // Windows checkouts convert LF to CRLF; the multi-line patterns below expect LF.
+    const config = readFileSync(join(packageRoot, "electron-builder.yml"), "utf8").replace(
+      /\r\n/g,
+      "\n",
+    );
     const packagedName = config.match(/^extraMetadata:\n {2}name: (\S+)$/m)?.[1];
     expect(packagedName).toBeDefined();
 
