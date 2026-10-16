@@ -244,6 +244,10 @@ filters (desktop release, Android, deploy-app, release notes) never match `zekod
 
 1. Bump the version in `plugins/zekoder/package.json` and `plugins/zekoder/shared/plugin-version.ts`.
    The plugin has no lockfile of its own; the root `package-lock.json` does not carry its version.
+   Check `requirements.paseo` in `plugins/zekoder/paseo-plugin.json` too. The release writes it into the
+   signed manifest as `requires.paseo`, and a daemon that doesn't satisfy it won't install the update.
+   Raise it when the new version needs a newer daemon. The release fails if the field is missing, and
+   changing it for an already-published version aborts the run.
 2. Merge to `main` and confirm CI is green on that commit.
 3. Tag the merged commit and push the tag:
 
