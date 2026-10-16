@@ -1,14 +1,14 @@
-import { BRAND, brandUrl } from "@getpaseo/protocol/branding";
+import { BRAND, brandReleasesPageUrl } from "@getpaseo/protocol/branding";
 import { expect, test, type Page } from "../support/fixtures";
 import { gotoAppShell, openSettings } from "../support/helpers/app";
-import { openSettingsSection, stubBrandWebsite } from "../support/helpers/settings";
-import { openWhatsNew, release, serveChangelog } from "../support/helpers/changelog";
+import { openSettingsSection } from "../support/helpers/settings";
+import { openWhatsNew, release, serveReleases } from "../support/helpers/changelog";
 
 const DISCORD_DESTINATION =
   /^https:\/\/(?:discord\.gg\/jz8T2uahpH|discord\.com\/invite\/jz8T2uahpH)(?:[/?#]|$)/;
 const GITHUB_ISSUE_DESTINATION =
   /^https:\/\/github\.com\/(?:getpaseo\/paseo\/issues\/new(?:\/choose)?(?:[/?#]|$)|login\?return_to=https%3A%2F%2Fgithub\.com%2Fgetpaseo%2Fpaseo%2Fissues%2Fnew$)/;
-const CHANGELOG_DESTINATION = new RegExp(`^${escapeRegExp(brandUrl("/changelog"))}(?:[/?#]|$)`);
+const RELEASES_DESTINATION = new RegExp(`^${escapeRegExp(brandReleasesPageUrl())}(?:[/?#]|$)`);
 // The name and the version are separate cells of a key/value row, so they meet with no space
 // between them in the row's text content.
 const APP_VERSION = new RegExp(
@@ -80,33 +80,32 @@ test("opens troubleshooting and support destinations", async ({ page }) => {
 });
 
 test("renders the changelog in the app and links the website", async ({ page }) => {
-  await stubBrandWebsite(page);
   // A callout, a section name the app has never seen, and a fenced sample whose
-  // contents look like a release heading.
-  await serveChangelog(page, [
-    "# Changelog",
-    "",
-    "## 9.1.0 - 2026-03-04",
-    "",
-    "Headline release note.",
-    "",
-    "> [!WARNING]",
-    "> Read this before upgrading.",
-    "",
-    "### Sparkles",
-    "",
-    "- Added a brand new thing",
-    "",
-    "```md",
-    "## 0.0.0 - 1999-01-01",
-    "```",
-    "",
-    "## 9.0.0 - 2026-02-01",
-    "",
-    "### Fixed",
-    "",
-    "- Fixed an older thing",
-    "",
+  // contents look like a heading.
+  await serveReleases(page, [
+    {
+      tag: "v9.1.0",
+      publishedAt: "2026-03-04T12:00:00Z",
+      body: [
+        "Headline release note.",
+        "",
+        "> [!WARNING]",
+        "> Read this before upgrading.",
+        "",
+        "### Sparkles",
+        "",
+        "- Added a brand new thing",
+        "",
+        "```md",
+        "## Not a section",
+        "```",
+      ],
+    },
+    {
+      tag: "v9.0.0",
+      publishedAt: "2026-02-01T12:00:00Z",
+      body: ["### Fixed", "", "- Fixed an older thing"],
+    },
   ]);
   await gotoAppShell(page);
 
@@ -118,10 +117,11 @@ test("renders the changelog in the app and links the website", async ({ page }) 
   await expect(latest.getByText("Read this before upgrading.")).toBeVisible();
   await expect(latest.getByText("Sparkles", { exact: true })).toBeVisible();
   await expect(latest.getByText("Added a brand new thing")).toBeVisible();
+  // The fenced heading stays literal code instead of starting a section.
+  await expect(latest.getByText("## Not a section", { exact: true })).toBeVisible();
   await expect(release(sheet, "9.0.0")).toBeVisible();
-  await expect(release(sheet, "0.0.0")).toHaveCount(0);
 
-  await expectExternalPage(page, "changelog-open-website", CHANGELOG_DESTINATION);
+  await expectExternalPage(page, "changelog-open-website", RELEASES_DESTINATION);
   await closeSheet(page, "changelog-sheet");
 });
 
