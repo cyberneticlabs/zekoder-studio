@@ -11,17 +11,20 @@ const githubReleasesSchema = z.array(
 );
 
 const LEADING_V = /^v(?=\d)/i;
+// App release tags only. Zekoder plugin tags (`zekoder-plugin-v*`) describe the
+// plugin, not the app.
+const APP_RELEASE_TAG = /^v\d/i;
 const ISO_DATE_PREFIX = /^\d{4}-\d{2}-\d{2}/;
 
 /**
  * Maps the GitHub REST `releases` response to what the sheet renders. Releases
- * keep the API's order (newest first). A release with no written notes has
- * nothing to show and is dropped.
+ * keep the API's order (newest first). Non-app tags and releases with no
+ * written notes have nothing to show and are dropped.
  */
 export function mapGithubReleases(payload: unknown): ChangelogRelease[] {
   return githubReleasesSchema
     .parse(payload)
-    .filter((release) => !release.draft)
+    .filter((release) => !release.draft && APP_RELEASE_TAG.test(release.tag_name))
     .map((release) => ({
       version: release.tag_name.replace(LEADING_V, ""),
       date: release.published_at?.match(ISO_DATE_PREFIX)?.[0] ?? "",

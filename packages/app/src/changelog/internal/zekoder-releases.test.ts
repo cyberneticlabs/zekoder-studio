@@ -32,6 +32,14 @@ describe("mapGithubReleases", () => {
     expect(releases.map((release) => release.version)).toEqual(["0.12.0-beta.2", "0.12.0-beta.1"]);
   });
 
+  it("drops tags that are not app releases", () => {
+    const releases = mapGithubReleases([
+      githubRelease({ tag_name: "zekoder-plugin-v1.2.0" }),
+      githubRelease({ tag_name: "v0.12.0" }),
+    ]);
+    expect(releases.map((release) => release.version)).toEqual(["0.12.0"]);
+  });
+
   it("drops releases without notes", () => {
     const releases = mapGithubReleases([
       githubRelease({ tag_name: "v0.12.2", body: "" }),
