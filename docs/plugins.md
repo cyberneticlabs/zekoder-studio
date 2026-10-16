@@ -121,6 +121,20 @@ the plugin became built-in) never runs. The daemon keeps the built-in, ignores t
 logs one warning at start. `paseo plugin remove <id>` drops only the config entry and any
 managed source checkout; it never stops the built-in or deletes its settings and logs.
 
+A provider registration with `requiresConfiguration: true` participates only while its ID exists
+under `agents.providers`. Hoplite uses this for catalog opt-in. Add writes `{ "enabled": true }`
+without `extends`, so it selects the bundled adapter. Remove deletes the config entry; setting
+`enabled: false` keeps the entry. The bundled JavaScript still loads at startup, but an absent
+provider does not enter executable resolution or catalog discovery.
+
+Provider plugins use separate installation and provider IDs. `muse-provider` registers the
+selectable `muse` provider (Muse Code) and a usage source. Its `status({ launch })` reports
+availability and a diagnostic after the daemon resolves the executable. Configure command,
+environment, or enablement overrides under `agents.providers.muse`. Omit `extends` to keep
+the bundled integration; an entry with `extends` shadows it with a custom provider. See
+[provider contributions](#contribute-a-provider) for the contract and
+[Muse Code](../public-docs/muse-code.md) for setup, per-agent options, and version limitations.
+
 ### The Zekoder plugin
 
 `plugins/zekoder/` is the source of the Zekoder plugin. Edit it in place like any other built-in
@@ -172,20 +186,6 @@ signed `zekoder` releases and runs the newest valid one at its next start.
 
 This is the user-approved exception (2026-10-07) to exact plugin pinning. It holds because every
 update is signed, immutable and version-pinned, and the bundled copy is always the fallback.
-
-A provider registration with `requiresConfiguration: true` participates only while its ID exists
-under `agents.providers`. Hoplite uses this for catalog opt-in. Add writes `{ "enabled": true }`
-without `extends`, so it selects the bundled adapter. Remove deletes the config entry; setting
-`enabled: false` keeps the entry. The bundled JavaScript still loads at startup, but an absent
-provider does not enter executable resolution or catalog discovery.
-
-Provider plugins use separate installation and provider IDs. `muse-provider` registers the
-selectable `muse` provider (Muse Code) and a usage source. Its `status({ launch })` reports
-availability and a diagnostic after the daemon resolves the executable. Configure command,
-environment, or enablement overrides under `agents.providers.muse`. Omit `extends` to keep
-the bundled integration; an entry with `extends` shadows it with a custom provider. See
-[provider contributions](#contribute-a-provider) for the contract and
-[Muse Code](../public-docs/muse-code.md) for setup, per-agent options, and version limitations.
 
 ## Install from a registry
 

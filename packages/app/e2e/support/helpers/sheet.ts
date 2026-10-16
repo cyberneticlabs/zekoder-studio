@@ -60,7 +60,7 @@ export async function replaceSheetFileText(
 ): Promise<void> {
   const editor = sheet(page, label).getByTestId("file-source-editor").locator(".cm-content");
   await editor.click();
-  await editor.press("ControlOrMeta+A");
+  await editor.press("Control+A");
   await editor.pressSequentially(content);
 }
 
