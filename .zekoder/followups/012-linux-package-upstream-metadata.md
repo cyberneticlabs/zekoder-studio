@@ -44,13 +44,13 @@ Sweep found no AppStream/metainfo or checked-in `.desktop` files (`.desktop` com
 
 Open questions (put to the user, do not invent):
 
-1. Exact maintainer string/contact for `linux.maintainer`. Owner is Cybernetic Labs; no email is known. Format needed: `"Cybernetic Labs Ltd <email>"`. deb requires an email-style maintainer.
+1. Answered by the user (2026-10-17): `linux.maintainer` is `"Cybernetic Labs Ltd <help@zekoder.com>"`.
 2. License mismatch: `nix/desktop-package.nix:260` says `agpl3Plus`, `packages/desktop/package.json` says `Apache-2.0`, root `LICENSE` carries the upstream copyright. Which is correct for the Zekoder desktop package? Do not change license metadata until the owner answers.
 3. Nix `homepage`: `https://zekoder.net` (matches `package.json`) assumed.
 
 ## Tasks
 
-- [ ] `packages/desktop/electron-builder.yml:76`: set `linux.maintainer` to the Cybernetic Labs maintainer string from open question 1 (blocked on that answer).
+- [ ] `packages/desktop/electron-builder.yml:76`: set `linux.maintainer` to `"Cybernetic Labs Ltd <help@zekoder.com>"`.
 - [ ] `nix/desktop-package.nix:259`: set `meta.homepage` to `https://zekoder.net`. Optionally add `meta.maintainers` only if the user supplies one.
 - [ ] `nix/package.nix:150`: same homepage change if the daemon package is Zekoder-branded (see approach).
 - [ ] `packages/desktop/src/daemon/desktop-packaging.test.ts` (near line 139, deb/rpm packageName assertions): add assertions that `linux.maintainer` does not contain `moboudra`/`Boudra` and `linux.vendor` is `Zekoder`.
