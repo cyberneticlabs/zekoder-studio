@@ -5,7 +5,7 @@ title: Move EAS owner and project ID off upstream before enabling EAS
 status: planned
 createdAt: 2026-10-16
 openedAt: 2026-10-16T15:50:17.706Z
-updatedAt: 2026-10-16T15:51:38.142Z
+updatedAt: 2026-10-17T09:43:29.604Z
 origin: zekoder-planner-agent
 filedFromTask: null
 branch: followup-013-eas-fork-identity
@@ -13,7 +13,8 @@ promoted: false
 packages: []
 relatedFeatures: []
 relatedBugs: []
-relatedFollowups: []
+relatedFollowups:
+  - 015-expo-app-store-accounts
 resolvedBy: null
 statusHistory: []
 ---
@@ -39,6 +40,8 @@ Touch points found (all paths repo-relative, confirmed to exist):
 - `.github/workflows/android-apk-release.yml`: lines 25 and 69 gate on `github.repository == 'getpaseo/paseo'`; line 99-112 uses `secrets.EXPO_TOKEN` and `npx eas build`. Update the gate to the fork repo (or an enable variable such as `vars.EAS_ENABLED`) so it can run when the user turns it on. Keep it off by default; Android is deferred.
 - `docs/release.md` ("Mobile builds (EAS)" at ~line 560, and line 501) and `docs/android.md` ("Cloud build + submit (EAS)" at ~line 206): both say EAS is triggered by the upstream EAS GitHub app. Rewrite to the Zekoder Expo project and the fork repo, per the docs rules in `CLAUDE.md` (integrate, do not append).
 - `packages/app/app.config.test.ts`: only asserts Android camera manifest entries; it has no owner/projectId expectations. Do not weaken it. Optionally add one assertion that `exp.owner` and `exp.extra.eas.projectId` are not the upstream values.
+
+Blocked by followup `015-expo-app-store-accounts`, which owns the account and store setup and records the values below.
 
 Open questions / prerequisites for the user (blocking; leave as placeholders until answered):
 
